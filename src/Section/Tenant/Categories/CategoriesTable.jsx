@@ -58,6 +58,7 @@ const CategoriesTable = ({ data = categories }) => {
     {
       key: "status",
       label: "Status",
+      align: "center",
       render: (_, row) => (
         <Badge
           leftIcon={
@@ -77,6 +78,7 @@ const CategoriesTable = ({ data = categories }) => {
     {
       key: "usage",
       label: "Usage",
+      align: "center",
       render: (_, row) => (
         <Badge
           size="sm"

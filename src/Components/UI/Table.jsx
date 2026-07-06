@@ -129,7 +129,7 @@ const Table = ({
                           disabled={!column.sortable || !onSort}
                           onClick={() => handleSort(column)}
                           className={[
-                            "flex min-w-0 items-center gap-2 bg-transparent p-0 font-inherit text-inherit",
+                            "flex w-full min-w-0 items-center gap-2 bg-transparent p-0 font-inherit text-inherit",
                             alignClass,
                             column.sortable && onSort
                               ? "cursor-pointer hover:text-(--theme-text-primary)"
@@ -211,7 +211,7 @@ const Table = ({
                             {column.render ? (
                               <div
                                 className={[
-                                  "min-w-0 max-w-full overflow-hidden whitespace-nowrap",
+                                  "flex min-w-0 max-w-full items-center overflow-hidden whitespace-nowrap",
                                   alignClass,
                                 ].join(" ")}
                               >
