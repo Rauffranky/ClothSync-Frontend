@@ -283,18 +283,13 @@ const LinkedLaundries = () => {
         description="Send an invitation to a laundry company to join ClothSync."
         footer={
           <>
-            <Button
-              onClick={closeInviteModal}
-              rounded="12px"
-              size="md"
-              variant="secondary"
-            >
+            <Button onClick={closeInviteModal} size="md" variant="secondary">
               Cancel
             </Button>
             <Button
+              variant="success"
               form="invite-laundry-form"
               leftIcon={<Send size={18} />}
-              rounded="12px"
               size="md"
               type="submit"
             >

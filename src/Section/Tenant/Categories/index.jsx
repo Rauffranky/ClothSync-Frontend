@@ -177,7 +177,7 @@ const Categories = () => {
               rounded="10px"
               size="md"
               type="submit"
-              variant="info"
+              variant="success"
             >
               Add Category
             </Button>
