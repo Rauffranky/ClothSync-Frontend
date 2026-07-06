@@ -33,37 +33,6 @@ const SideBar = ({
   const navigate = useNavigate();
   const [expandedMenus, setExpandedMenus] = useState({});
 
-  const getActiveStyles = (portal) => {
-    switch (portal) {
-      case 'tenant':
-      case 'business':
-        return {
-          activeContainer: "bg-(--tenant-glow) border border-(--tenant-primary) shadow-(--button-secondary-shadow)",
-          inactiveContainer: "border border-transparent hover:bg-(--tenant-glow) hover:border-(--tenant-primary)",
-          icon: "text-white",
-          text: "text-white",
-          dot: "bg-white shadow-[0_0_8px_rgba(255,255,255,0.6)]",
-        };
-      case 'laundry':
-        return {
-          activeContainer: "bg-(--admin-glow) border border-(--admin-primary) shadow-(--button-secondary-shadow)",
-          inactiveContainer: "border border-transparent hover:bg-(--admin-glow) hover:border-(--admin-primary)",
-          icon: "text-white",
-          text: "text-white",
-          dot: "bg-white shadow-[0_0_8px_rgba(255,255,255,0.6)]",
-        };
-      case 'superadmin':
-      default:
-        return {
-          activeContainer: "bg-(--laundry-glow) border border-(--laundry-primary) shadow-(--button-secondary-shadow)",
-          inactiveContainer: "border border-transparent hover:bg-(--laundry-glow) hover:border-(--laundry-primary)",
-          icon: "text-(--laundry-primary)",
-          text: "text-(--laundry-primary)",
-          dot: "bg-(--laundry-primary) shadow-[0_0_8px_var(--laundry-primary)]",
-        };
-    }
-  };
-
   const renderLogoArea = (isMobile = false) => {
     return (
       <div
@@ -147,8 +116,8 @@ const SideBar = ({
               showLabel ? "px-4 py-2.5" : "w-11 h-11 mx-auto px-0 py-0",
               "rounded-[10px]",
               isActive
-                ? getActiveStyles(portal).activeContainer
-                : getActiveStyles(portal).inactiveContainer,
+                ? "bg-(--button-secondary-bg) border border-(--button-secondary-border) shadow-(--button-secondary-shadow)"
+                : "hover:bg-(--button-ghost-bg-hover) border border-transparent",
             ].join(" ")}
           >
             <div
@@ -164,7 +133,7 @@ const SideBar = ({
                   className={[
                     "relative z-10 transition-colors duration-300",
                     isActive
-                      ? getActiveStyles(portal).icon
+                      ? "text-(--color-aurora-teal)"
                       : "text-(--theme-text-muted) group-hover:text-(--theme-text-primary)",
                   ].join(" ")}
                 />
@@ -179,7 +148,7 @@ const SideBar = ({
                       ? "max-w-40 flex-1 whitespace-nowrap overflow-hidden text-ellipsis pr-4 opacity-100"
                       : "max-w-0 flex-none pr-0 opacity-0",
                   isActive
-                    ? getActiveStyles(portal).text
+                    ? "text-(--color-aurora-teal)"
                     : "text-(--theme-text-secondary) group-hover:text-(--theme-text-primary)",
                 ].join(" ")}
               >
@@ -188,8 +157,7 @@ const SideBar = ({
 
               <div
                 className={[
-                  "absolute right-4 w-1.5 h-1.5 rounded-full transition-opacity duration-300",
-                  getActiveStyles(portal).dot,
+                  "absolute right-4 w-1.5 h-1.5 rounded-full bg-(--color-aurora-teal) shadow-[0_0_8px_var(--color-aurora-teal)] transition-opacity duration-300",
                   isActive && showLabel ? "opacity-100" : "opacity-0",
                 ].join(" ")}
               />
@@ -207,7 +175,7 @@ const SideBar = ({
                   size={16}
                   className={
                     isActive
-                      ? getActiveStyles(portal).icon
+                      ? "text-(--color-aurora-teal)"
                       : "text-(--theme-text-muted)"
                   }
                 />
@@ -230,7 +198,7 @@ const SideBar = ({
                   className={[
                     "flex items-center justify-between px-3 py-1.5 rounded-lg text-[13px] transition-all duration-200",
                     isSubActive
-                      ? `${getActiveStyles(portal).text} font-medium`
+                      ? "text-(--color-aurora-teal) font-medium"
                       : "text-(--theme-text-secondary) hover:text-(--theme-text-primary) hover:bg-(--button-ghost-bg-hover)",
                   ].join(" ")}
                 >
