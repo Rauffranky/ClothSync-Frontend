@@ -166,7 +166,7 @@ const Categories = () => {
             <Button
               onClick={closeAddModal}
               rounded="10px"
-              size="md"
+              size="sm"
               variant="outline"
             >
               Cancel
@@ -175,7 +175,7 @@ const Categories = () => {
               form="add-category-form"
               leftIcon={<CircleCheck size={16} />}
               rounded="10px"
-              size="md"
+              size="sm"
               type="submit"
               variant="success"
             >
