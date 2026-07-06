@@ -17,7 +17,7 @@ import GlobalTooltip from "../../UI/Tooltip";
 
 const SideBar = ({
   isOpen = false,
-  onClose = () => {},
+  onClose = () => { },
   isDesktopOpen,
   onDesktopToggle,
   portal = "superadmin",
@@ -33,6 +33,37 @@ const SideBar = ({
   const navigate = useNavigate();
   const [expandedMenus, setExpandedMenus] = useState({});
 
+  const getActiveStyles = (portal) => {
+    switch (portal) {
+      case 'tenant':
+      case 'business':
+        return {
+          activeContainer: "bg-(--tenant-glow) border border-(--tenant-primary) shadow-(--button-secondary-shadow)",
+          inactiveContainer: "border border-transparent hover:bg-(--tenant-glow) hover:border-(--tenant-primary)",
+          icon: "text-white",
+          text: "text-white",
+          dot: "bg-white shadow-[0_0_8px_rgba(255,255,255,0.6)]",
+        };
+      case 'laundry':
+        return {
+          activeContainer: "bg-(--admin-glow) border border-(--admin-primary) shadow-(--button-secondary-shadow)",
+          inactiveContainer: "border border-transparent hover:bg-(--admin-glow) hover:border-(--admin-primary)",
+          icon: "text-white",
+          text: "text-white",
+          dot: "bg-white shadow-[0_0_8px_rgba(255,255,255,0.6)]",
+        };
+      case 'superadmin':
+      default:
+        return {
+          activeContainer: "bg-(--laundry-glow) border border-(--laundry-primary) shadow-(--button-secondary-shadow)",
+          inactiveContainer: "border border-transparent hover:bg-(--laundry-glow) hover:border-(--laundry-primary)",
+          icon: "text-(--laundry-primary)",
+          text: "text-(--laundry-primary)",
+          dot: "bg-(--laundry-primary) shadow-[0_0_8px_var(--laundry-primary)]",
+        };
+    }
+  };
+
   const renderLogoArea = (isMobile = false) => {
     return (
       <div
@@ -45,7 +76,7 @@ const SideBar = ({
       </div>
     );
   };
-  
+
   const handleLogo = () => {
     navigate(`/${portal}/dashboard`);
   };
@@ -116,8 +147,8 @@ const SideBar = ({
               showLabel ? "px-4 py-2.5" : "w-11 h-11 mx-auto px-0 py-0",
               "rounded-[10px]",
               isActive
-                ? "bg-(--button-secondary-bg) border border-(--button-secondary-border) shadow-(--button-secondary-shadow)"
-                : "hover:bg-(--button-ghost-bg-hover) border border-transparent",
+                ? getActiveStyles(portal).activeContainer
+                : getActiveStyles(portal).inactiveContainer,
             ].join(" ")}
           >
             <div
@@ -133,7 +164,7 @@ const SideBar = ({
                   className={[
                     "relative z-10 transition-colors duration-300",
                     isActive
-                      ? "text-(--color-aurora-teal)"
+                      ? getActiveStyles(portal).icon
                       : "text-(--theme-text-muted) group-hover:text-(--theme-text-primary)",
                   ].join(" ")}
                 />
@@ -145,10 +176,10 @@ const SideBar = ({
                   isMobile
                     ? "min-w-0 flex-1 whitespace-normal wrap-break-word pr-3 opacity-100"
                     : showLabel
-                    ? "max-w-40 flex-1 whitespace-nowrap overflow-hidden text-ellipsis pr-4 opacity-100"
-                    : "max-w-0 flex-none pr-0 opacity-0",
+                      ? "max-w-40 flex-1 whitespace-nowrap overflow-hidden text-ellipsis pr-4 opacity-100"
+                      : "max-w-0 flex-none pr-0 opacity-0",
                   isActive
-                    ? "text-(--color-aurora-teal)"
+                    ? getActiveStyles(portal).text
                     : "text-(--theme-text-secondary) group-hover:text-(--theme-text-primary)",
                 ].join(" ")}
               >
@@ -157,7 +188,8 @@ const SideBar = ({
 
               <div
                 className={[
-                  "absolute right-4 w-1.5 h-1.5 rounded-full bg-(--color-aurora-teal) shadow-[0_0_8px_var(--color-aurora-teal)] transition-opacity duration-300",
+                  "absolute right-4 w-1.5 h-1.5 rounded-full transition-opacity duration-300",
+                  getActiveStyles(portal).dot,
                   isActive && showLabel ? "opacity-100" : "opacity-0",
                 ].join(" ")}
               />
@@ -175,7 +207,7 @@ const SideBar = ({
                   size={16}
                   className={
                     isActive
-                      ? "text-(--color-aurora-teal)"
+                      ? getActiveStyles(portal).icon
                       : "text-(--theme-text-muted)"
                   }
                 />
@@ -198,7 +230,7 @@ const SideBar = ({
                   className={[
                     "flex items-center justify-between px-3 py-1.5 rounded-lg text-[13px] transition-all duration-200",
                     isSubActive
-                      ? "text-(--color-aurora-teal) font-medium"
+                      ? `${getActiveStyles(portal).text} font-medium`
                       : "text-(--theme-text-secondary) hover:text-(--theme-text-primary) hover:bg-(--button-ghost-bg-hover)",
                   ].join(" ")}
                 >
@@ -271,7 +303,7 @@ const SideBar = ({
           "--sidebar-pad": isDesktopOpen ? "16px" : "8px",
         }}
       >
-        
+
 
         <div
           className={`flex items-center justify-center pt-2 pb-1 shrink-0 border-b border-(--theme-border)`}
@@ -288,7 +320,7 @@ const SideBar = ({
             { id: "logout", label: "Logout", href: "#", Icon: LogOut },
             false,
           )}
-          
+
         </div>
       </aside>
     </>
