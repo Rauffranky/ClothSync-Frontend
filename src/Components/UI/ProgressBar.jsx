@@ -18,7 +18,7 @@ const ProgressBar = ({
   color, // custom hex or css var to override variant
   heightClass = 'h-1',
   className = '',
-  bgColorClass = 'bg-black/10 dark:bg-white/10',
+  bgColorClass = 'bg-(--theme-border)',
 }) => {
   const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
   const resolvedColor = color || VARIANTS[variant] || VARIANTS.primary;
