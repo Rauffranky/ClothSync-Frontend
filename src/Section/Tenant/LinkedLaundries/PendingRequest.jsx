@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Building2 } from "lucide-react";
 import Badge from "../../../Components/UI/Badge";
 import Button from "../../../Components/UI/Button";
+import IconWrapper from "../../../Components/UI/IconWrapper";
 import Pagination from "../../../Components/UI/Pagination";
 import { pendingRequests } from "./data";
 
@@ -31,16 +32,12 @@ const PendingRequest = () => {
             key={request.id}
           >
             <div className="flex min-w-0 items-center gap-4">
-              <span
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
-                style={{
-                  color: "var(--color-sky-blue)",
-                  background:
-                    "color-mix(in srgb, var(--color-sky-blue) 13%, transparent)",
-                }}
-              >
-                <Building2 size={18} />
-              </span>
+              <IconWrapper
+                icon={Building2}
+                variant="info"
+                sizeClassName="h-11 w-11 shrink-0"
+                roundedClassName="rounded-xl"
+              />
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
