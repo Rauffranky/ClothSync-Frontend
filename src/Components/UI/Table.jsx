@@ -211,14 +211,14 @@ const Table = ({
                             {column.render ? (
                               <div
                                 className={[
-                                  "flex min-w-0 max-w-full items-center overflow-hidden whitespace-nowrap",
+                                  "flex items-center whitespace-nowrap",
                                   alignClass,
                                 ].join(" ")}
                               >
                                 {cellContent}
                               </div>
                             ) : (
-                              <span className="min-w-0 max-w-full truncate">
+                              <span className="whitespace-nowrap">
                                 {cellContent}
                               </span>
                             )}

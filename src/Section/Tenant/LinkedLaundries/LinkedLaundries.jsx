@@ -187,7 +187,6 @@ const LinkedLaundries = () => {
     {
       key: "name",
       label: "Laundry Name",
-      width: "minmax(230px, 1.35fr)",
       render: (_, row) => (
         <div className="flex min-w-0 items-center gap-3">
           <IconWrapper
@@ -211,7 +210,6 @@ const LinkedLaundries = () => {
     {
       key: "contact",
       label: "Contact",
-      width: "minmax(190px, 1fr)",
       render: (_, row) => (
         <div className="min-w-0">
           <p className="m-0 truncate font-bold text-(--theme-text-primary)">
@@ -223,11 +221,10 @@ const LinkedLaundries = () => {
         </div>
       ),
     },
-    { key: "location", label: "Location", width: "150px" },
+    { key: "location", label: "Location" },
     {
       key: "status",
       label: "Status",
-      width: "130px",
       render: (_, row) => (
         <Badge variant={row.statusVariant} size="sm">
           {row.status}
@@ -237,7 +234,6 @@ const LinkedLaundries = () => {
     {
       key: "isDefault",
       label: "Default",
-      width: "135px",
       render: (_, row) =>
         row.isDefault ? (
           <Badge variant="warning" size="sm" leftIcon={<Star size={12} />}>
@@ -254,12 +250,11 @@ const LinkedLaundries = () => {
           </Button>
         ),
     },
-    { key: "batches", label: "Batches", width: "95px", align: "center" },
-    { key: "itemsSent", label: "Items Sent", width: "115px", align: "center" },
+    { key: "batches", label: "Batches", align: "center" },
+    { key: "itemsSent", label: "Items Sent", align: "center" },
     {
       key: "missing",
       label: "Missing",
-      width: "95px",
       align: "center",
       render: (value) => (
         <span
@@ -276,7 +271,6 @@ const LinkedLaundries = () => {
     {
       key: "actions",
       label: "Actions",
-      width: "110px",
       align: "center",
       render: (_, row) => (
         <ActionDropdown
