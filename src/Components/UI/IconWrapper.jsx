@@ -19,6 +19,7 @@ const IconWrapper = ({
   iconSize = 18,
   iconStrokeWidth = 2.2,
   variant, // e.g. "primary", "info", "success", "warning", "danger", "purple", "neutral"
+  hasAlert = false, // If true, shows a red dot on the top right
   color, // Hex or CSS variable for automatic background tinting (overrides variant)
   bgColor, // Tailwind class for background
   borderColor, // Tailwind class for border
@@ -40,10 +41,16 @@ const IconWrapper = ({
 
   return (
     <span
-      className={`grid place-items-center ${sizeClassName} ${roundedClassName} ${bgColor || ''} ${borderColor ? `border ${borderColor}` : ''} ${iconColor || ''} ${className}`}
+      className={`relative grid place-items-center shrink-0 ${sizeClassName} ${roundedClassName} ${bgColor || ''} ${borderColor ? `border ${borderColor}` : ''} ${iconColor || ''} ${className}`}
       style={customStyle}
     >
       <Icon size={iconSize} strokeWidth={iconStrokeWidth} />
+      
+      {hasAlert && (
+        <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-(--theme-surface) shadow-sm">
+          <span className="h-2.5 w-2.5 rounded-full bg-(--color-overdue)"></span>
+        </span>
+      )}
     </span>
   );
 };
