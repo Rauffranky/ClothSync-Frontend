@@ -4,8 +4,7 @@ import {
   Cuboid,
   Hourglass,
   RefreshCw,
-  Star,
-} from "lucide-react";
+  } from "lucide-react";
 import Card from "../../../Components/UI/Card";
 
 const stats = [
@@ -15,13 +14,6 @@ const stats = [
     helper: "laundry partners",
     icon: Building2,
     color: "var(--color-sky-blue)",
-  },
-  {
-    value: "1",
-    label: "Default Laundry",
-    helper: "PureWash Industrial",
-    icon: Star,
-    color: "var(--color-pending)",
   },
   {
     value: "2",
@@ -55,7 +47,7 @@ const stats = [
 
 const Stats = () => {
   return (
-    <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+    <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
       {stats.map((item) => {
         const Icon = item.icon;
 
