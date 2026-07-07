@@ -22,6 +22,7 @@ import Input from "../../../Components/UI/Input";
 import Modal from "../../../Components/UI/Modal";
 import Pagination from "../../../Components/UI/Pagination";
 import Table from "../../../Components/UI/Table";
+import IconWrapper from "../../../Components/UI/IconWrapper";
 import { laundries } from "./data";
 
 const ITEMS_PER_PAGE = 3;
@@ -189,16 +190,13 @@ const LinkedLaundries = () => {
       width: "minmax(230px, 1.35fr)",
       render: (_, row) => (
         <div className="flex min-w-0 items-center gap-3">
-          <span
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
-            style={{
-              color: "var(--color-sky-blue)",
-              background:
-                "color-mix(in srgb, var(--color-sky-blue) 13%, transparent)",
-            }}
-          >
-            <Building2 size={17} />
-          </span>
+          <IconWrapper
+            icon={Building2}
+            variant="info"
+            sizeClassName="h-9 w-9 shrink-0"
+            roundedClassName="rounded-xl"
+            iconSize={17}
+          />
           <div className="min-w-0">
             <p className="m-0 truncate  text-(--theme-text-primary)">
               {row.name}

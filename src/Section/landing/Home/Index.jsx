@@ -3,6 +3,7 @@ import { ArrowRight, Building2, Mail, Radio, ShieldCheck } from "lucide-react";
 import Button from "../../../Components/UI/Button";
 import Dropdown from "../../../Components/UI/Dropdown";
 import Input from "../../../Components/UI/Input";
+import IconWrapper from "../../../Components/UI/IconWrapper";
 
 const stats = [
   { value: "24/7", label: "Live laundry tracking" },
@@ -122,15 +123,13 @@ const Index = () => {
                 }}
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <span
-                    className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
-                    style={{
-                      color: "var(--color-aurora-teal)",
-                      background: "rgba(20, 184, 166, 0.12)",
-                    }}
-                  >
-                    <Building2 size={18} />
-                  </span>
+                  <IconWrapper
+                    icon={Building2}
+                    variant="primary"
+                    sizeClassName="h-10 w-10 shrink-0"
+                    roundedClassName="rounded-xl"
+                    iconSize={18}
+                  />
                   <div className="min-w-0">
                     <p className="m-0 truncate text-sm font-black text-(--theme-text-primary)">
                       {title}

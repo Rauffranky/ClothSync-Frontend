@@ -7,6 +7,7 @@ import {
   Star,
 } from "lucide-react";
 import Card from "../../../Components/UI/Card";
+import IconWrapper from "../../../Components/UI/IconWrapper";
 
 const stats = [
   {
@@ -14,42 +15,42 @@ const stats = [
     label: "Total Linked",
     helper: "laundry partners",
     icon: Building2,
-    color: "var(--color-sky-blue)",
+    variant: "info",
   },
   {
     value: "1",
     label: "Default Laundry",
     helper: "PureWash Industrial",
     icon: Star,
-    color: "var(--color-pending)",
+    variant: "warning",
   },
   {
     value: "2",
     label: "Pending Requests",
     helper: "awaiting confirmation",
     icon: Hourglass,
-    color: "var(--color-maintenance)",
+    variant: "warning",
   },
   {
     value: "6",
     label: "Active Dispatches",
     helper: "across all laundries",
     icon: RefreshCw,
-    color: "var(--color-super-admin-light)",
+    variant: "purple",
   },
   {
     value: "382",
     label: "Items Currently Sent",
     helper: "in transit or processing",
     icon: Cuboid,
-    color: "var(--color-ready)",
+    variant: "success",
   },
   {
     value: "9",
     label: "Delayed Items",
     helper: "past expected return",
     icon: Clock,
-    color: "var(--color-overdue)",
+    variant: "danger",
   },
 ];
 
@@ -63,15 +64,7 @@ const Stats = () => {
           <Card
             key={item.label}
           >
-            <span
-              className="grid h-9 w-9 place-items-center rounded-lg"
-              style={{
-                color: item.color,
-                background: `color-mix(in srgb, ${item.color} 14%, transparent)`,
-              }}
-            >
-              <Icon size={18} strokeWidth={2.2} />
-            </span>
+            <IconWrapper icon={Icon} variant={item.variant} />
 
             <p className="m-0 mt-4 text-3xl font-black leading-none text-(--theme-text-primary)">
               {item.value}
