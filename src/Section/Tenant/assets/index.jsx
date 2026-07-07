@@ -1,13 +1,14 @@
+import Card from "../../../Components/UI/Card";
 import AssetsTable from "./AssetsTable";
 import AssetStats from "./stats";
 
 const AssetIndex = () => {
     return (
-        <div className="flex flex-col gap-2">
+        <div className="space-y-5">
             <AssetStats />
-            <div>
+            <Card padding="0" rounded="18px">
                 <AssetsTable />
-            </div>
+            </Card>
         </div>
     );
 };
