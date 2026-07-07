@@ -2,28 +2,27 @@ import { useMemo, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import {
-  AlertTriangle,
   Building2,
   Eye,
-  Mail,
   Plus,
   Search,
-  Send,
   Star,
   StarOff,
   Unlink,
 } from "lucide-react";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
-import Alert from "../../../Components/UI/Alert";
 import Badge from "../../../Components/UI/Badge";
 import Button from "../../../Components/UI/Button";
 import Dropdown from "../../../Components/UI/Dropdown";
 import Input from "../../../Components/UI/Input";
-import Modal from "../../../Components/UI/Modal";
 import Pagination from "../../../Components/UI/Pagination";
 import Table from "../../../Components/UI/Table";
 import IconWrapper from "../../../Components/UI/IconWrapper";
 import { laundries } from "./data";
+import InviteLaundryModal from "./InviteLaundryModal";
+import UnlinkLaundryModal from "./UnlinkLaundryModal";
+import DefaultConfirmModal from "./DefaultConfirmModal";
+import DefaultBlockedModal from "./DefaultBlockedModal";
 
 const ITEMS_PER_PAGE = 3;
 
@@ -63,9 +62,6 @@ const LinkedLaundries = () => {
   const currentDefaultLaundry = linkedLaundries.find(
     (laundry) => laundry.isDefault,
   );
-  const isUnlinkModalOpen = Boolean(unlinkLaundry);
-  const isDefaultBlockedModalOpen = Boolean(defaultBlockedLaundry);
-  const isDefaultConfirmModalOpen = Boolean(defaultAction);
 
   const inviteLaundryFormik = useFormik({
     initialValues: inviteLaundryInitialValues,
@@ -323,7 +319,6 @@ const LinkedLaundries = () => {
     <>
       <div className="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(240px,1fr)_170px_190px_auto]">
         <Input
-          // height="42px"
           leftIcon={<Search size={16} />}
           onChange={handleSearchChange}
           placeholder="Search laundries..."
@@ -365,246 +360,32 @@ const LinkedLaundries = () => {
         />
       </div>
 
-      <Modal
-        description="Send an invitation to a laundry company to join ClothSync."
-        footer={
-          <>
-            <Button onClick={closeInviteModal} size="sm" variant="secondary">
-              Cancel
-            </Button>
-            <Button
-              variant="success"
-              form="invite-laundry-form"
-              leftIcon={<Send size={18} />}
-              size="sm"
-              type="submit"
-            >
-              Send Invitation
-            </Button>
-          </>
-        }
+      <InviteLaundryModal
+        isOpen={isInviteModalOpen}
         onClose={closeInviteModal}
-        open={isInviteModalOpen}
-        title="Invite New Laundry"
-      >
-        <form
-          className="space-y-5"
-          id="invite-laundry-form"
-          onSubmit={inviteLaundryFormik.handleSubmit}
-        >
-          <Input
-            error={
-              inviteLaundryFormik.touched.email &&
-              Boolean(inviteLaundryFormik.errors.email)
-            }
-            helperText={
-              inviteLaundryFormik.touched.email
-                ? inviteLaundryFormik.errors.email
-                : ""
-            }
-            label="Email Address"
-            leftIcon={<Mail size={20} />}
-            name="email"
-            onBlur={inviteLaundryFormik.handleBlur}
-            onChange={(value) =>
-              inviteLaundryFormik.setFieldValue("email", value)
-            }
-            placeholder="contact@laundry.com"
-            required
-            type="email"
-            value={inviteLaundryFormik.values.email}
-          />
+        formik={inviteLaundryFormik}
+      />
 
-          <Alert variant="info">
-            An email invitation will be sent to the contact. Once they accept,
-            they'll appear in your Linked Laundries list.
-          </Alert>
-        </form>
-      </Modal>
-
-      <Modal
-        footer={
-          <>
-            <Button onClick={closeUnlinkModal} size="sm" variant="secondary">
-              Cancel
-            </Button>
-            <Button
-              leftIcon={<Unlink size={18} />}
-              onClick={handleConfirmUnlink}
-              size="sm"
-              variant={unlinkLaundry?.status === "Suspended" ? "success" : "danger"}
-            >
-              {unlinkLaundry?.status === "Suspended"
-                ? "Connect Laundry"
-                : "Unlink Laundry"}
-            </Button>
-          </>
-        }
+      <UnlinkLaundryModal
+        isOpen={Boolean(unlinkLaundry)}
         onClose={closeUnlinkModal}
-        open={isUnlinkModalOpen}
-        title={
-          unlinkLaundry?.status === "Suspended"
-            ? "Connect Laundry"
-            : "Unlink Laundry"
-        }
-        width={520}
-      >
-        {unlinkLaundry && (
-          <div className="space-y-4">
-            <Alert
-              leftIcon={<AlertTriangle size={18} />}
-              rounded="rounded-xl"
-              variant={unlinkLaundry.status === "Suspended" ? "info" : "danger"}
-            >
-              <p className="m-0 font-bold">
-                {unlinkLaundry.status === "Suspended"
-                  ? "Confirm connect request"
-                  : "Confirm unlink request"}
-              </p>
-              <p className="m-0 mt-1 text-sm">
-                {unlinkLaundry.status === "Suspended" ? (
-                  <>
-                    You are about to connect{" "}
-                    <span className="font-black">{unlinkLaundry.name}</span>{" "}
-                    again for this tenant account.
-                  </>
-                ) : (
-                  <>
-                    You are about to unlink{" "}
-                    <span className="font-black">{unlinkLaundry.name}</span>{" "}
-                    from this tenant account. This will move the laundry to
-                    Suspended instead of deleting it.
-                  </>
-                )}
-              </p>
-            </Alert>
+        laundry={unlinkLaundry}
+        onConfirm={handleConfirmUnlink}
+      />
 
-            <div className="rounded-xl border border-(--theme-border) bg-(--button-ghost-bg) px-4 py-3 text-sm">
-              <div className="flex items-center justify-between gap-4 py-1">
-                <span className="font-semibold text-(--theme-text-muted)">
-                  Contact
-                </span>
-                <span className="text-right font-bold text-(--theme-text-primary)">
-                  {unlinkLaundry.contact}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-4 py-1">
-                <span className="font-semibold text-(--theme-text-muted)">
-                  Status
-                </span>
-                <span className="text-right font-bold text-(--theme-text-primary)">
-                  {unlinkLaundry.status}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-4 py-1">
-                <span className="font-semibold text-(--theme-text-muted)">
-                  Default
-                </span>
-                <span className="text-right font-bold text-(--theme-text-primary)">
-                  {unlinkLaundry.isDefault ? "Yes" : "No"}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      <Modal
-        footer={
-          <>
-            <Button
-              onClick={closeDefaultConfirmModal}
-              size="sm"
-              variant="secondary"
-            >
-              Cancel
-            </Button>
-            <Button
-              leftIcon={
-                defaultAction?.action === "set" ? (
-                  <Star size={18} />
-                ) : (
-                  <StarOff size={18} />
-                )
-              }
-              onClick={handleConfirmDefaultAction}
-              size="sm"
-              variant={defaultAction?.action === "set" ? "success" : "warning"}
-            >
-              {defaultAction?.action === "set"
-                ? "Set As Default"
-                : "Unset Default"}
-            </Button>
-          </>
-        }
+      <DefaultConfirmModal
+        isOpen={Boolean(defaultAction)}
         onClose={closeDefaultConfirmModal}
-        open={isDefaultConfirmModalOpen}
-        title={
-          defaultAction?.action === "set"
-            ? "Set Default Laundry"
-            : "Unset Default Laundry"
-        }
-        width={520}
-      >
-        {defaultAction && (
-          <Alert
-            leftIcon={<AlertTriangle size={18} />}
-            rounded="rounded-xl"
-            variant="info"
-          >
-            <p className="m-0 font-bold">
-              {defaultAction.action === "set"
-                ? "Confirm default laundry"
-                : "Confirm unset default"}
-            </p>
-            <p className="m-0 mt-1 text-sm">
-              {defaultAction.action === "set" ? (
-                <>
-                  Set{" "}
-                  <span className="font-black">
-                    {defaultAction.laundry.name}
-                  </span>{" "}
-                  as the default laundry for this tenant.
-                </>
-              ) : (
-                <>
-                  Unset{" "}
-                  <span className="font-black">
-                    {defaultAction.laundry.name}
-                  </span>{" "}
-                  as the default laundry. No laundry will be default until you
-                  set another one.
-                </>
-              )}
-            </p>
-          </Alert>
-        )}
-      </Modal>
+        actionData={defaultAction}
+        onConfirm={handleConfirmDefaultAction}
+      />
 
-      <Modal
-        footer={
-          <Button onClick={closeDefaultBlockedModal} size="sm" variant="danger">
-            Got It
-          </Button>
-        }
+      <DefaultBlockedModal
+        isOpen={Boolean(defaultBlockedLaundry)}
         onClose={closeDefaultBlockedModal}
-        open={isDefaultBlockedModalOpen}
-        title="Unset Default Laundry First"
-        width={500}
-      >
-        <Alert
-          leftIcon={<AlertTriangle size={18} />}
-          rounded="rounded-xl"
-          variant="danger"
-        >
-          <p className="m-0 font-bold">Only one laundry can be default.</p>
-          <p className="m-0 mt-1 text-sm">
-            {currentDefaultLaundry?.name || "Another laundry"} is already set as
-            default. Unset it first, then set{" "}
-            {defaultBlockedLaundry?.name || "this laundry"} as default.
-          </p>
-        </Alert>
-      </Modal>
+        blockedLaundry={defaultBlockedLaundry}
+        currentDefaultLaundry={currentDefaultLaundry}
+      />
     </>
   );
 };
