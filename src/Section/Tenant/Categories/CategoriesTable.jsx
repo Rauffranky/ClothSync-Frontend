@@ -16,13 +16,36 @@ import Modal from "../../../Components/UI/Modal";
 import Table from "../../../Components/UI/Table";
 import { categories } from "./data";
 
-const CategoriesTable = ({ data = categories }) => {
+const CategoriesTable = ({ data = categories, onStatusChange }) => {
   const [deleteCategory, setDeleteCategory] = useState(null);
+  const [statusAction, setStatusAction] = useState(null);
   const isDeleteModalOpen = Boolean(deleteCategory);
+  const isStatusModalOpen = Boolean(statusAction);
   const hasMappedAssets = Number(deleteCategory?.assets || 0) > 0;
 
   const closeDeleteModal = () => {
     setDeleteCategory(null);
+  };
+
+  const closeStatusModal = () => {
+    setStatusAction(null);
+  };
+
+  const requestStatusAction = (category) => {
+    setStatusAction({
+      action: category.status === "Active" ? "inactive" : "active",
+      category,
+    });
+  };
+
+  const handleConfirmStatusAction = () => {
+    if (!statusAction) return;
+
+    onStatusChange?.(
+      statusAction.category.id,
+      statusAction.action === "active" ? "Active" : "Inactive",
+    );
+    setStatusAction(null);
   };
 
   const columns = [
@@ -130,6 +153,12 @@ const CategoriesTable = ({ data = categories }) => {
             { label: "View Details", icon: Eye },
             { label: "Edit Category", icon: Pencil },
             {
+              label: row.status === "Active" ? "Set Inactive" : "Set Active",
+              icon: row.status === "Active" ? CircleX : CircleCheck,
+              danger: row.status === "Active",
+              onClick: () => requestStatusAction(row),
+            },
+            {
               label: "Delete Category",
               icon: Trash2,
               danger: true,
@@ -164,7 +193,10 @@ const CategoriesTable = ({ data = categories }) => {
             </Button>
             {hasMappedAssets ? (
               <Button
-                onClick={closeDeleteModal}
+                onClick={() => {
+                  onStatusChange?.(deleteCategory.id, "Inactive");
+                  closeDeleteModal();
+                }}
                 rounded="10px"
                 size="sm"
                 variant="success"
@@ -269,6 +301,77 @@ const CategoriesTable = ({ data = categories }) => {
               </>
             )}
           </div>
+        )}
+      </Modal>
+
+      <Modal
+        footer={
+          <>
+            <Button
+              onClick={closeStatusModal}
+              rounded="10px"
+              size="sm"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button
+              leftIcon={
+                statusAction?.action === "active" ? (
+                  <CircleCheck size={15} />
+                ) : (
+                  <CircleX size={15} />
+                )
+              }
+              onClick={handleConfirmStatusAction}
+              rounded="10px"
+              size="sm"
+              variant={statusAction?.action === "active" ? "success" : "danger"}
+            >
+              {statusAction?.action === "active" ? "Set Active" : "Set Inactive"}
+            </Button>
+          </>
+        }
+        onClose={closeStatusModal}
+        open={isStatusModalOpen}
+        title={
+          statusAction?.action === "active"
+            ? "Set Category Active"
+            : "Set Category Inactive"
+        }
+        width={500}
+      >
+        {statusAction && (
+          <Alert
+            leftIcon={<AlertTriangle size={18} />}
+            rounded="rounded-xl"
+            variant={statusAction.action === "active" ? "info" : "danger"}
+          >
+            <p className="m-0 font-bold">
+              {statusAction.action === "active"
+                ? "Confirm active status"
+                : "Confirm inactive status"}
+            </p>
+            <p className="m-0 mt-1 text-sm">
+              {statusAction.action === "active" ? (
+                <>
+                  Set{" "}
+                  <span className="font-black">
+                    {statusAction.category.name}
+                  </span>{" "}
+                  as active.
+                </>
+              ) : (
+                <>
+                  Set{" "}
+                  <span className="font-black">
+                    {statusAction.category.name}
+                  </span>{" "}
+                  as inactive.
+                </>
+              )}
+            </p>
+          </Alert>
         )}
       </Modal>
     </>

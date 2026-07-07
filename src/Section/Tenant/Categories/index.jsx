@@ -40,6 +40,7 @@ const addCategoryValidationSchema = Yup.object({
 });
 
 const Categories = () => {
+  const [categoryRows, setCategoryRows] = useState(categories);
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [usageFilter, setUsageFilter] = useState("all");
@@ -49,7 +50,7 @@ const Categories = () => {
   const filteredCategories = useMemo(() => {
     const search = searchValue.trim().toLowerCase();
 
-    return categories.filter((category) => {
+    return categoryRows.filter((category) => {
       const matchesSearch =
         !search ||
         [
@@ -70,7 +71,7 @@ const Categories = () => {
 
       return matchesSearch && matchesStatus && matchesUsage;
     });
-  }, [searchValue, statusFilter, usageFilter]);
+  }, [categoryRows, searchValue, statusFilter, usageFilter]);
 
   const pageCount = Math.ceil(filteredCategories.length / ITEMS_PER_PAGE);
   const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
@@ -113,6 +114,20 @@ const Categories = () => {
     addCategoryFormik.resetForm();
   };
 
+  const handleStatusChange = (categoryId, nextStatus) => {
+    setCategoryRows((current) =>
+      current.map((category) =>
+        category.id === categoryId
+          ? {
+              ...category,
+              status: nextStatus,
+              statusVariant: nextStatus === "Active" ? "success" : "neutral",
+            }
+          : category,
+      ),
+    );
+  };
+
   return (
     <>
       <div className="space-y-5">
@@ -147,7 +162,10 @@ const Categories = () => {
           </div>
 
           <div className="px-4 py-4">
-            <CategoriesTable data={paginatedCategories} />
+            <CategoriesTable
+              data={paginatedCategories}
+              onStatusChange={handleStatusChange}
+            />
             <Pagination
               forcePage={activePage}
               itemsPerPage={ITEMS_PER_PAGE}
