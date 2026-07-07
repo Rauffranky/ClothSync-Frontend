@@ -9,6 +9,13 @@ const VARIANTS = {
   purple: "var(--color-super-admin-light)",
   neutral: "var(--color-cancelled)",
   teal: "var(--color-aurora-teal)",
+  business: "#22c55e",
+  sent: "#f59e0b",
+  laundry: "#a855f7",
+  washed: "#3b82f6",
+  returned: "#0ea5e9",
+  delayed: "#f97316",
+  missing: "#ef4444",
 };
 
 const IconWrapper = ({

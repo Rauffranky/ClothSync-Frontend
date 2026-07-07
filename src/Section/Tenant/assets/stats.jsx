@@ -1,91 +1,102 @@
 import {
+    AlertCircle,
     Building2,
-    Clock,
+    Clock3,
     Cuboid,
-    Hourglass,
-    RefreshCw,
+    RotateCcw,
+    ShieldCheck,
+    Truck,
+    WashingMachine,
 } from "lucide-react";
 import Card from "../../../Components/UI/Card";
 import IconWrapper from "../../../Components/UI/IconWrapper";
 
 const stats = [
     {
-        value: "6",
-        label: "Total Linked",
-        helper: "laundry partners",
-        icon: Building2,
+        value: "8",
+        label: "Total Assets",
+        helper: "all registered",
+        icon: Cuboid,
         variant: "info",
     },
     {
         value: "2",
-        label: "Pending Requests",
-        helper: "awaiting confirmation",
-        icon: Hourglass,
-        variant: "warning",
+        label: "In Business",
+        helper: "on-premise",
+        icon: Building2,
+        variant: "business",
     },
     {
-        value: "6",
-        label: "Active Dispatches",
-        helper: "across all laundries",
-        icon: RefreshCw,
-        variant: "purple",
+        value: "1",
+        label: "Sent to Laundry",
+        helper: "dispatched",
+        icon: Truck,
+        variant: "sent",
     },
     {
-        value: "382",
-        label: "Items Currently Sent",
-        helper: "in transit or processing",
-        icon: Cuboid,
-        variant: "success",
+        value: "1",
+        label: "In Laundry",
+        helper: "processing",
+        icon: WashingMachine,
+        variant: "laundry",
     },
     {
-        value: "9",
-        label: "Delayed Items",
+        value: "1",
+        label: "Washed",
+        helper: "ready to return",
+        icon: ShieldCheck,
+        variant: "washed",
+    },
+    {
+        value: "0",
+        label: "Returned",
+        helper: "back this week",
+        icon: RotateCcw,
+        variant: "returned",
+    },
+    {
+        value: "1",
+        label: "Delayed",
         helper: "past expected return",
-        icon: Clock,
-        variant: "danger",
+        icon: Clock3,
+        variant: "delayed",
     },
     {
-        value: "9",
-        label: "Delayed Items",
-        helper: "past expected return",
-        icon: Clock,
-        variant: "danger",
-    },
-    {
-        value: "9",
-        label: "Delayed Items",
-        helper: "past expected return",
-        icon: Clock,
-        variant: "danger",
-    },
-    {
-        value: "9",
-        label: "Delayed Items",
-        helper: "past expected return",
-        icon: Clock,
-        variant: "danger",
+        value: "1",
+        label: "Missing / Lost",
+        helper: "flagged",
+        icon: AlertCircle,
+        variant: "missing",
     },
 ];
 
 const AssetStats = () => {
     return (
-        <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-8">
+        <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8">
             {stats.map((item, index) => {
                 const Icon = item.icon;
 
                 return (
                     <Card
                         key={index}
+                        padding="10px"
+                        rounded="8px"
                     >
-                        <IconWrapper icon={Icon} variant={item.variant} />
+                        <IconWrapper
+                            icon={Icon}
+                            iconSize={14}
+                            roundedClassName="rounded-md"
+                            sizeClassName="h-6 w-6"
+                            variant={item.variant}
+                        />
 
-                        <p className="m-0 mt-4 text-3xl font-black leading-none text-(--theme-text-primary)">
+                        <p className="m-0 mt-2 text-xl font-black leading-none text-(--theme-text-primary)">
                             {item.value}
                         </p>
-                        <p className="m-0 mt-2 text-sm font-medium leading-5 text-(--theme-text-primary)">
+                        <p className="m-0 mt-1 text-xs font-bold leading-4 text-(--theme-text-primary)">
                             {item.label}
                         </p>
-                        <p className="m-0 mt-1 text-xs font-semibold leading-5 text-(--theme-text-muted)">
+                        <p className="m-0 mt-0.5 text-[10px] font-semibold leading-4 text-(--theme-text-muted)">
                             {item.helper}
                         </p>
                     </Card>
