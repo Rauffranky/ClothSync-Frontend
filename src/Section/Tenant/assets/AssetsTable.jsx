@@ -167,7 +167,7 @@ const AssetsTable = () => {
       render: (_, row) => {
         const isCritical = row.washCount >= row.maxWash * 0.9;
         return (
-          <div className="min-w-25 max-w-30">
+          <div className="min-w-16 max-w-20">
             <div className="flex items-end gap-1 mb-1.5">
               <span
                 className={`text-sm font-black ${isCritical ? "text-(--color-overdue)" : "text-(--theme-text-primary)"}`}
@@ -236,7 +236,7 @@ const AssetsTable = () => {
 
   return (
     <div className="">
-      <div className="grid gap-3 px-4 py-4 lg:flex lg:flex-wrap lg:items-center">
+      <div className="grid gap-2 px-4 py-4 lg:flex lg:flex-wrap lg:items-center">
         <div className="w-full lg:w-70">
           <Input
             leftIcon={<Search size={16} />}

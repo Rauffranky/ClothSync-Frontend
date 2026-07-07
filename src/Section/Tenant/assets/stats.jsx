@@ -72,7 +72,7 @@ const stats = [
 
 const AssetStats = () => {
     return (
-        <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8">
+        <section className="grid gap-2 grid-cols-2 sm:grid-cols-4 2xl:grid-cols-8">
             {stats.map((item, index) => {
                 const Icon = item.icon;
 
