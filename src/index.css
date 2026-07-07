@@ -301,7 +301,8 @@
   --theme-text-primary: var(--color-dark-text-primary);
   --theme-text-secondary: var(--color-dark-text-secondary);
   --theme-text-muted: var(--color-dark-text-muted);
-  --alert-orange-text: #FDBA74; /* orange-300 for dark mode */
+  --alert-orange-text: #FDBA74;
+  /* orange-300 for dark mode */
   --layout-header-bg: linear-gradient(135deg,
       rgba(9, 45, 52, 0.82),
       rgba(5, 28, 36, 0.72));
