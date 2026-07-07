@@ -1,14 +1,32 @@
-import { useState } from "react";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import Tabs from "../../../../Components/UI/Tabs";
 import HeaderCard from "./HeaderCard";
 import RFIDCard from "./RFIDCard";
 import LifecycleCard from "./LifecycleCard";
-import OverviewTab from "./OverviewTab";
+import { TAB_COMPONENTS } from "./components";
 import { assetDetailData } from "./data";
+import Card from "../../../../Components/UI/Card";
 
 const AssetDetailsIndex = () => {
     const data = assetDetailData;
-    const [activeTab, setActiveTab] = useState("Overview");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const tabLabels = useMemo(() => data.tabs.map((tab) => tab.label), [data.tabs]);
+    const requestedTab = searchParams.get("tab");
+    const activeTab = tabLabels.includes(requestedTab) ? requestedTab : "Overview";
+    const ActiveTabComponent = TAB_COMPONENTS[activeTab];
+
+    const handleTabChange = (nextTab) => {
+        setSearchParams((currentParams) => {
+            const nextParams = new URLSearchParams(currentParams);
+            if (nextTab === "Overview") {
+                nextParams.delete("tab");
+            } else {
+                nextParams.set("tab", nextTab);
+            }
+            return nextParams;
+        }, { replace: true });
+    };
 
     return (
         <div className="space-y-6">
@@ -23,7 +41,7 @@ const AssetDetailsIndex = () => {
 
             <LifecycleCard data={data} />
 
-            <div className="rounded-[18px] border border-(--theme-border) bg-(--theme-surface) p-6 shadow-[var(--card-shadow)]">
+            <Card >
                 <div className="mb-6 overflow-x-auto">
                     <Tabs
                         items={data.tabs.map((tab) => ({
@@ -32,20 +50,20 @@ const AssetDetailsIndex = () => {
                             count: tab.count !== null ? tab.count : undefined,
                         }))}
                         value={activeTab}
-                        onChange={setActiveTab}
+                        onChange={handleTabChange}
                     />
                 </div>
 
                 <div>
-                    {activeTab === "Overview" ? (
-                        <OverviewTab data={data} />
+                    {ActiveTabComponent ? (
+                        <ActiveTabComponent data={data} />
                     ) : (
                         <div className="flex min-h-[200px] items-center justify-center text-sm font-semibold text-(--theme-text-muted)">
-                            {activeTab} content goes here
+                            No content available
                         </div>
                     )}
                 </div>
-            </div>
+            </Card>
         </div>
     );
 };

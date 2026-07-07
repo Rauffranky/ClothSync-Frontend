@@ -18,6 +18,7 @@ import Input from "../../../Components/UI/Input";
 import Pagination from "../../../Components/UI/Pagination";
 import Table from "../../../Components/UI/Table";
 import IconWrapper from "../../../Components/UI/IconWrapper";
+import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import { laundries } from "./data";
 import InviteLaundryModal from "./InviteLaundryModal";
 import UnlinkLaundryModal from "./UnlinkLaundryModal";
@@ -102,13 +103,15 @@ const LinkedLaundries = () => {
     });
   }, [laundryFilter, linkedLaundries, searchValue, statusFilter]);
 
-  const pageCount = Math.ceil(filteredLaundries.length / ITEMS_PER_PAGE);
+  const { handleSort, sortedData, sortBy, sortDirection } =
+    useSortableTableData(filteredLaundries);
+  const pageCount = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
   const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
   const paginatedLaundries = useMemo(() => {
     const startIndex = activePage * ITEMS_PER_PAGE;
 
-    return filteredLaundries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [activePage, filteredLaundries]);
+    return sortedData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [activePage, sortedData]);
 
   const resetCurrentPage = () => {
     setCurrentPage(0);
@@ -126,6 +129,11 @@ const LinkedLaundries = () => {
 
   const handleLaundryFilterChange = (value) => {
     setLaundryFilter(value);
+    resetCurrentPage();
+  };
+
+  const handleTableSort = (nextSortBy, nextSortDirection) => {
+    handleSort(nextSortBy, nextSortDirection);
     resetCurrentPage();
   };
 
@@ -195,6 +203,7 @@ const LinkedLaundries = () => {
     {
       key: "name",
       label: "Laundry Name",
+      sortable: true,
       render: (_, row) => (
         <div className="flex min-w-0 items-center gap-3">
           <IconWrapper
@@ -218,6 +227,7 @@ const LinkedLaundries = () => {
     {
       key: "contact",
       label: "Contact",
+      sortable: true,
       render: (_, row) => (
         <div className="min-w-0">
           <p className="m-0 truncate font-bold text-(--theme-text-primary)">
@@ -229,10 +239,11 @@ const LinkedLaundries = () => {
         </div>
       ),
     },
-    { key: "location", label: "Location" },
+    { key: "location", label: "Location", sortable: true },
     {
       key: "status",
       label: "Status",
+      sortable: true,
       render: (_, row) => (
         <Badge variant={row.statusVariant} size="sm">
           {row.status}
@@ -242,6 +253,7 @@ const LinkedLaundries = () => {
     {
       key: "isDefault",
       label: "Default",
+      sortable: true,
       render: (_, row) =>
         row.isDefault ? (
           <Badge variant="warning" size="sm" leftIcon={<Star size={12} />}>
@@ -260,12 +272,13 @@ const LinkedLaundries = () => {
           </Button>
         ),
     },
-    { key: "batches", label: "Batches", align: "center" },
-    { key: "itemsSent", label: "Items Sent", align: "center" },
+    { key: "batches", label: "Batches", align: "center", sortable: true },
+    { key: "itemsSent", label: "Items Sent", align: "center", sortable: true },
     {
       key: "missing",
       label: "Missing",
       align: "center",
+      sortable: true,
       render: (value) => (
         <span
           className="font-black"
@@ -349,14 +362,17 @@ const LinkedLaundries = () => {
           columns={columns}
           data={paginatedLaundries}
           emptyText="No linked laundries found"
+          onSort={handleTableSort}
           rowKey="id"
+          sortBy={sortBy}
+          sortDirection={sortDirection}
         />
         <Pagination
           forcePage={activePage}
           itemsPerPage={ITEMS_PER_PAGE}
           onPageChange={({ selected }) => setCurrentPage(selected)}
           pageCount={pageCount}
-          totalItems={filteredLaundries.length}
+          totalItems={sortedData.length}
         />
       </div>
 

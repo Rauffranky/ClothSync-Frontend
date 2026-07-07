@@ -16,7 +16,13 @@ import Modal from "../../../Components/UI/Modal";
 import Table from "../../../Components/UI/Table";
 import { categories } from "./data";
 
-const CategoriesTable = ({ data = categories, onStatusChange }) => {
+const CategoriesTable = ({
+  data = categories,
+  onSort,
+  onStatusChange,
+  sortBy,
+  sortDirection,
+}) => {
   const [deleteCategory, setDeleteCategory] = useState(null);
   const [statusAction, setStatusAction] = useState(null);
   const isDeleteModalOpen = Boolean(deleteCategory);
@@ -52,6 +58,7 @@ const CategoriesTable = ({ data = categories, onStatusChange }) => {
     {
       key: "name",
       label: "Category Name",
+      sortable: true,
       render: (_, row) => (
         <div className="flex min-w-0 items-center gap-3">
           <span
@@ -82,6 +89,7 @@ const CategoriesTable = ({ data = categories, onStatusChange }) => {
       key: "status",
       label: "Status",
       align: "center",
+      sortable: true,
       render: (_, row) => (
         <Badge
           leftIcon={
@@ -102,6 +110,7 @@ const CategoriesTable = ({ data = categories, onStatusChange }) => {
       key: "usage",
       label: "Usage",
       align: "center",
+      sortable: true,
       render: (_, row) => (
         <Badge
           size="sm"
@@ -115,6 +124,7 @@ const CategoriesTable = ({ data = categories, onStatusChange }) => {
       key: "assets",
       label: "Assets",
       align: "center",
+      sortable: true,
       render: (value) =>
         value ? (
           <span className="font-black" style={{ color: "#9333ea" }}>
@@ -127,6 +137,7 @@ const CategoriesTable = ({ data = categories, onStatusChange }) => {
     {
       key: "created",
       label: "Created",
+      sortable: true,
       render: (value) => (
         <span className="text-sm font-bold text-(--theme-text-secondary)">
           {value}
@@ -136,6 +147,7 @@ const CategoriesTable = ({ data = categories, onStatusChange }) => {
     {
       key: "lastUpdated",
       label: "Last Updated",
+      sortable: true,
       render: (value) => (
         <span className="text-sm font-bold text-(--theme-text-secondary)">
           {value}
@@ -177,7 +189,10 @@ const CategoriesTable = ({ data = categories, onStatusChange }) => {
         columns={columns}
         data={data}
         emptyText="No categories found"
+        onSort={onSort}
         rowKey="id"
+        sortBy={sortBy}
+        sortDirection={sortDirection}
       />
 
       <Modal

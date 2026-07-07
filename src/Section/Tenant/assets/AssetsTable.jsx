@@ -1,11 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Layers,
   Search,
   Shirt,
-  MapPin,
-  Building2,
   Unlink,
   Bed,
   Bath,
@@ -25,6 +22,7 @@ import Dropdown from "../../../Components/UI/Dropdown";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Table from "../../../Components/UI/Table";
 import Pagination from "../../../Components/UI/Pagination";
+import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import {
   assetsData,
   categoryOptions,
@@ -89,12 +87,14 @@ const AssetsTable = () => {
     });
   }, [searchValue, categoryFilter, zoneFilter, laundryFilter, statusFilter]);
 
-  const pageCount = Math.ceil(filteredAssets.length / ITEMS_PER_PAGE);
+  const { handleSort, sortedData, sortBy, sortDirection } =
+    useSortableTableData(filteredAssets);
+  const pageCount = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
   const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
   const paginatedAssets = useMemo(() => {
     const startIndex = activePage * ITEMS_PER_PAGE;
-    return filteredAssets.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [activePage, filteredAssets]);
+    return sortedData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [activePage, sortedData]);
 
   const resetCurrentPage = () => setCurrentPage(0);
 
@@ -103,10 +103,16 @@ const AssetsTable = () => {
     resetCurrentPage();
   };
 
+  const handleTableSort = (nextSortBy, nextSortDirection) => {
+    handleSort(nextSortBy, nextSortDirection);
+    resetCurrentPage();
+  };
+
   const columns = [
     {
       key: "name",
       label: "Asset ID / Name",
+      sortable: true,
       render: (_, row) => {
         const CategoryIcon = categoryIcons[row.category] || Shirt;
         return (
@@ -134,6 +140,7 @@ const AssetsTable = () => {
     {
       key: "tag",
       label: "RFID Tag",
+      sortable: true,
       render: (_, row) => {
         const isNoTag = row.tag === "No Tag";
         return (
@@ -149,6 +156,7 @@ const AssetsTable = () => {
     {
       key: "category",
       label: "Category",
+      sortable: true,
       render: (_, row) => (
         <span className="text-sm font-medium text-(--theme-text-secondary)">
           {row.category}
@@ -158,6 +166,7 @@ const AssetsTable = () => {
     {
       key: "status",
       label: "Status",
+      sortable: true,
       render: (_, row) => (
         <Badge variant={row.statusVariant} size="sm">
           {row.status}
@@ -167,6 +176,7 @@ const AssetsTable = () => {
     {
       key: "washCount",
       label: "Wash Count",
+      sortable: true,
       render: (_, row) => {
         const isCritical = row.washCount >= row.maxWash * 0.9;
         return (
@@ -194,6 +204,7 @@ const AssetsTable = () => {
     {
       key: "assignedLaundry",
       label: "Assigned Laundry",
+      sortable: true,
       render: (_, row) => (
         <span className="text-[12px] font-medium text-(--theme-text-secondary)">
           {row.assignedLaundry}
@@ -203,6 +214,8 @@ const AssetsTable = () => {
     {
       key: "lastScan",
       label: "Last Scan",
+      sortKey: "lastScanTime",
+      sortable: true,
       render: (_, row) => (
         <div className="min-w-0">
           <p
@@ -302,15 +315,18 @@ const AssetsTable = () => {
           columns={columns}
           data={paginatedAssets}
           emptyText="No assets found"
-          rowKey="id"
+          onSort={handleTableSort}
           onRowClick={(row) => navigate(`/business/assets/${row.id}`)}
+          rowKey="id"
+          sortBy={sortBy}
+          sortDirection={sortDirection}
         />
         <Pagination
           forcePage={activePage}
           itemsPerPage={ITEMS_PER_PAGE}
           onPageChange={({ selected }) => setCurrentPage(selected)}
           pageCount={pageCount}
-          totalItems={filteredAssets.length}
+          totalItems={sortedData.length}
         />
       </div>
     </div>

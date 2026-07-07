@@ -54,6 +54,11 @@ const badgeVariants = {
     background: "var(--badge-cancelled-bg)",
     borderColor: "var(--badge-cancelled-border)",
   },
+  purple: {
+    color: "var(--admin-text)",
+    background: "var(--admin-soft)",
+    borderColor: "var(--admin-border)",
+  },
 };
 
 const badgeSizes = {

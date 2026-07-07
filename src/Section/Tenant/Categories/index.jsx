@@ -8,6 +8,7 @@ import Dropdown from "../../../Components/UI/Dropdown";
 import Input from "../../../Components/UI/Input";
 import Modal from "../../../Components/UI/Modal";
 import Pagination from "../../../Components/UI/Pagination";
+import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import CategoriesTable from "./CategoriesTable";
 import Stats from "./Stats";
 import { categories } from "./data";
@@ -73,13 +74,15 @@ const Categories = () => {
     });
   }, [categoryRows, searchValue, statusFilter, usageFilter]);
 
-  const pageCount = Math.ceil(filteredCategories.length / ITEMS_PER_PAGE);
+  const { handleSort, sortedData, sortBy, sortDirection } =
+    useSortableTableData(filteredCategories);
+  const pageCount = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
   const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
   const paginatedCategories = useMemo(() => {
     const startIndex = activePage * ITEMS_PER_PAGE;
 
-    return filteredCategories.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [activePage, filteredCategories]);
+    return sortedData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [activePage, sortedData]);
 
   const resetCurrentPage = () => {
     setCurrentPage(0);
@@ -97,6 +100,11 @@ const Categories = () => {
 
   const handleUsageFilterChange = (value) => {
     setUsageFilter(value);
+    resetCurrentPage();
+  };
+
+  const handleTableSort = (nextSortBy, nextSortDirection) => {
+    handleSort(nextSortBy, nextSortDirection);
     resetCurrentPage();
   };
 
@@ -164,14 +172,17 @@ const Categories = () => {
           <div className="px-4 py-4">
             <CategoriesTable
               data={paginatedCategories}
+              onSort={handleTableSort}
               onStatusChange={handleStatusChange}
+              sortBy={sortBy}
+              sortDirection={sortDirection}
             />
             <Pagination
               forcePage={activePage}
               itemsPerPage={ITEMS_PER_PAGE}
               onPageChange={({ selected }) => setCurrentPage(selected)}
               pageCount={pageCount}
-              totalItems={filteredCategories.length}
+              totalItems={sortedData.length}
             />
           </div>
         </Card>
