@@ -1,6 +1,6 @@
-import { Bell, Menu, Moon, Sun } from "lucide-react";
+import { Bell, Menu, Moon, Sun, ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Button from "../../UI/Button";
 import {
   applyThemeMode,
@@ -11,6 +11,7 @@ import { getFlatPortalItems, portalGroups } from "./nav";
 
 const Header = ({ portalKey, onOpenSidebar }) => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [themeMode, setThemeMode] = useState(getThemeMode);
 
   useEffect(() => {
@@ -29,13 +30,14 @@ const Header = ({ portalKey, onOpenSidebar }) => {
     );
   }, [pathname, portalKey]);
 
-  const activeItem = useMemo(
-    () =>
-      getFlatPortalItems(activePortal?.key).find((item) =>
-        pathname.endsWith(`/${item.segment}`),
-      ),
-    [activePortal?.key, pathname],
-  );
+  const activeItem = useMemo(() => {
+    const flatItems = getFlatPortalItems(activePortal?.key) || [];
+    return flatItems
+      .filter((item) => pathname.includes(`/${item.segment}`))
+      .sort((a, b) => b.segment.length - a.segment.length)[0];
+  }, [activePortal?.key, pathname]);
+
+  const isDetailPage = activeItem && pathname !== `${activePortal?.basePath}/${activeItem.segment}`;
 
   return (
     <header className="sticky top-0 z-30 border-b border-(--theme-border) bg-(--layout-header-bg) px-4 py-3 backdrop-blur-[18px] backdrop-saturate-150">
@@ -50,13 +52,23 @@ const Header = ({ portalKey, onOpenSidebar }) => {
             >
               <Menu size={20} />
             </button>
+            {isDetailPage && (
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<ArrowLeft size={16} />}
+                onClick={() => navigate(`${activePortal?.basePath}/${activeItem?.segment}`)}
+              />
+            )}
             <div className="min-w-0">
               <p className="m-0 truncate text-lg font-medium text-(--theme-text-primary)">
                 {activeItem?.label || "Dashboard"}
+                {isDetailPage && (
+                  <span className="text-(--theme-text-muted) font-semibold ml-2">
+                    / <span className="ml-1 text-(--theme-text-secondary)">Details</span>
+                  </span>
+                )}
               </p>
-              {/* <p className="m-0 truncate text-xs font-semibold text-(--theme-text-secondary)">
-                {activePortal?.label || "Portal"}
-              </p> */}
             </div>
           </div>
         </div>

@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  Link,
+  Layers,
   Search,
   Shirt,
+  MapPin,
+  Building2,
   Unlink,
   Bed,
   Bath,
@@ -56,6 +59,7 @@ const AssetsTable = () => {
   const [laundryFilter, setLaundryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(0);
+  const navigate = useNavigate();
 
   const filteredAssets = useMemo(() => {
     return assetsData.filter((asset) => {
@@ -116,7 +120,7 @@ const AssetsTable = () => {
               iconSize={18}
             />
             <div className="min-w-0">
-              <p className="m-0 truncate font-bold text-sm text-(--theme-text-primary)">
+              <p className="m-0 truncate font-black text-sm text-(--theme-text-primary)">
                 {row.name}
               </p>
               <p className="m-0 mt-0.5 font-mono text-[11px] font-semibold text-(--theme-text-muted)">
@@ -151,7 +155,6 @@ const AssetsTable = () => {
         </span>
       ),
     },
-
     {
       key: "status",
       label: "Status",
@@ -208,7 +211,7 @@ const AssetsTable = () => {
             {row.lastScanTime}
           </p>
           {row.lastScanTime !== "Never" && (
-            <p className=" truncate text-[10px] font-medium text-(--theme-text-muted)">
+            <p className="truncate text-[10px] font-medium text-(--theme-text-muted)">
               {row.location}
             </p>
           )}
@@ -219,10 +222,14 @@ const AssetsTable = () => {
       key: "actions",
       label: "Actions",
       align: "center",
-      render: () => (
+      render: (_, row) => (
         <ActionDropdown
           items={[
-            { label: "View Details", icon: Eye },
+            {
+              label: "View Details",
+              icon: Eye,
+              onClick: () => navigate(`/business/assets/${row.id}`),
+            },
             { label: "Edit Assets", icon: Edit },
             { label: "Re-Tag Asset", icon: RefreshCw },
             { label: "View History", icon: History },
@@ -296,6 +303,7 @@ const AssetsTable = () => {
           data={paginatedAssets}
           emptyText="No assets found"
           rowKey="id"
+          onRowClick={(row) => navigate(`/business/assets/${row.id}`)}
         />
         <Pagination
           forcePage={activePage}

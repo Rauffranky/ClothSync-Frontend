@@ -21,6 +21,7 @@ const LaundryDashboard = lazy(() => import("../Page/Dashboard/Laundry/DashboardP
 
 //Tenant 
 const AssetsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetsPage"));
+const AssetDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetDetailsPage"));
 
 // ============================================================================
 // ROUTE CONFIGURATION
@@ -62,6 +63,7 @@ const AppRoutes = () => {
           <Route path="/business/linked-laundries" element={<LinkedLaundriesPage />} />
           <Route path="/business/categories" element={<CategoriesPage />} />
           <Route path="/business/assets" element={<AssetsPage />} />
+          <Route path="/business/assets/:id" element={<AssetDetailsPage />} />
 
           {/* Laundry Portal */}
           <Route path="/laundry" element={<Navigate to="/laundry/dashboard" replace />} />
