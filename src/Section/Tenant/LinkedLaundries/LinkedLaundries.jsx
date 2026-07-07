@@ -146,6 +146,8 @@ const LinkedLaundries = () => {
   };
 
   const requestDefaultAction = (laundry, action) => {
+    if (laundry.status === "Suspended") return;
+
     if (
       action === "set" &&
       currentDefaultLaundry &&
@@ -175,9 +177,19 @@ const LinkedLaundries = () => {
 
   const handleConfirmUnlink = () => {
     if (!unlinkLaundry) return;
+    const isConnecting = unlinkLaundry.status === "Suspended";
 
     setLinkedLaundries((current) =>
-      current.filter((laundry) => laundry.id !== unlinkLaundry.id),
+      current.map((laundry) =>
+        laundry.id === unlinkLaundry.id
+          ? {
+              ...laundry,
+              status: isConnecting ? "Connected" : "Suspended",
+              statusVariant: isConnecting ? "success" : "neutral",
+              isDefault: false,
+            }
+          : laundry,
+      ),
     );
     setUnlinkLaundry(null);
     resetCurrentPage();
@@ -239,6 +251,8 @@ const LinkedLaundries = () => {
           <Badge variant="warning" size="sm" leftIcon={<Star size={12} />}>
             Default
           </Badge>
+        ) : row.status === "Suspended" ? (
+          <span className="font-black text-(--theme-text-muted)">-</span>
         ) : (
           <Button
             leftIcon={<StarOff size={13} />}
@@ -276,16 +290,26 @@ const LinkedLaundries = () => {
         <ActionDropdown
           items={[
             { label: "View Details", icon: Eye },
+            ...(row.status === "Suspended"
+              ? []
+              : [
+                  {
+                    label: row.isDefault ? "Unset Default" : "Set As Default",
+                    icon: row.isDefault ? StarOff : Star,
+                    onClick: () =>
+                      requestDefaultAction(
+                        row,
+                        row.isDefault ? "unset" : "set",
+                      ),
+                  },
+                ]),
             {
-              label: row.isDefault ? "Unset Default" : "Set As Default",
-              icon: row.isDefault ? StarOff : Star,
-              onClick: () =>
-                requestDefaultAction(row, row.isDefault ? "unset" : "set"),
-            },
-            {
-              label: "Unlink Laundry",
-              icon: Unlink,
-              danger: true,
+              label:
+                row.status === "Suspended"
+                  ? "Connect Laundry"
+                  : "Unlink Laundry",
+              icon: row.status === "Suspended" ? Building2 : Unlink,
+              danger: row.status !== "Suspended",
               onClick: () => setUnlinkLaundry(row),
             },
           ]}
@@ -408,15 +432,21 @@ const LinkedLaundries = () => {
               leftIcon={<Unlink size={18} />}
               onClick={handleConfirmUnlink}
               size="sm"
-              variant="danger"
+              variant={unlinkLaundry?.status === "Suspended" ? "success" : "danger"}
             >
-              Unlink Laundry
+              {unlinkLaundry?.status === "Suspended"
+                ? "Connect Laundry"
+                : "Unlink Laundry"}
             </Button>
           </>
         }
         onClose={closeUnlinkModal}
         open={isUnlinkModalOpen}
-        title="Unlink Laundry"
+        title={
+          unlinkLaundry?.status === "Suspended"
+            ? "Connect Laundry"
+            : "Unlink Laundry"
+        }
         width={520}
       >
         {unlinkLaundry && (
@@ -424,13 +454,28 @@ const LinkedLaundries = () => {
             <Alert
               leftIcon={<AlertTriangle size={18} />}
               rounded="rounded-xl"
-              variant="danger"
+              variant={unlinkLaundry.status === "Suspended" ? "info" : "danger"}
             >
-              <p className="m-0 font-bold">Confirm unlink request</p>
+              <p className="m-0 font-bold">
+                {unlinkLaundry.status === "Suspended"
+                  ? "Confirm connect request"
+                  : "Confirm unlink request"}
+              </p>
               <p className="m-0 mt-1 text-sm">
-                You are about to unlink{" "}
-                <span className="font-black">{unlinkLaundry.name}</span> from
-                this tenant account.
+                {unlinkLaundry.status === "Suspended" ? (
+                  <>
+                    You are about to connect{" "}
+                    <span className="font-black">{unlinkLaundry.name}</span>{" "}
+                    again for this tenant account.
+                  </>
+                ) : (
+                  <>
+                    You are about to unlink{" "}
+                    <span className="font-black">{unlinkLaundry.name}</span>{" "}
+                    from this tenant account. This will move the laundry to
+                    Suspended instead of deleting it.
+                  </>
+                )}
               </p>
             </Alert>
 
