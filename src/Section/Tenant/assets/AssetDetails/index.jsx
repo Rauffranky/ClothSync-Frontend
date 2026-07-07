@@ -1,7 +1,5 @@
 import { useState } from "react";
 import Tabs from "../../../../Components/UI/Tabs";
-import Button from "../../../../Components/UI/Button";
-import Badge from "../../../../Components/UI/Badge";
 import HeaderCard from "./HeaderCard";
 import RFIDCard from "./RFIDCard";
 import LifecycleCard from "./LifecycleCard";
@@ -14,9 +12,13 @@ const AssetDetailsIndex = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
-                <HeaderCard data={data} />
-                <RFIDCard data={data} />
+            <div className="grid gap-2 lg:grid-cols-[1fr_440px]">
+                <div>
+                    <HeaderCard data={data} />
+                </div>
+                <div>
+                    <RFIDCard data={data} />
+                </div>
             </div>
 
             <LifecycleCard data={data} />

@@ -4,45 +4,57 @@ import IconWrapper from "../../../../Components/UI/IconWrapper";
 import ProgressBar from "../../../../Components/UI/ProgressBar";
 
 const OverviewTab = ({ data }) => {
+    const stats = [
+        {
+            id: "wash-cycles",
+            icon: RefreshCw,
+            variant: "success",
+            value: (
+                <>
+                    {data.washCount} <span className="text-sm font-semibold text-(--theme-text-muted)">/ {data.maxWash}</span>
+                </>
+            ),
+            isMono: true,
+            label: "Total Wash Cycles",
+            subtext: `${Math.round((data.washCount / data.maxWash) * 100)}% of lifecycle used`,
+        },
+        {
+            id: "assigned-laundry",
+            icon: Building2,
+            variant: "info",
+            value: data.assignedLaundry,
+            isMono: false,
+            label: "Assigned Laundry",
+            subtext: "Automatic dispatch mode",
+        },
+        {
+            id: "current-batch",
+            icon: FileText,
+            variant: "purple",
+            value: data.currentBatch.id,
+            isMono: true,
+            label: "Current Batch",
+            subtext: `${data.currentBatch.status} — ${data.currentBatch.date}`,
+        }
+    ];
+
     return (
         <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card bodyClassName="flex flex-col gap-4">
-                    <IconWrapper icon={RefreshCw} variant="success" sizeClassName="h-8 w-8 rounded-lg" iconSize={16} />
-                    <div className="space-y-1">
-                        <div className="font-mono text-lg font-black text-(--theme-text-primary)">
-                            {data.washCount} <span className="text-sm font-semibold text-(--theme-text-muted)">/ {data.maxWash}</span>
+            <div className="grid gap-2 md:grid-cols-3">
+                {stats.map((stat) => (
+                    <Card key={stat.id} bodyClassName="flex flex-col gap-4">
+                        <IconWrapper icon={stat.icon} variant={stat.variant} sizeClassName="h-8 w-8 rounded-lg" iconSize={16} />
+                        <div className="space-y-1">
+                            <div className={`text-lg font-black text-(--theme-text-primary) ${stat.isMono ? 'font-mono' : ''}`}>
+                                {stat.value}
+                            </div>
+                            <div className="text-sm font-bold text-(--theme-text-primary)">{stat.label}</div>
+                            <div className="text-xs font-medium text-(--theme-text-muted)">
+                                {stat.subtext}
+                            </div>
                         </div>
-                        <div className="text-sm font-bold text-(--theme-text-primary)">Total Wash Cycles</div>
-                        <div className="text-xs font-medium text-(--theme-text-muted)">
-                            {Math.round((data.washCount / data.maxWash) * 100)}% of lifecycle used
-                        </div>
-                    </div>
-                </Card>
-                <Card bodyClassName="flex flex-col gap-4">
-                    <IconWrapper icon={Building2} variant="info" sizeClassName="h-8 w-8 rounded-lg" iconSize={16} />
-                    <div className="space-y-1">
-                        <div className="text-lg font-black text-(--theme-text-primary)">
-                            {data.assignedLaundry}
-                        </div>
-                        <div className="text-sm font-bold text-(--theme-text-primary)">Assigned Laundry</div>
-                        <div className="text-xs font-medium text-(--theme-text-muted)">
-                            Automatic dispatch mode
-                        </div>
-                    </div>
-                </Card>
-                <Card bodyClassName="flex flex-col gap-4">
-                    <IconWrapper icon={FileText} variant="purple" sizeClassName="h-8 w-8 rounded-lg" iconSize={16} />
-                    <div className="space-y-1">
-                        <div className="font-mono text-lg font-black text-(--theme-text-primary)">
-                            {data.currentBatch.id}
-                        </div>
-                        <div className="text-sm font-bold text-(--theme-text-primary)">Current Batch</div>
-                        <div className="text-xs font-medium text-(--theme-text-muted)">
-                            {data.currentBatch.status} — {data.currentBatch.date}
-                        </div>
-                    </div>
-                </Card>
+                    </Card>
+                ))}
             </div>
 
             <Card bodyClassName="flex flex-col gap-4">

@@ -6,15 +6,15 @@ import ProgressBar from "../../../../Components/UI/ProgressBar";
 
 const HeaderCard = ({ data }) => {
     return (
-        <Card className="flex-1">
-            <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
+        <Card >
+            <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 {/* Icon */}
                 <IconWrapper
                     icon={Shirt}
                     variant={data.statusVariant}
-                    sizeClassName="h-20 w-20 shrink-0"
-                    roundedClassName="rounded-[18px]"
-                    iconSize={36}
+                    sizeClassName="h-16 w-16 shrink-0"
+                    roundedClassName="rounded-[16px]"
+                    iconSize={40}
                 />
 
                 {/* Details */}

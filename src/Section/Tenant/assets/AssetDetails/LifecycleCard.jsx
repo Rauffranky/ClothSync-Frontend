@@ -44,7 +44,7 @@ const LifecycleCard = ({ data }) => {
                         <div
                             key={step.label}
                             className="flex flex-1 items-start"
-                            style={{ minWidth: 100 }}
+                        // style={{ minWidth: 100 }}
                         >
                             {/* Step node */}
                             <div className="relative z-10 flex flex-col items-center gap-3"
@@ -87,13 +87,12 @@ const LifecycleCard = ({ data }) => {
 
                                 {/* Label */}
                                 <span
-                                    className={`text-center text-[11px] font-bold leading-tight transition-colors duration-300 ${
-                                        isCurrent
-                                            ? "text-(--theme-text-primary)"
-                                            : isActive
-                                                ? "text-(--theme-text-secondary)"
-                                                : "text-(--theme-text-muted) opacity-50"
-                                    }`}
+                                    className={`text-center text-[11px] font-bold leading-tight transition-colors duration-300 ${isCurrent
+                                        ? "text-(--theme-text-primary)"
+                                        : isActive
+                                            ? "text-(--theme-text-secondary)"
+                                            : "text-(--theme-text-muted) opacity-50"
+                                        }`}
                                 >
                                     {step.label}
                                 </span>
@@ -101,7 +100,7 @@ const LifecycleCard = ({ data }) => {
 
                             {/* Connector line */}
                             {!isLast && (
-                                <div className="relative mt-[24px] flex flex-1 items-center px-1" style={{ minWidth: 24 }}>
+                                <div className="relative mt-[24px] flex flex-1 items-center px-1">
                                     {/* Track background */}
                                     <div className="h-[3px] w-full rounded-full bg-(--theme-border) overflow-hidden">
                                         {/* Filled portion */}

@@ -128,6 +128,7 @@
   --theme-text-primary: var(--color-light-text-primary);
   --theme-text-secondary: var(--color-light-text-secondary);
   --theme-text-muted: var(--color-light-text-muted);
+  --alert-orange-text: #92400E;
   --layout-header-bg: linear-gradient(135deg,
       rgba(255, 255, 255, 0.78),
       rgba(241, 246, 246, 0.58));
@@ -264,6 +265,7 @@
   --theme-text-primary: var(--color-dark-text-primary);
   --theme-text-secondary: var(--color-dark-text-secondary);
   --theme-text-muted: var(--color-dark-text-muted);
+  --alert-orange-text: #FDBA74; /* orange-300 for dark mode */
   --layout-header-bg: linear-gradient(135deg,
       rgba(9, 45, 52, 0.82),
       rgba(5, 28, 36, 0.72));

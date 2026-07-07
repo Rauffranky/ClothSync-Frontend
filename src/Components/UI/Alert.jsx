@@ -20,6 +20,11 @@ const alertVariants = {
     borderColor:
       "color-mix(in srgb, var(--color-sunlit-gold) 42%, var(--theme-border))",
   },
+  orange: {
+    color: "var(--alert-orange-text)",
+    background: "color-mix(in srgb, #A16207 12%, var(--theme-surface))",
+    borderColor: "color-mix(in srgb, #A16207 42%, var(--theme-border))",
+  },
   danger: {
     color: "var(--color-overdue)",
     background:
