@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertCircle } from 'lucide-react';
 
 const VARIANTS = {
   primary: "var(--color-aurora-teal)",
@@ -54,8 +55,8 @@ const IconWrapper = ({
       <Icon size={iconSize} strokeWidth={iconStrokeWidth} />
       
       {hasAlert && (
-        <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-(--theme-surface) shadow-sm">
-          <span className="h-2.5 w-2.5 rounded-full bg-(--color-overdue)"></span>
+        <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center rounded-full shadow-sm">
+          <AlertCircle size={15} color="var(--theme-surface)" fill="var(--color-overdue)" />
         </span>
       )}
     </span>

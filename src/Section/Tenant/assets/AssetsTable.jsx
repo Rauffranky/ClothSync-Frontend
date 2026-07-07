@@ -81,15 +81,15 @@ const AssetsTable = () => {
                             roundedClassName="rounded-xl"
                             iconSize={18}
                         />
-                    <div className="min-w-0">
-                        <p className="m-0 truncate font-black text-sm text-(--theme-text-primary)">
-                            {row.name}
-                        </p>
-                        <p className="m-0 mt-0.5 font-mono text-[11px] font-semibold text-(--theme-text-muted)">
-                            {row.id}
-                        </p>
+                        <div className="min-w-0">
+                            <p className="m-0 truncate font-black text-sm text-(--theme-text-primary)">
+                                {row.name}
+                            </p>
+                            <p className="m-0 mt-0.5 font-mono text-[11px] font-semibold text-(--theme-text-muted)">
+                                {row.id}
+                            </p>
+                        </div>
                     </div>
-                </div>
                 );
             },
         },
@@ -194,7 +194,7 @@ const AssetsTable = () => {
     ];
 
     return (
-        <div className="bg-(--theme-surface) border-t border-(--theme-border)">
+        <div className="">
             <div className="grid gap-3 px-4 py-4 lg:flex lg:flex-wrap lg:items-center">
                 <div className="w-full lg:w-[280px]">
                     <Input
