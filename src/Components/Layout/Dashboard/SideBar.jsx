@@ -112,17 +112,26 @@ const SideBar = ({
               }
             }}
             className={[
-              "relative flex items-center justify-between cursor-pointer group transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "relative flex items-center justify-between cursor-pointer group",
               showLabel ? "px-4 py-2.5" : "w-11 h-11 mx-auto px-0 py-0",
-              "rounded-[10px]",
+              "rounded-[10px] overflow-hidden z-10",
               isActive
                 ? "bg-(--button-secondary-bg) border border-(--button-secondary-border) shadow-(--button-secondary-shadow)"
-                : "hover:bg-(--button-ghost-bg-hover) border border-transparent",
+                : "border border-transparent",
             ].join(" ")}
           >
+            {/* Fancy Animated Hover Background */}
+            {!isActive && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-r from-(--button-ghost-bg-hover) to-transparent opacity-0 group-hover:opacity-100 transform origin-left scale-x-0 group-hover:scale-x-100 transition-all duration-300 ease-out pointer-events-none -z-10" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-(--color-aurora-teal) shadow-[0_0_8px_var(--color-aurora-teal)] rounded-r-full opacity-0 group-hover:opacity-100 group-hover:h-3/4 transition-all duration-300 ease-out pointer-events-none -z-10" />
+              </>
+            )}
+
             <div
               className={[
-                "flex items-center w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                "flex items-center w-full transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+                !isActive && showLabel && "group-hover:translate-x-1.5",
                 showLabel ? "gap-3 justify-start" : "gap-0 justify-center",
               ].join(" ")}
             >
@@ -131,17 +140,18 @@ const SideBar = ({
                   size={20}
                   strokeWidth={isActive ? 2.2 : 1.8}
                   className={[
-                    "relative z-10 transition-colors duration-300",
+                    "relative z-10 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+                    !isActive && "group-hover:scale-110",
                     isActive
                       ? "text-(--color-aurora-teal)"
-                      : "text-(--theme-text-muted) group-hover:text-(--theme-text-primary)",
+                      : "text-(--theme-text-muted) group-hover:text-(--color-aurora-teal)",
                   ].join(" ")}
                 />
               </div>
 
               <span
                 className={[
-                  "font-medium text-[14px] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  "font-medium text-[14px] transition-colors duration-200",
                   isMobile
                     ? "min-w-0 flex-1 whitespace-normal wrap-break-word pr-3 opacity-100"
                     : showLabel
@@ -157,7 +167,7 @@ const SideBar = ({
 
               <div
                 className={[
-                  "absolute right-4 w-1.5 h-1.5 rounded-full bg-(--color-aurora-teal) shadow-[0_0_8px_var(--color-aurora-teal)] transition-opacity duration-300",
+                  "absolute right-4 w-1.5 h-1.5 rounded-full bg-(--color-aurora-teal) shadow-[0_0_8px_var(--color-aurora-teal)] transition-opacity duration-150",
                   isActive && showLabel ? "opacity-100" : "opacity-0",
                 ].join(" ")}
               />
@@ -166,7 +176,7 @@ const SideBar = ({
             {hasSubmenus && (
               <div
                 className={[
-                  "transition-all duration-300",
+                  "transition-all duration-150",
                   showLabel ? "max-w-5 opacity-100" : "max-w-0 opacity-0",
                   isExpanded ? "rotate-180" : "",
                 ].join(" ")}
@@ -229,7 +239,7 @@ const SideBar = ({
       <aside
         className={[
           "fixed z-9999 top-0 left-0 h-screen w-72 max-w-[86vw] lg:hidden",
-          "transform transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
+          "transform transition-transform duration-300 ease-in-out will-change-transform",
           "bg-(--layout-sidebar-bg) shadow-(--layout-panel-shadow) border-r border-(--theme-border)",
           isOpen ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
@@ -263,7 +273,6 @@ const SideBar = ({
           hidden lg:flex flex-col
           fixed top-0 left-0 bottom-0 h-screen
           bg-(--layout-sidebar-bg) border-r border-(--theme-border)
-          backdrop-blur-[18px] backdrop-saturate-150
           z-50 overflow-visible font-jakarta
         `}
         style={{
