@@ -17,13 +17,6 @@ const stats = [
     variant: "info",
   },
   {
-    value: "1",
-    label: "Default Laundry",
-    helper: "PureWash Industrial",
-    icon: Star,
-    variant: "warning",
-  },
-  {
     value: "2",
     label: "Pending Requests",
     helper: "awaiting confirmation",
