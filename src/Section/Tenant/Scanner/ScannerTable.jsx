@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   MapPin,
@@ -31,6 +32,7 @@ import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 const ITEMS_PER_PAGE = 10;
 
 const ScannerTable = () => {
+  const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
@@ -225,7 +227,11 @@ const ScannerTable = () => {
         <ActionDropdown
           align="right"
           items={[
-            { label: "View Details", icon: Eye },
+            {
+              label: "View Details",
+              icon: Eye,
+              onClick: () => navigate(`/business/scanners/${row.id}`),
+            },
             { label: "Edit Scanner", icon: Pencil },
             {
               label: row.status === "Inactive" ? "Activate" : "Deactivate",

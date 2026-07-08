@@ -46,7 +46,7 @@ const Modal = ({
 
       <section
         aria-modal="true"
-        className="relative max-h-[calc(100vh-48px)] w-full overflow-hidden rounded-[22px] border shadow-[0_28px_90px_rgba(0,0,0,0.38)]"
+        className="relative flex max-h-[calc(100vh-48px)] w-full flex-col overflow-hidden rounded-[22px] border shadow-[0_28px_90px_rgba(0,0,0,0.38)]"
         role="dialog"
         style={{
           maxWidth: width,
@@ -84,7 +84,7 @@ const Modal = ({
           </header>
         )}
 
-        <div className="border-t border-(--theme-border) px-6 py-4">
+        <div className="flex-1 overflow-y-auto border-t border-(--theme-border) px-6 py-4">
           {children}
         </div>
 
