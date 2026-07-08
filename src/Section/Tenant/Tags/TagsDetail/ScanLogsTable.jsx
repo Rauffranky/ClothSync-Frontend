@@ -1,17 +1,21 @@
-import { Building2, Settings2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Building2 } from "lucide-react";
 import Table from "../../../../Components/UI/Table";
 import Badge from "../../../../Components/UI/Badge";
 import IconWrapper from "../../../../Components/UI/IconWrapper";
+import Pagination from "../../../../Components/UI/Pagination";
 import { useSortableTableData } from "../../../../Hooks/useSortableTableData";
+
+const ITEMS_PER_PAGE = 10;
 
 const logsData = [
     {
         id: "1",
-        tagId: { text: "TAG-001" },
+        tagId: { icon: Building2, name: "CleanFlow Solutions", sub: "LND-001" },
         assets: { name: "King Duvet Cover", sub: "LNS-BED-0041" },
         location: "Chicago, IL",
         mode: "Automatic",
-        batch: "BTH-20240\n611-001",
+        batch: "10",
         itemsSent: "229",
         delayed: "8",
         lastActivity: "2 min ago"
@@ -63,7 +67,7 @@ const columns = [
                 return <span className="font-mono text-sm font-black text-(--theme-text-primary)">{row.tagId.text}</span>;
             }
             return (
-                <div className="flex min-w-0 items-center gap-3">
+                <div className="flex min-w-0 items-start gap-3">
                     <IconWrapper
                         icon={row.tagId.icon}
                         variant="info"
@@ -71,8 +75,8 @@ const columns = [
                         roundedClassName="rounded-xl"
                         iconSize={16}
                     />
-                    <div className="min-w-0">
-                        <p className="m-0 truncate text-sm font-bold text-(--theme-text-primary)">
+                    <div className="min-w-0 leading-tight">
+                        <p className="m-0 text-sm font-bold text-(--theme-text-primary)">
                             {row.tagId.name}
                         </p>
                         <p className="m-0 mt-0.5 font-mono text-[11px] font-semibold text-(--theme-text-muted)">
@@ -88,8 +92,8 @@ const columns = [
         label: "ASSETS",
         sortable: true,
         render: (_, row) => (
-            <div className="min-w-0">
-                <p className="m-0 truncate text-sm font-bold text-(--theme-text-primary)">
+            <div className="min-w-0 leading-tight">
+                <p className="m-0 text-sm font-bold text-(--theme-text-primary)">
                     {row.assets.name}
                 </p>
                 <p className={`m-0 mt-0.5 font-mono text-[11px] font-semibold ${row.assets.sub.includes('@') ? 'text-(--theme-text-muted)' : 'text-(--color-sky-blue)'}`}>
@@ -103,25 +107,21 @@ const columns = [
         label: "LOCATION",
         sortable: true,
         render: (_, row) => {
-            const parts = row.location.split(", ");
             return (
                 <div className="text-sm font-medium text-(--theme-text-secondary)">
-                    {parts[0]},<br />{parts[1]}
+                    {row.location}
                 </div>
             );
         }
     },
     {
+        align: "center",
         key: "mode",
         label: "MODE",
         sortable: true,
         render: (_, row) => (
             <div className="flex items-center gap-3">
-                {row.hasSet && (
-                    <Badge variant="neutral" size="sm" leftIcon={<Settings2 size={12} />}>
-                        Set
-                    </Badge>
-                )}
+                
                 <Badge variant={row.mode === 'Automatic' ? 'info' : 'neutral'} size="sm">
                     {row.mode}
                 </Badge>
@@ -129,17 +129,19 @@ const columns = [
         ),
     },
     {
+        align: "center",
         key: "batch",
-        label: "BATCHE",
+        label: "BATCH",
         sortable: true,
         render: (_, row) => (
-            <div className="text-sm font-bold whitespace-pre-line text-(--color-sky-blue)">
+            <div className="text-sm font-bold whitespace-nowrap text-(--color-sky-blue)">
                 {row.batch}
             </div>
         ),
     },
     {
         key: "itemsSent",
+        align: "center",
         label: "ITEMS SENT",
         sortable: true,
         render: (_, row) => (
@@ -148,6 +150,7 @@ const columns = [
     },
     {
         key: "delayed",
+        align: "center",
         label: "DELAYED",
         sortable: true,
         render: (_, row) => (
@@ -157,6 +160,7 @@ const columns = [
         ),
     },
     {
+        align: "center",
         key: "lastActivity",
         label: "LAST ACTIVITY",
         sortable: true,
@@ -167,18 +171,41 @@ const columns = [
 ];
 
 const ScanLogsTable = () => {
+    const [currentPage, setCurrentPage] = useState(0);
     const { handleSort, sortedData, sortBy, sortDirection } = useSortableTableData(logsData);
+    const pageCount = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
+    const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
+
+    const paginatedData = useMemo(() => {
+        const startIndex = activePage * ITEMS_PER_PAGE;
+        return sortedData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [activePage, sortedData]);
+
+    const resetCurrentPage = () => setCurrentPage(0);
+
+    const handleTableSort = (nextSortBy, nextSortDirection) => {
+        handleSort(nextSortBy, nextSortDirection);
+        resetCurrentPage();
+    };
 
     return (
-        <div className="p-4 overflow-x-auto">
+        <div>
             <Table
                 columns={columns}
-                data={sortedData}
+                data={paginatedData}
                 emptyText="No scan logs found"
                 rowKey="id"
-                onSort={handleSort}
+                onSort={handleTableSort}
                 sortBy={sortBy}
                 sortDirection={sortDirection}
+            />
+
+            <Pagination
+                pageCount={pageCount}
+                totalItems={sortedData.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                forcePage={activePage}
+                onPageChange={({ selected }) => setCurrentPage(selected)}
             />
         </div>
     );

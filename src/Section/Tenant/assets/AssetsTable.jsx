@@ -10,8 +10,6 @@ import {
   Utensils,
   Eye,
   Edit,
-  RefreshCw,
-  History,
   Archive,
 } from "lucide-react";
 import IconWrapper from "../../../Components/UI/IconWrapper";
@@ -29,6 +27,7 @@ import {
   zoneOptions,
   laundryFilterOptions,
 } from "./data";
+import EditAssetModal from "./EditAssetModal";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -57,6 +56,8 @@ const AssetsTable = () => {
   const [laundryFilter, setLaundryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(0);
+  const [editAssetModalOpen, setEditAssetModalOpen] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState(null);
   const navigate = useNavigate();
 
   const filteredAssets = useMemo(() => {
@@ -97,6 +98,16 @@ const AssetsTable = () => {
   }, [activePage, sortedData]);
 
   const resetCurrentPage = () => setCurrentPage(0);
+
+  const openEditAssetModal = (asset) => {
+    setSelectedAsset(asset);
+    setEditAssetModalOpen(true);
+  };
+
+  const closeEditAssetModal = () => {
+    setEditAssetModalOpen(false);
+    setSelectedAsset(null);
+  };
 
   const handleSearchChange = (value) => {
     setSearchValue(value);
@@ -164,6 +175,7 @@ const AssetsTable = () => {
       ),
     },
     {
+      align: "center",
       key: "status",
       label: "Status",
       sortable: true,
@@ -243,12 +255,13 @@ const AssetsTable = () => {
               icon: Eye,
               onClick: () => navigate(`/business/assets/${row.id}`),
             },
-            { label: "Edit Assets", icon: Edit },
-            { label: "Re-Tag Asset", icon: RefreshCw },
-            { label: "View History", icon: History },
+            {
+              label: "Edit Assets",
+              icon: Edit,
+              onClick: () => openEditAssetModal(row),
+            },
             { label: "Retire Asset", icon: Archive, danger: true },
           ]}
-          width={200}
         />
       ),
     },
@@ -256,8 +269,8 @@ const AssetsTable = () => {
 
   return (
     <div className="">
-      <div className="grid gap-2 px-4 py-4 lg:flex lg:flex-wrap lg:items-center">
-        <div className="w-full lg:w-70">
+      <div className="grid grid-cols-1 gap-2 px-4 py-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div>
           <Input
             leftIcon={<Search size={16} />}
             onChange={handleSearchChange}
@@ -265,7 +278,7 @@ const AssetsTable = () => {
             value={searchValue}
           />
         </div>
-        <div className="w-full lg:w-45">
+        <div>
           <Dropdown
             onChange={(val) => {
               setCategoryFilter(val);
@@ -275,7 +288,7 @@ const AssetsTable = () => {
             value={categoryFilter}
           />
         </div>
-        <div className="w-full lg:w-45">
+        <div>
           <Dropdown
             onChange={(val) => {
               setZoneFilter(val);
@@ -285,7 +298,7 @@ const AssetsTable = () => {
             value={zoneFilter}
           />
         </div>
-        <div className="w-full lg:w-50">
+        <div>
           <Dropdown
             onChange={(val) => {
               setLaundryFilter(val);
@@ -295,7 +308,7 @@ const AssetsTable = () => {
             value={laundryFilter}
           />
         </div>
-        <div className="w-full lg:w-50">
+        <div>
           <Dropdown
             leftIcon={
               <Search size={14} className="text-(--theme-text-muted)" />
@@ -329,6 +342,13 @@ const AssetsTable = () => {
           totalItems={sortedData.length}
         />
       </div>
+
+      <EditAssetModal
+        key={selectedAsset?.id || "edit-asset"}
+        asset={selectedAsset}
+        isOpen={editAssetModalOpen}
+        onClose={closeEditAssetModal}
+      />
     </div>
   );
 };

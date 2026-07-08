@@ -25,6 +25,7 @@ import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Table from "../../../Components/UI/Table";
 import Pagination from "../../../Components/UI/Pagination";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
+import InactiveTagModal from "./InactiveTagModal";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -35,6 +36,8 @@ const TagsTable = () => {
   const [assetStatusFilter, setAssetStatusFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(0);
+  const [inactiveTagModalOpen, setInactiveTagModalOpen] = useState(false);
+  const [selectedTag, setSelectedTag] = useState(null);
   const navigate = useNavigate();
 
   const filteredTags = useMemo(() => {
@@ -81,6 +84,16 @@ const TagsTable = () => {
   }, [activePage, sortedData]);
 
   const resetCurrentPage = () => setCurrentPage(0);
+
+  const openInactiveTagModal = (tag) => {
+    setSelectedTag(tag);
+    setInactiveTagModalOpen(true);
+  };
+
+  const closeInactiveTagModal = () => {
+    setInactiveTagModalOpen(false);
+    setSelectedTag(null);
+  };
 
   const handleSearchChange = (value) => {
     setSearchValue(value);
@@ -176,6 +189,7 @@ const TagsTable = () => {
       },
     },
     {
+      align: "center",
       key: "assetStatus",
       label: "ASSET STATUS",
       sortable: true,
@@ -197,6 +211,7 @@ const TagsTable = () => {
       },
     },
     {
+      align: "center",
       key: "tagStatus",
       label: "TAG STATUS",
       sortable: true,
@@ -257,7 +272,12 @@ const TagsTable = () => {
               onClick: () => navigate(`/business/tags/${row.id}`),
             },
             { label: "View History", icon: History },
-            { label: "Inactive Tag", icon: Ban, danger: true },
+            {
+              label: "Inactive Tag",
+              icon: Ban,
+              danger: true,
+              onClick: () => openInactiveTagModal(row),
+            },
           ]}
           width={180}
         />
@@ -343,16 +363,11 @@ const TagsTable = () => {
         />
       </div>
 
-      {/* <div className="px-4 py-3 border-t border-(--theme-border-soft) flex items-center justify-between text-xs font-semibold text-(--theme-text-muted)">
-                <div>Showing {sortedData.length} tags</div>
-                <div className="flex gap-4">
-                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-(--color-ready)"></span> Mapped</span>
-                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-(--color-slate)"></span> Unmapped</span>
-                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-(--tenant-primary)"></span> Active</span>
-                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-(--color-overdue)"></span> Unlinked</span>
-                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-(--color-ocean-gray)"></span> History</span>
-                </div>
-            </div> */}
+      <InactiveTagModal
+        isOpen={inactiveTagModalOpen}
+        onClose={closeInactiveTagModal}
+        tag={selectedTag}
+      />
     </div>
   );
 };

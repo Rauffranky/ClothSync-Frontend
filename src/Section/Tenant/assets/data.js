@@ -54,7 +54,7 @@ export const assetsData = [
         assignedLaundry: "PureWash Industrial",
     },
     {
-        id: "LNS-TBL-0011",
+        id: "LNS-TBL-0012",
         name: "Round Tablecloth",
         tag: "TAG-007",
         category: "Table Linen",
@@ -67,7 +67,7 @@ export const assetsData = [
         assignedLaundry: "Metro Linen Service",
     },
     {
-        id: "LNS-TBL-0011",
+        id: "LNS-TBL-0013",
         name: "Round Tablecloth",
         tag: "TAG-007",
         category: "Table Linen",
@@ -80,7 +80,7 @@ export const assetsData = [
         assignedLaundry: "Metro Linen Service",
     },
     {
-        id: "LNS-TBL-0011",
+        id: "LNS-TBL-0014",
         name: "Round Tablecloth",
         tag: "TAG-007",
         category: "Table Linen",
@@ -93,7 +93,7 @@ export const assetsData = [
         assignedLaundry: "Metro Linen Service",
     },
     {
-        id: "LNS-TBL-0011",
+        id: "LNS-TBL-0015",
         name: "Round Tablecloth",
         tag: "TAG-007",
         category: "Table Linen",

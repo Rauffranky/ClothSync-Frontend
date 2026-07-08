@@ -43,7 +43,7 @@ const stats = [
 
 const StatsCards = () => {
     return (
-        <section className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+        <section className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             {stats.map((item, index) => {
                 const Icon = item.icon;
                 return (
