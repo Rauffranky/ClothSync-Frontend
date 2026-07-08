@@ -87,7 +87,7 @@ const TimelineEventCard = ({ event, isLast }) => {
           iconSize={17}
         />
         {!isLast && (
-          <span className="absolute top-10 bottom-[-18px] w-px bg-(--theme-border-soft)" />
+          <span className="absolute top-10 -bottom-4.5 w-px bg-(--theme-border-soft)" />
         )}
       </div>
 

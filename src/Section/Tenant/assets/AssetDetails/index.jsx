@@ -58,7 +58,7 @@ const AssetDetailsIndex = () => {
                     {ActiveTabComponent ? (
                         <ActiveTabComponent data={data} />
                     ) : (
-                        <div className="flex min-h-[200px] items-center justify-center text-sm font-semibold text-(--theme-text-muted)">
+                        <div className="flex min-h-50 items-center justify-center text-sm font-semibold text-(--theme-text-muted)">
                             No content available
                         </div>
                     )}
