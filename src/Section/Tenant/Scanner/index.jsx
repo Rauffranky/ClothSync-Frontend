@@ -30,6 +30,7 @@ const ScannerManagementIndex = () => {
       <AddScannerModal
         isOpen={isAddScannerOpen}
         onClose={() => setIsAddScannerOpen(false)}
+        onSubmit={() => setIsAddScannerOpen(false)}
       />
     </div>
   );

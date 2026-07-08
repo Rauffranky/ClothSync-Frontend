@@ -27,21 +27,33 @@ import Table from "../../../Components/UI/Table";
 import Pagination from "../../../Components/UI/Pagination";
 import Badge from "../../../Components/UI/Badge";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
+import AddScannerModal from "./AddScannerModal";
+import ScannerStatusModal from "./ScannerStatusModal";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 
 const ITEMS_PER_PAGE = 10;
 
 const ScannerTable = () => {
   const navigate = useNavigate();
+  const [scannerRows, setScannerRows] = useState(scannersData);
   const [searchValue, setSearchValue] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(0);
+  const [statusModalState, setStatusModalState] = useState({
+    isOpen: false,
+    action: null,
+    scanner: null,
+  });
+  const [editScannerState, setEditScannerState] = useState({
+    isOpen: false,
+    scanner: null,
+  });
 
   const filteredScanners = useMemo(() => {
-    return scannersData.filter((scanner) => {
+    return scannerRows.filter((scanner) => {
       const search = searchValue.trim().toLowerCase();
       const matchesSearch =
         !search ||
@@ -65,7 +77,7 @@ const ScannerTable = () => {
         matchesStatus
       );
     });
-  }, [searchValue, typeFilter, modeFilter, locationFilter, statusFilter]);
+  }, [scannerRows, searchValue, typeFilter, modeFilter, locationFilter, statusFilter]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
     useSortableTableData(filteredScanners);
@@ -85,6 +97,77 @@ const ScannerTable = () => {
 
   const handleTableSort = (nextSortBy, nextSortDirection) => {
     handleSort(nextSortBy, nextSortDirection);
+    resetCurrentPage();
+  };
+
+  const openStatusModal = (scanner, action) => {
+    setStatusModalState({
+      isOpen: true,
+      action,
+      scanner,
+    });
+  };
+
+  const closeStatusModal = () => {
+    setStatusModalState({
+      isOpen: false,
+      action: null,
+      scanner: null,
+    });
+  };
+
+  const handleStatusConfirm = ({ scanner, action }) => {
+    const nextStatus = action === "deactivate" ? "Inactive" : "Active";
+
+    setScannerRows((current) =>
+      current.map((item) =>
+        item.id === scanner.id
+          ? {
+              ...item,
+              status: nextStatus,
+            }
+          : item,
+      ),
+    );
+    resetCurrentPage();
+  };
+
+  const openEditScannerModal = (scanner) => {
+    setEditScannerState({
+      isOpen: true,
+      scanner: {
+        ...scanner,
+        scannerName: scanner.name,
+        scannerId: scanner.id,
+        scannerType: scanner.type,
+        scannerMode: scanner.mode,
+        zoneName: scanner.location,
+        assignedOperator: scanner.operator === "Unassigned" ? null : scanner.operator,
+        customNotes: "",
+      },
+    });
+  };
+
+  const closeEditScannerModal = () => {
+    setEditScannerState({
+      isOpen: false,
+      scanner: null,
+    });
+  };
+
+  const handleEditScannerSubmit = (updatedScanner) => {
+    if (!editScannerState.scanner) return;
+
+    setScannerRows((current) =>
+      current.map((item) =>
+        item.id === editScannerState.scanner.id
+          ? {
+              ...item,
+              ...updatedScanner,
+            }
+          : item,
+      ),
+    );
     resetCurrentPage();
   };
 
@@ -232,11 +315,20 @@ const ScannerTable = () => {
               icon: Eye,
               onClick: () => navigate(`/business/scanners/${row.id}`),
             },
-            { label: "Edit Scanner", icon: Pencil },
+            {
+              label: "Edit Scanner",
+              icon: Pencil,
+              onClick: () => openEditScannerModal(row),
+            },
             {
               label: row.status === "Inactive" ? "Activate" : "Deactivate",
               icon: Power,
               danger: row.status !== "Inactive",
+              onClick: () =>
+                openStatusModal(
+                  row,
+                  row.status === "Inactive" ? "activate" : "deactivate",
+                ),
             },
           ]}
         />
@@ -321,6 +413,21 @@ const ScannerTable = () => {
           totalItems={sortedData.length}
         />
       </div>
+
+      <ScannerStatusModal
+        actionData={statusModalState.scanner ? statusModalState : null}
+        isOpen={statusModalState.isOpen}
+        onClose={closeStatusModal}
+        onConfirm={handleStatusConfirm}
+      />
+
+      <AddScannerModal
+        initialValues={editScannerState.scanner || undefined}
+        isOpen={editScannerState.isOpen}
+        mode="edit"
+        onClose={closeEditScannerModal}
+        onSubmit={handleEditScannerSubmit}
+      />
     </Card>
   );
 };

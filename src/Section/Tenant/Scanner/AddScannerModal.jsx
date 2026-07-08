@@ -84,9 +84,22 @@ const scannerTypeCards = [
   },
 ];
 
-const AddScannerModal = ({ isOpen, onClose, onCreate }) => {
+const AddScannerModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  mode = "add",
+  initialValues = initialFormState,
+}) => {
+  const resolvedInitialValues = {
+    ...initialFormState,
+    ...initialValues,
+    assignedOperator: initialValues?.assignedOperator ?? null,
+  };
+
   const formik = useFormik({
-    initialValues: initialFormState,
+    enableReinitialize: true,
+    initialValues: resolvedInitialValues,
     validationSchema: scannerValidationSchema,
     onSubmit: (values, { resetForm }) => {
       const payload = {
@@ -104,7 +117,7 @@ const AddScannerModal = ({ isOpen, onClose, onCreate }) => {
           : {}),
       };
 
-      onCreate?.(payload);
+      onSubmit?.(payload);
       resetForm();
       onClose?.();
     },
@@ -160,13 +173,13 @@ const AddScannerModal = ({ isOpen, onClose, onCreate }) => {
             type="submit"
             variant="primary"
           >
-            Add Scanner
+            {mode === "edit" ? "Save Changes" : "Add Scanner"}
           </Button>
         </>
       }
       onClose={handleClose}
       open={isOpen}
-      title="Add New Scanner"
+      title={mode === "edit" ? "Edit Scanner" : "Add New Scanner"}
       width={720}
     >
       <form className="space-y-5" id="add-scanner-form" noValidate onSubmit={formik.handleSubmit}>

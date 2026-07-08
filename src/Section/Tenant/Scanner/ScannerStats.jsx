@@ -5,7 +5,7 @@ import { scannerStats } from "./data";
 
 const ScannerStats = () => {
     return (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
             {scannerStats.map((stat) => (
                 <Card key={stat.id} bodyClassName="flex flex-col gap-3 h-full">
                     <IconWrapper
