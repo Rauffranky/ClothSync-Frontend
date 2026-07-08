@@ -24,6 +24,8 @@ const AssetsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetsPage"));
 const AssetDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetDetailsPage"));
 const ScannersPage = lazy(() => import("../Page/Dashboard/Tenant/ScannersPage"));
 const ScannerDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/ScannerDetailsPage"));
+const TagsPage = lazy(() => import("../Page/Dashboard/Tenant/TagsPage"));
+const TagDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/TagDetailsPage"));
 
 // ============================================================================
 // ROUTE CONFIGURATION
@@ -68,6 +70,8 @@ const AppRoutes = () => {
           <Route path="/business/assets/:id" element={<AssetDetailsPage />} />
           <Route path="/business/scanners" element={<ScannersPage />} />
           <Route path="/business/scanners/:id" element={<ScannerDetailsPage />} />
+          <Route path="/business/tags" element={<TagsPage />} />
+          <Route path="/business/tags/:id" element={<TagDetailsPage />} />
 
           {/* Laundry Portal */}
           <Route path="/laundry" element={<Navigate to="/laundry/dashboard" replace />} />
