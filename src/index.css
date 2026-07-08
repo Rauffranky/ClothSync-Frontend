@@ -233,6 +233,13 @@
   --badge-cancelled-text: #475569;
   --badge-cancelled-bg: var(--color-cancelled-bg);
   --badge-cancelled-border: rgba(148, 163, 184, 0.3);
+    --badge-purple-text: #5B21B6;
+    --badge-purple-bg: linear-gradient(135deg,
+      rgba(233, 213, 255, 0.95),
+      rgba(216, 180, 254, 0.82));
+    --badge-purple-border: rgba(192, 132, 252, 0.78);
+    --badge-purple-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    --badge-purple-backdrop: blur(14px) saturate(140%);
 
   /* Toast tokens */
   --toast-bg: linear-gradient(145deg,
@@ -364,6 +371,13 @@
   --badge-cancelled-text: #cbd5e1;
   --badge-cancelled-bg: rgba(148, 163, 184, 0.12);
   --badge-cancelled-border: rgba(148, 163, 184, 0.24);
+    --badge-purple-text: #F5E8FF;
+  --badge-purple-bg: linear-gradient(135deg,
+      rgba(88, 28, 135, 0.56),
+      rgba(59, 7, 100, 0.42));
+    --badge-purple-border: rgba(196, 181, 253, 0.48);
+    --badge-purple-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  --badge-purple-backdrop: blur(14px) saturate(140%);
   --toast-bg:
     radial-gradient(circle at 16% 20%,
       rgba(20, 184, 166, 0.09),

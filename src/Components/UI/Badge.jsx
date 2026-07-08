@@ -55,9 +55,12 @@ const badgeVariants = {
     borderColor: "var(--badge-cancelled-border)",
   },
   purple: {
-    color: "var(--admin-text)",
-    background: "var(--admin-soft)",
-    borderColor: "var(--admin-border)",
+    color: "var(--badge-purple-text)",
+    background: "var(--badge-purple-bg)",
+    borderColor: "var(--badge-purple-border)",
+    boxShadow: "var(--badge-purple-shadow)",
+    backdropFilter: "var(--badge-purple-backdrop)",
+    WebkitBackdropFilter: "var(--badge-purple-backdrop)",
   },
 };
 

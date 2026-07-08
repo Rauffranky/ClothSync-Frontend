@@ -6,7 +6,9 @@ import {
   AlertTriangle,
   Radio,
   Smartphone,
-  MoreHorizontal,
+  Eye,
+  Pencil,
+  Power,
 } from "lucide-react";
 import {
   scannersData,
@@ -23,7 +25,7 @@ import Dropdown from "../../../Components/UI/Dropdown";
 import Table from "../../../Components/UI/Table";
 import Pagination from "../../../Components/UI/Pagination";
 import Badge from "../../../Components/UI/Badge";
-import Button from "../../../Components/UI/Button";
+import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 
 const ITEMS_PER_PAGE = 10;
@@ -219,10 +221,19 @@ const ScannerTable = () => {
       key: "actions",
       label: "Actions",
       align: "center",
-      render: () => (
-        <Button variant="secondary" size="sm" className="px-2">
-          <MoreHorizontal size={14} />
-        </Button>
+      render: (_, row) => (
+        <ActionDropdown
+          align="right"
+          items={[
+            { label: "View Details", icon: Eye },
+            { label: "Edit Scanner", icon: Pencil },
+            {
+              label: row.status === "Inactive" ? "Activate" : "Deactivate",
+              icon: Power,
+              danger: row.status !== "Inactive",
+            },
+          ]}
+        />
       ),
     },
   ];
