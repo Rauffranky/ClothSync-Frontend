@@ -28,6 +28,7 @@ import {
   ShelvingUnit,
   ChartNoAxesCombined,
   ShieldAlert,
+  UsersRound,
 } from "lucide-react";
 
 export const NAV_MENU = [
@@ -177,6 +178,12 @@ export const NAV = {
       label: "Scanners",
       href: "/business/scanners",
       Icon: ScanQrCode,
+    },
+    {
+      id: 112,
+      label: "Staff",
+      href: "/business/staff",
+      Icon: UsersRound,
     },
     {
       id: 107,

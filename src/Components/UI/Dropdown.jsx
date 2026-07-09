@@ -1,4 +1,12 @@
-import { isValidElement, useEffect, useMemo, useRef, useState } from "react";
+import {
+  isValidElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search, X } from "lucide-react";
 
 const getOptionLabel = (option, fallback) =>
@@ -32,7 +40,10 @@ const Dropdown = ({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [menuPosition, setMenuPosition] = useState(null);
   const wrapRef = useRef(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
   const listRef = useRef(null);
   const searchRef = useRef(null);
 
@@ -67,10 +78,49 @@ const Dropdown = ({
     return getOptionLabel(selectedOption, String(value));
   }, [multiple, options, value]);
 
+  const updateMenuPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const gutter = 8;
+    const viewportPadding = 12;
+    const estimatedHeight = Math.min(
+      320,
+      12 +
+        (search ? 58 : 0) +
+        (menuHeader ? 52 : 0) +
+        Math.max(1, filteredOptions.length) * 44,
+    );
+    const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+    const shouldOpenUp =
+      spaceBelow < estimatedHeight && rect.top > spaceBelow;
+    const top = shouldOpenUp
+      ? Math.max(viewportPadding, rect.top - estimatedHeight - gutter)
+      : Math.min(rect.bottom + gutter, window.innerHeight - viewportPadding);
+
+    setMenuPosition({
+      top,
+      left: Math.max(
+        viewportPadding,
+        Math.min(rect.left, window.innerWidth - rect.width - viewportPadding),
+      ),
+      width: rect.width,
+      maxHeight: shouldOpenUp
+        ? Math.max(180, rect.top - viewportPadding - gutter)
+        : Math.max(180, window.innerHeight - rect.bottom - viewportPadding - gutter),
+    });
+  }, [filteredOptions.length, menuHeader, search]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (wrapRef.current && !wrapRef.current.contains(event.target)) {
+      const target = event.target;
+      const isInTrigger = wrapRef.current?.contains(target);
+      const isInMenu = menuRef.current?.contains(target);
+
+      if (!isInTrigger && !isInMenu) {
         setOpen(false);
+        setMenuPosition(null);
         setActiveIndex(-1);
         setQuery("");
       }
@@ -81,6 +131,19 @@ const Dropdown = ({
   }, []);
 
   useEffect(() => {
+    if (!open) return undefined;
+
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [open, updateMenuPosition]);
+
+  useEffect(() => {
     if (open && search) {
       window.setTimeout(() => searchRef.current?.focus(), 40);
     }
@@ -88,6 +151,7 @@ const Dropdown = ({
 
   const closeDropdown = () => {
     setOpen(false);
+    setMenuPosition(null);
     setActiveIndex(-1);
     setQuery("");
   };
@@ -141,6 +205,7 @@ const Dropdown = ({
   const handleKeyDown = (event) => {
     if (!open && ["ArrowDown", "Enter", " "].includes(event.key)) {
       event.preventDefault();
+      updateMenuPosition();
       setOpen(true);
       return;
     }
@@ -257,6 +322,7 @@ const Dropdown = ({
           if (open) {
             closeDropdown();
           } else {
+            updateMenuPosition();
             setOpen(true);
           }
         }}
@@ -273,6 +339,7 @@ const Dropdown = ({
             : "inset 0 1px 0 rgba(255, 255, 255, 0.18)",
           ...triggerStyle,
         }}
+        ref={triggerRef}
         type="button"
       >
         {customTrigger ? (
@@ -324,14 +391,22 @@ const Dropdown = ({
         )}
       </button>
 
-      {open && (
+      {open &&
+        menuPosition &&
+        createPortal(
         <div
           aria-activedescendant={
             activeIndex >= 0 ? `dropdown-option-${activeIndex}` : undefined
           }
-          className={`absolute left-0 z-50 mt-2 w-full min-w-full overflow-hidden rounded-xl border backdrop-blur-[18px] ${dropdownClassName}`}
+          className={`fixed z-1000 overflow-hidden rounded-xl border backdrop-blur-[18px] ${dropdownClassName}`}
+          onKeyDown={handleKeyDown}
+          ref={menuRef}
           role="listbox"
           style={{
+            top: menuPosition.top,
+            left: menuPosition.left,
+            width: menuPosition.width,
+            maxHeight: menuPosition.maxHeight,
             borderRadius: rounded,
             color: "var(--theme-text-primary)",
             background:
@@ -375,7 +450,11 @@ const Dropdown = ({
             </div>
           )}
 
-          <ul className="hide-scrollbar max-h-64 overflow-auto p-1.5" ref={listRef}>
+          <ul
+            className="hide-scrollbar overflow-auto p-1.5"
+            ref={listRef}
+            style={{ maxHeight: menuPosition.maxHeight - (search ? 58 : 0) }}
+          >
             {!filteredOptions.length && (
               <li
                 className="px-3 py-3 text-sm font-semibold"
@@ -454,8 +533,9 @@ const Dropdown = ({
               );
             })}
           </ul>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
 
       {name && (
         <div className="hidden">
