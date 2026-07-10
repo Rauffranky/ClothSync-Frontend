@@ -6,38 +6,38 @@ import {
 } from "lucide-react";
 import Card from "../../../Components/UI/Card";
 
-const stats = [
-  {
-    value: "6",
+const Stats = ({ categories = [] }) => {
+  const stats = [
+    {
+    value: categories.length,
     label: "Total Categories",
     helper: "all defined categories",
     icon: ChartBarStacked,
     color: "var(--color-sky-blue)",
   },
   {
-    value: "1",
+    value: categories.filter((item) => item.status === "Active").length,
     label: "Active Categories",
     helper: "currently in use",
     icon: CircleCheck,
     color: "var(--color-ready)",
   },
   {
-    value: "2",
+    value: categories.filter((item) => item.status === "Inactive").length,
     label: "Inactive Categories",
     helper: "disabled",
     icon: CircleX,
     color: "var(--color-overdue)",
   },
   {
-    value: "6",
+    value: categories.filter((item) => item.usageState === "used").length,
     label: "Categories in Use",
     helper: "across all laundries",
     icon: Cuboid,
     color: "var(--color-super-admin-light)",
   },
-];
+  ];
 
-const Stats = () => {
   return (
     <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((item) => {

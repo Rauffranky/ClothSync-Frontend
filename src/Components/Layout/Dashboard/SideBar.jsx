@@ -14,6 +14,12 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { NAV } from "./nav";
 import GlobalTooltip from "../../UI/Tooltip";
+import {
+  clearTenantSession,
+  logoutTenant,
+} from "../../../axios/auth/tenantAuth";
+import { getApiErrorMessage } from "../../../axios/api";
+import { toast } from "../../../Utils/toast";
 
 const SideBar = ({
   isOpen = false,
@@ -50,9 +56,23 @@ const SideBar = ({
     navigate(`/${portal}/dashboard`);
   };
 
-  const handleLogout = () => {
-    navigate("/auth/login");
-    if (isOpen) onClose();
+  const handleLogout = async () => {
+    if (portal !== "business") {
+      navigate(`/${portal}/login`, { replace: true });
+      if (isOpen) onClose();
+      return;
+    }
+
+    try {
+      await logoutTenant();
+      toast.success("Logout successful");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to logout from the server"));
+    } finally {
+      clearTenantSession();
+      navigate("/business/login", { replace: true });
+      if (isOpen) onClose();
+    }
   };
 
   useEffect(() => {

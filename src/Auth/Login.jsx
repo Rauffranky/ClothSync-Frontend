@@ -9,6 +9,9 @@ import Input from "../Components/UI/Input";
 import Tabs from "../Components/UI/Tabs";
 import { portalTabs } from "./authConfig";
 import OtpInput from "./components/OtpInput";
+import { loginTenant } from "../axios/auth/tenantAuth";
+import { getApiErrorMessage } from "../axios/api";
+import { toast } from "../Utils/toast";
 
 const initialLoginValues = {
   email: "",
@@ -79,9 +82,43 @@ const Login = ({ portal }) => {
   const formik = useFormik({
     initialValues: initialLoginValues,
     validationSchema: isForgotFlow ? validationSchema : loginSchema,
-    onSubmit: () => {
+    onSubmit: async (values, { setSubmitting }) => {
       if (!isForgotFlow) {
-        navigate(portal.dashboardPath);
+        if (portal.value !== "business") {
+          navigate(portal.dashboardPath);
+          return;
+        }
+
+        try {
+          const response = await loginTenant({
+            email: values.email,
+            password: values.password,
+          });
+          const authData = response?.data ?? response;
+          const accessToken =
+            authData?.accessToken ?? authData?.access_token ?? authData?.token;
+
+          if (!accessToken) {
+            throw new Error("Login succeeded, but no access token was returned");
+          }
+
+          localStorage.setItem("accessToken", accessToken);
+
+          if (authData?.refreshToken) {
+            localStorage.setItem("refreshToken", authData.refreshToken);
+          }
+
+          if (authData?.user) {
+            localStorage.setItem("authUser", JSON.stringify(authData.user));
+          }
+
+          toast.success(response?.message || "Login successful");
+          navigate(portal.dashboardPath, { replace: true });
+        } catch (error) {
+          toast.error(getApiErrorMessage(error, "Unable to login. Please try again."));
+        } finally {
+          setSubmitting(false);
+        }
         return;
       }
 
@@ -239,7 +276,13 @@ const Login = ({ portal }) => {
             )}
           </div>
 
-          <Button className="mt-6" fullWidth size="lg" type="submit">
+          <Button
+            className="mt-6"
+            fullWidth
+            loading={formik.isSubmitting}
+            size="lg"
+            type="submit"
+          >
             {isForgotFlow
               ? forgotStep === "email"
                 ? "Send OTP"

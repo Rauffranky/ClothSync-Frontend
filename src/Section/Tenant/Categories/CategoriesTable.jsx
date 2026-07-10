@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   CircleCheck,
@@ -6,7 +7,6 @@ import {
   Eye,
   Pencil,
   Tag,
-  Trash2,
 } from "lucide-react";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Alert from "../../../Components/UI/Alert";
@@ -19,19 +19,16 @@ import { categories } from "./data";
 const CategoriesTable = ({
   data = categories,
   onSort,
+  onEditCategory,
   onStatusChange,
+  loading = false,
   sortBy,
   sortDirection,
 }) => {
-  const [deleteCategory, setDeleteCategory] = useState(null);
+  const navigate = useNavigate();
   const [statusAction, setStatusAction] = useState(null);
-  const isDeleteModalOpen = Boolean(deleteCategory);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const isStatusModalOpen = Boolean(statusAction);
-  const hasMappedAssets = Number(deleteCategory?.assets || 0) > 0;
-
-  const closeDeleteModal = () => {
-    setDeleteCategory(null);
-  };
 
   const closeStatusModal = () => {
     setStatusAction(null);
@@ -44,14 +41,19 @@ const CategoriesTable = ({
     });
   };
 
-  const handleConfirmStatusAction = () => {
+  const handleConfirmStatusAction = async () => {
     if (!statusAction) return;
 
-    onStatusChange?.(
-      statusAction.category.id,
-      statusAction.action === "active" ? "Active" : "Inactive",
-    );
-    setStatusAction(null);
+    setIsUpdatingStatus(true);
+    try {
+      await onStatusChange?.(
+        statusAction.category.id,
+        statusAction.action === "active" ? "Active" : "Inactive",
+      );
+      setStatusAction(null);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   const columns = [
@@ -75,11 +77,11 @@ const CategoriesTable = ({
             <Tag size={17} />
           </span>
           <div className="min-w-0">
-            <p className="m-0 truncate font-black text-(--theme-text-primary)">
-              {row.name}
+            <p className="m-0 truncate font-bold text-(--theme-text-primary)">
+              {row.title}
             </p>
-            <p className="m-0 mt-0.5 text-xs font-bold text-(--theme-text-muted)">
-              {row.id}
+            <p className="m-0 mt-0.5 text-xs text-(--theme-text-muted)">
+              {row.categoryCode}
             </p>
           </div>
         </div>
@@ -162,19 +164,21 @@ const CategoriesTable = ({
         <ActionDropdown
           align="right"
           items={[
-            { label: "View Details", icon: Eye },
-            { label: "Edit Category", icon: Pencil },
+            {
+              label: "View Details",
+              icon: Eye,
+              onClick: () => navigate(`/business/categories/${row.apiId || row.id}`),
+            },
+            {
+              label: "Edit Category",
+              icon: Pencil,
+              onClick: () => onEditCategory?.(row),
+            },
             {
               label: row.status === "Active" ? "Set Inactive" : "Set Active",
               icon: row.status === "Active" ? CircleX : CircleCheck,
               danger: row.status === "Active",
               onClick: () => requestStatusAction(row),
-            },
-            {
-              label: "Delete Category",
-              icon: Trash2,
-              danger: true,
-              onClick: () => setDeleteCategory(row),
             },
           ]}
           width={210}
@@ -189,135 +193,12 @@ const CategoriesTable = ({
         columns={columns}
         data={data}
         emptyText="No categories found"
+        loading={loading}
         onSort={onSort}
         rowKey="id"
         sortBy={sortBy}
         sortDirection={sortDirection}
       />
-
-      <Modal
-        footer={
-          <>
-            <Button
-              onClick={closeDeleteModal}
-              rounded="10px"
-              size="sm"
-              variant="outline"
-            >
-              Cancel
-            </Button>
-            {hasMappedAssets ? (
-              <Button
-                onClick={() => {
-                  onStatusChange?.(deleteCategory.id, "Inactive");
-                  closeDeleteModal();
-                }}
-                rounded="10px"
-                size="sm"
-                variant="success"
-              >
-                Set to Inactive Instead
-              </Button>
-            ) : (
-              <Button
-                leftIcon={<Trash2 size={15} />}
-                onClick={closeDeleteModal}
-                rounded="10px"
-                size="sm"
-                variant="danger"
-              >
-                Confirm Delete
-              </Button>
-            )}
-          </>
-        }
-        onClose={closeDeleteModal}
-        open={isDeleteModalOpen}
-        title="Delete Category"
-        width={460}
-      >
-        {deleteCategory && (
-          <div className="space-y-3">
-            {hasMappedAssets ? (
-              <>
-                <Alert
-                  leftIcon={<AlertTriangle size={18} />}
-                  rounded="rounded-xl"
-                  variant="danger"
-                >
-                  <p className="m-0 font-bold">Cannot delete this category</p>
-                  <p className="m-0 mt-1 text-sm">
-                    <span className="font-bold">
-                      "{deleteCategory.name}"
-                    </span>{" "}
-                    is mapped to {deleteCategory.assets} assets and cannot be
-                    deleted. Please remap or remove all assets from this
-                    category before deleting.
-                  </p>
-                </Alert>
-
-                <div className="rounded-xl border border-(--theme-border) bg-(--button-ghost-bg) px-4 py-3 text-sm font-semibold leading-6 text-(--theme-text-secondary)">
-                  Alternatively, you can set this category to{" "}
-                  <span className="font-black text-(--theme-text-primary)">
-                    Inactive
-                  </span>{" "}
-                  to prevent new asset mappings without removing existing ones.
-                </div>
-              </>
-            ) : (
-              <>
-                <Alert
-                  leftIcon={<AlertTriangle size={18} />}
-                  rounded="rounded-xl"
-                  variant="danger"
-                >
-                  <p className="m-0 font-bold">
-                    This action cannot be undone
-                  </p>
-                  <p className="m-0 mt-1 text-sm">
-                    You are about to permanently delete{" "}
-                    <span className="font-bold">
-                      "{deleteCategory.name}"
-                    </span>
-                    . This category has no mapped assets, so it is safe to
-                    delete.
-                  </p>
-                </Alert>
-
-                <div className="rounded-xl border border-(--theme-border) bg-(--button-ghost-bg) px-4 py-3">
-                  {[
-                    ["Category", deleteCategory.name],
-                    ["Category ID", deleteCategory.id],
-                    [
-                      "Mapped Assets",
-                      `${deleteCategory.assets || 0} - safe to delete`,
-                    ],
-                  ].map(([label, value]) => (
-                    <div
-                      className="flex items-center justify-between gap-4 py-1 text-sm"
-                      key={label}
-                    >
-                      <span className="font-semibold text-(--theme-text-muted)">
-                        {label}
-                      </span>
-                      <span
-                        className={[
-                          "text-right font-bold",
-                          label === "Mapped Assets"
-                            ? "text-(--badge-ready-text)"
-                            : "text-(--theme-text-primary)",
-                        ].join(" ")}
-                      >
-                        {value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </Modal>
 
       <Modal
         footer={
@@ -339,6 +220,7 @@ const CategoriesTable = ({
                 )
               }
               onClick={handleConfirmStatusAction}
+              loading={isUpdatingStatus}
               rounded="10px"
               size="sm"
               variant={statusAction?.action === "active" ? "success" : "danger"}

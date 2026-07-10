@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CircleCheck, Plus, Search, Tag } from "lucide-react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -11,7 +11,15 @@ import Pagination from "../../../Components/UI/Pagination";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import CategoriesTable from "./CategoriesTable";
 import Stats from "./Stats";
-import { categories } from "./data";
+import {
+  getTenantCategories,
+  createTenantCategory,
+  updateTenantCategory,
+  updateTenantCategoryStatus,
+} from "../../../axios/categories/tenantCategories";
+import { getApiErrorMessage } from "../../../axios/api";
+import { toast } from "../../../Utils/toast";
+import { formatDate } from "../../../Utils/date";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -28,61 +36,136 @@ const usageOptions = [
 ];
 
 const addCategoryInitialValues = {
-  name: "",
-  description: "",
+  englishTitle: "",
+  englishDescription: "",
+  // arabicTitle: "",
+  // arabicDescription: "",
 };
 
 const addCategoryValidationSchema = Yup.object({
-  name: Yup.string()
+  englishTitle: Yup.string()
     .trim()
     .min(2, "Category name must be at least 2 characters")
-    .required("Category name is required"),
-  description: Yup.string().trim(),
+    .required("English title is required"),
+  englishDescription: Yup.string().trim(),
+  // arabicTitle: Yup.string().trim(),
+  // arabicDescription: Yup.string().trim(),
 });
 
+const normalizeCategory = (category) => {
+  const status = String(category.status || "inactive").toLowerCase();
+  const assetCount = Number(
+    category.assetCount ?? category.assetsCount ?? category.assets?.length ?? 0,
+  );
+  const isUsed = category.usageStatus
+    ? String(category.usageStatus).toLowerCase() === "in use"
+    : assetCount > 0;
+
+  return {
+    ...category,
+    apiId: category._id || category.id,
+    id: category.categoryId || category.code || category._id || category.id,
+    name:
+      category.title ||
+      category.name ||
+      category.categoryName ||
+      category.translations?.en?.title ||
+      "Unnamed Category",
+    description:
+      category.description || category.translations?.en?.description || "",
+    status: status === "active" ? "Active" : "Inactive",
+    statusVariant: status === "active" ? "success" : "neutral",
+    usage: isUsed ? "In Use" : "Not in Use",
+    usageState: isUsed ? "used" : "unused",
+    assets: assetCount || null,
+    created: formatDate(category.createdAt || category.created),
+    lastUpdated: formatDate(category.updatedAt || category.lastUpdated),
+  };
+};
+
 const Categories = () => {
-  const [categoryRows, setCategoryRows] = useState(categories);
+  const [categoryRows, setCategoryRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [usageFilter, setUsageFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const nextSearch = searchValue.trim();
+
+      if (nextSearch !== debouncedSearch) {
+        setIsLoading(true);
+        setDebouncedSearch(nextSearch);
+      }
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [debouncedSearch, searchValue]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    getTenantCategories({
+      page: currentPage + 1,
+      limit: ITEMS_PER_PAGE,
+      ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
+      ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    })
+      .then((response) => {
+        if (!isActive) return;
+        const payload = response?.data ?? response;
+        const rows = Array.isArray(payload)
+          ? payload
+          : payload?.items ||
+            payload?.categories ||
+            payload?.docs ||
+            payload?.results ||
+            [];
+        setCategoryRows(rows.map(normalizeCategory));
+        const pagination = payload?.pagination || payload?.meta || payload;
+        setTotalItems(
+          Number(
+            pagination?.totalItems ??
+              pagination?.totalDocs ??
+              pagination?.total ??
+              rows.length,
+          ),
+        );
+      })
+      .catch((error) => {
+        if (isActive) {
+          toast.error(getApiErrorMessage(error, "Unable to load categories"));
+        }
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [currentPage, debouncedSearch, statusFilter, refreshKey]);
 
   const filteredCategories = useMemo(() => {
-    const search = searchValue.trim().toLowerCase();
-
     return categoryRows.filter((category) => {
-      const matchesSearch =
-        !search ||
-        [
-          category.name,
-          category.id,
-          category.washLimit,
-          category.status,
-          category.usage,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(search);
-      const matchesStatus =
-        statusFilter === "all" ||
-        category.status.toLowerCase() === statusFilter;
       const matchesUsage =
         usageFilter === "all" || category.usageState === usageFilter;
 
-      return matchesSearch && matchesStatus && matchesUsage;
+      return matchesUsage;
     });
-  }, [categoryRows, searchValue, statusFilter, usageFilter]);
+  }, [categoryRows, usageFilter]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
     useSortableTableData(filteredCategories);
-  const pageCount = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
+  const pageCount = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
-  const paginatedCategories = useMemo(() => {
-    const startIndex = activePage * ITEMS_PER_PAGE;
-
-    return sortedData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [activePage, sortedData]);
 
   const resetCurrentPage = () => {
     setCurrentPage(0);
@@ -94,6 +177,7 @@ const Categories = () => {
   };
 
   const handleStatusFilterChange = (value) => {
+    setIsLoading(true);
     setStatusFilter(value);
     resetCurrentPage();
   };
@@ -111,9 +195,33 @@ const Categories = () => {
   const addCategoryFormik = useFormik({
     initialValues: addCategoryInitialValues,
     validationSchema: addCategoryValidationSchema,
-    onSubmit: (_, { resetForm }) => {
-      setIsAddModalOpen(false);
-      resetForm();
+    onSubmit: async (values, { resetForm, setSubmitting }) => {
+      try {
+        await createTenantCategory({
+          translations: {
+            en: {
+              title: values.englishTitle.trim(),
+              description: values.englishDescription.trim(),
+            },
+            // Arabic translation will be enabled in a later phase.
+            // ar: {
+            //   title: values.arabicTitle.trim(),
+            //   description: values.arabicDescription.trim(),
+            // },
+          },
+          status: "active",
+        });
+        toast.success("Category created successfully");
+        setIsAddModalOpen(false);
+        resetForm();
+        setCurrentPage(0);
+        setIsLoading(true);
+        setRefreshKey((current) => current + 1);
+      } catch (error) {
+        toast.error(getApiErrorMessage(error, "Unable to create category"));
+      } finally {
+        setSubmitting(false);
+      }
     },
   });
 
@@ -122,7 +230,15 @@ const Categories = () => {
     addCategoryFormik.resetForm();
   };
 
-  const handleStatusChange = (categoryId, nextStatus) => {
+  const handleStatusChange = async (categoryId, nextStatus) => {
+    const category = categoryRows.find((item) => item.id === categoryId);
+
+    try {
+      await updateTenantCategoryStatus(
+        category?.apiId || categoryId,
+        nextStatus.toLowerCase(),
+      );
+
     setCategoryRows((current) =>
       current.map((category) =>
         category.id === categoryId
@@ -134,12 +250,62 @@ const Categories = () => {
           : category,
       ),
     );
+      toast.success(`Category set to ${nextStatus.toLowerCase()}`);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to update category status"));
+      throw error;
+    }
+  };
+
+  const editCategoryFormik = useFormik({
+    enableReinitialize: true,
+    initialValues: {
+      englishTitle: editingCategory?.name || "",
+      englishDescription: editingCategory?.description || "",
+      status: editingCategory?.status?.toLowerCase() || "active",
+    },
+    validationSchema: Yup.object({
+      englishTitle: Yup.string()
+        .trim()
+        .min(2, "Category name must be at least 2 characters")
+        .required("English title is required"),
+      englishDescription: Yup.string().trim(),
+      status: Yup.string().oneOf(["active", "inactive"]).required(),
+    }),
+    onSubmit: async (values, { setSubmitting }) => {
+      if (!editingCategory) return;
+
+      try {
+        await updateTenantCategory(editingCategory.apiId, {
+          translations: {
+            en: {
+              title: values.englishTitle.trim(),
+              description: values.englishDescription.trim(),
+            },
+          },
+          status: values.status,
+        });
+        toast.success("Category updated successfully");
+        setEditingCategory(null);
+        setIsLoading(true);
+        setRefreshKey((current) => current + 1);
+      } catch (error) {
+        toast.error(getApiErrorMessage(error, "Unable to update category"));
+      } finally {
+        setSubmitting(false);
+      }
+    },
+  });
+
+  const closeEditModal = () => {
+    setEditingCategory(null);
+    editCategoryFormik.resetForm();
   };
 
   return (
     <>
       <div className="space-y-5">
-        <Stats />
+        <Stats categories={categoryRows} />
 
         <Card padding="0" rounded="18px">
           <div className="grid gap-3 border-b border-(--theme-border) px-4 py-4 lg:grid-cols-[minmax(240px,1fr)_170px_170px_auto]">
@@ -171,7 +337,9 @@ const Categories = () => {
 
           <div className="px-4 py-4">
             <CategoriesTable
-              data={paginatedCategories}
+              data={sortedData}
+              loading={isLoading}
+              onEditCategory={setEditingCategory}
               onSort={handleTableSort}
               onStatusChange={handleStatusChange}
               sortBy={sortBy}
@@ -180,9 +348,12 @@ const Categories = () => {
             <Pagination
               forcePage={activePage}
               itemsPerPage={ITEMS_PER_PAGE}
-              onPageChange={({ selected }) => setCurrentPage(selected)}
+              onPageChange={({ selected }) => {
+                setIsLoading(true);
+                setCurrentPage(selected);
+              }}
               pageCount={pageCount}
-              totalItems={sortedData.length}
+              totalItems={totalItems}
             />
           </div>
         </Card>
@@ -203,6 +374,7 @@ const Categories = () => {
             <Button
               form="add-category-form"
               leftIcon={<CircleCheck size={16} />}
+              loading={addCategoryFormik.isSubmitting}
               rounded="10px"
               size="sm"
               type="submit"
@@ -223,44 +395,96 @@ const Categories = () => {
           onSubmit={addCategoryFormik.handleSubmit}
         >
           <Input
-            error={
-              addCategoryFormik.touched.name &&
-              Boolean(addCategoryFormik.errors.name)
-            }
+            error={addCategoryFormik.touched.englishTitle && Boolean(addCategoryFormik.errors.englishTitle)}
             helperText={
-              addCategoryFormik.touched.name
-                ? addCategoryFormik.errors.name
+              addCategoryFormik.touched.englishTitle
+                ? addCategoryFormik.errors.englishTitle
                 : ""
             }
-            label="Category Name"
+            label="English Title"
             leftIcon={<Tag size={18} />}
-            name="name"
+            name="englishTitle"
             onBlur={addCategoryFormik.handleBlur}
-            onChange={(value) => addCategoryFormik.setFieldValue("name", value)}
-            placeholder="e.g. King Duvet Cover"
+            onChange={(value) => addCategoryFormik.setFieldValue("englishTitle", value)}
+            placeholder="e.g. Shirts"
             required
-            value={addCategoryFormik.values.name}
+            value={addCategoryFormik.values.englishTitle}
           />
           <Input
-            error={
-              addCategoryFormik.touched.description &&
-              Boolean(addCategoryFormik.errors.description)
-            }
-            helperText={
-              addCategoryFormik.touched.description
-                ? addCategoryFormik.errors.description
-                : ""
-            }
-            label="Description / Notes"
+            label="English Description"
             multiline
-            name="description"
+            name="englishDescription"
             onBlur={addCategoryFormik.handleBlur}
             onChange={(value) =>
-              addCategoryFormik.setFieldValue("description", value)
+              addCategoryFormik.setFieldValue("englishDescription", value)
             }
-            placeholder="Fabric type, condition, notes..."
-            rows={4}
-            value={addCategoryFormik.values.description}
+            placeholder="RFID-tagged shirts and tops"
+            rows={3}
+            value={addCategoryFormik.values.englishDescription}
+          />
+          {/* Arabic title and description fields will be enabled later. */}
+          {/*
+            <Input name="arabicTitle" label="Arabic Title" />
+            <Input name="arabicDescription" label="Arabic Description" multiline />
+          */}
+        </form>
+      </Modal>
+
+      <Modal
+        description="Update the English category title and description."
+        footer={
+          <>
+            <Button onClick={closeEditModal} rounded="10px" size="sm" variant="outline">
+              Cancel
+            </Button>
+            <Button
+              form="edit-category-form"
+              leftIcon={<CircleCheck size={16} />}
+              loading={editCategoryFormik.isSubmitting}
+              rounded="10px"
+              size="sm"
+              type="submit"
+              variant="success"
+            >
+              Update Category
+            </Button>
+          </>
+        }
+        onClose={closeEditModal}
+        open={Boolean(editingCategory)}
+        title="Edit Category"
+        width={760}
+      >
+        <form
+          className="grid gap-5"
+          id="edit-category-form"
+          onSubmit={editCategoryFormik.handleSubmit}
+        >
+          <Input
+            error={editCategoryFormik.touched.englishTitle && Boolean(editCategoryFormik.errors.englishTitle)}
+            helperText={editCategoryFormik.touched.englishTitle ? editCategoryFormik.errors.englishTitle : ""}
+            label="English Title"
+            leftIcon={<Tag size={18} />}
+            name="englishTitle"
+            onBlur={editCategoryFormik.handleBlur}
+            onChange={(value) => editCategoryFormik.setFieldValue("englishTitle", value)}
+            required
+            value={editCategoryFormik.values.englishTitle}
+          />
+          <Input
+            label="English Description"
+            multiline
+            name="englishDescription"
+            onBlur={editCategoryFormik.handleBlur}
+            onChange={(value) => editCategoryFormik.setFieldValue("englishDescription", value)}
+            rows={3}
+            value={editCategoryFormik.values.englishDescription}
+          />
+          <Dropdown
+            label="Status"
+            onChange={(value) => editCategoryFormik.setFieldValue("status", value)}
+            options={statusOptions.slice(1)}
+            value={editCategoryFormik.values.status}
           />
         </form>
       </Modal>

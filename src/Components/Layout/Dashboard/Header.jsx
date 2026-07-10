@@ -8,15 +8,44 @@ import {
   toggleThemeMode,
 } from "../../../Utils/themeMode";
 import { getFlatPortalItems, portalGroups } from "./nav";
+import { getAuthenticatedTenant } from "../../../axios/auth/tenantAuth";
 
 const Header = ({ portalKey, onOpenSidebar }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [themeMode, setThemeMode] = useState(getThemeMode);
+  const [tenantProfile, setTenantProfile] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("authUser")) || null;
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
     applyThemeMode(themeMode);
   }, [themeMode]);
+
+  useEffect(() => {
+    if (portalKey !== "business" || !localStorage.getItem("accessToken")) return;
+
+    let isActive = true;
+
+    getAuthenticatedTenant()
+      .then((response) => {
+        if (!isActive) return;
+        const profile = response?.data ?? response;
+        setTenantProfile(profile);
+        localStorage.setItem("authUser", JSON.stringify(profile));
+      })
+      .catch(() => {
+        // Keep the last stored profile when a background refresh fails.
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [portalKey]);
 
   const activePortal = useMemo(() => {
     const portalFromKey = portalGroups.find(
@@ -36,6 +65,17 @@ const Header = ({ portalKey, onOpenSidebar }) => {
       .filter((item) => pathname.includes(`/${item.segment}`))
       .sort((a, b) => b.segment.length - a.segment.length)[0];
   }, [activePortal?.key, pathname]);
+
+  const profileName =
+    tenantProfile?.name || tenantProfile?.fullName || activePortal?.user.name || "User";
+  const profileInitials = profileName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 
   const isDetailPage = activeItem && pathname !== `${activePortal?.basePath}/${activeItem.segment}`;
 
@@ -97,17 +137,17 @@ const Header = ({ portalKey, onOpenSidebar }) => {
           <div className="hidden items-center gap-3 rounded-2xl border border-(--theme-border) bg-(--button-ghost-bg) px-2 py-1 md:flex">
             <div className="min-w-0 text-right">
               <p className="m-0 truncate text-xs font-black text-(--theme-text-primary)">
-                {activePortal?.user.name}
+                {profileName}
               </p>
               <p className="m-0 truncate text-[11px] font-semibold text-(--theme-text-muted)">
-                {activePortal?.user.email}
+                {tenantProfile?.email || activePortal?.user.email}
               </p>
             </div>
             <span
               className="grid h-9 w-9 place-items-center rounded-xl text-xs font-black text-white"
               style={{ background: activePortal?.accent }}
             >
-              {activePortal?.shortLabel}
+              {profileInitials}
             </span>
           </div>
         </div>
