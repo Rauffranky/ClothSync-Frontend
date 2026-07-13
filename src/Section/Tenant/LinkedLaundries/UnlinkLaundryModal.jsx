@@ -15,9 +15,9 @@ const UnlinkLaundryModal = ({ isOpen, onClose, laundry, onConfirm }) => {
             leftIcon={<Unlink size={18} />}
             onClick={onConfirm}
             size="sm"
-            variant={laundry?.status === "Suspended" ? "success" : "danger"}
+            variant={laundry?.status === "Suspend" ? "success" : "danger"}
           >
-            {laundry?.status === "Suspended"
+            {laundry?.status === "Suspend"
               ? "Connect Laundry"
               : "Unlink Laundry"}
           </Button>
@@ -26,7 +26,7 @@ const UnlinkLaundryModal = ({ isOpen, onClose, laundry, onConfirm }) => {
       onClose={onClose}
       open={isOpen}
       title={
-        laundry?.status === "Suspended"
+        laundry?.status === "Suspend"
           ? "Connect Laundry"
           : "Unlink Laundry"
       }
@@ -37,15 +37,15 @@ const UnlinkLaundryModal = ({ isOpen, onClose, laundry, onConfirm }) => {
           <Alert
             leftIcon={<AlertTriangle size={18} />}
             rounded="rounded-xl"
-            variant={laundry.status === "Suspended" ? "info" : "danger"}
+            variant={laundry.status === "Suspend" ? "info" : "danger"}
           >
             <p className="m-0 font-bold">
-              {laundry.status === "Suspended"
+              {laundry.status === "Suspend"
                 ? "Confirm connect request"
                 : "Confirm unlink request"}
             </p>
             <p className="m-0 mt-1 text-sm">
-              {laundry.status === "Suspended" ? (
+              {laundry.status === "Suspend" ? (
                 <>
                   You are about to connect{" "}
                   <span className="font-black">{laundry.name}</span>{" "}
@@ -56,7 +56,7 @@ const UnlinkLaundryModal = ({ isOpen, onClose, laundry, onConfirm }) => {
                   You are about to unlink{" "}
                   <span className="font-black">{laundry.name}</span>{" "}
                   from this tenant account. This will move the laundry to
-                  Suspended instead of deleting it.
+                  Suspend status instead of deleting it.
                 </>
               )}
             </p>

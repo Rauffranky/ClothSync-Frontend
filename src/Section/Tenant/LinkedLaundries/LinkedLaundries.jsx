@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import {
@@ -19,7 +19,10 @@ import Pagination from "../../../Components/UI/Pagination";
 import Table from "../../../Components/UI/Table";
 import IconWrapper from "../../../Components/UI/IconWrapper";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
-import { laundries } from "./data";
+import { getTenantLaundries } from "../../../axios/laundries/tenantLaundries";
+import { getApiErrorMessage } from "../../../axios/api";
+import { toast } from "../../../Utils/toast";
+import { getPaginatedCollection, normalizeLinkedLaundry } from "./utils";
 import InviteLaundryModal from "./InviteLaundryModal";
 import UnlinkLaundryModal from "./UnlinkLaundryModal";
 import DefaultConfirmModal from "./DefaultConfirmModal";
@@ -29,8 +32,8 @@ const ITEMS_PER_PAGE = 3;
 
 const filterOptions = [
   { label: "All Statuses", value: "all" },
-  { label: "Connected", value: "connected" },
-  { label: "Suspended", value: "suspended" },
+  { label: "Connected", value: "active" },
+  { label: "Suspend", value: "suspend" },
 ];
 
 const laundryOptions = [
@@ -50,9 +53,11 @@ const inviteLaundryValidationSchema = Yup.object({
     .required("Email address is required"),
 });
 
-const LinkedLaundries = () => {
-  const [linkedLaundries, setLinkedLaundries] = useState(laundries);
+const LinkedLaundries = ({ onTotalChange }) => {
+  const [linkedLaundries, setLinkedLaundries] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [laundryFilter, setLaundryFilter] = useState("all");
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -60,6 +65,8 @@ const LinkedLaundries = () => {
   const [defaultBlockedLaundry, setDefaultBlockedLaundry] = useState(null);
   const [defaultAction, setDefaultAction] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const currentDefaultLaundry = linkedLaundries.find(
     (laundry) => laundry.isDefault,
   );
@@ -77,41 +84,64 @@ const LinkedLaundries = () => {
     inviteLaundryFormik.resetForm();
   };
 
-  const filteredLaundries = useMemo(() => {
-    return linkedLaundries.filter((laundry) => {
-      const search = searchValue.trim().toLowerCase();
-      const matchesSearch =
-        !search ||
-        [
-          laundry.name,
-          laundry.id,
-          laundry.contact,
-          laundry.email,
-          laundry.location,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(search);
-      const matchesStatus =
-        statusFilter === "all" || laundry.status.toLowerCase() === statusFilter;
-      const matchesLaundry =
-        laundryFilter === "all" ||
-        (laundryFilter === "default" && laundry.isDefault) ||
-        (laundryFilter === "non-default" && !laundry.isDefault);
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const nextSearch = searchValue.trim();
 
-      return matchesSearch && matchesStatus && matchesLaundry;
-    });
-  }, [laundryFilter, linkedLaundries, searchValue, statusFilter]);
+      if (nextSearch !== debouncedSearch) {
+        setCurrentPage(0);
+        setIsLoading(true);
+        setDebouncedSearch(nextSearch);
+      }
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [debouncedSearch, searchValue]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    getTenantLaundries({
+      page: currentPage + 1,
+      limit: ITEMS_PER_PAGE,
+      ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
+      ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+      ...(laundryFilter !== "all"
+        ? { isDefault: laundryFilter === "default" }
+        : {}),
+    })
+      .then((response) => {
+        if (!isActive) return;
+        const collection = getPaginatedCollection(
+          response,
+          ["laundries", "tenantLaundries"],
+          ITEMS_PER_PAGE,
+        );
+        setLinkedLaundries(collection.rows.map(normalizeLinkedLaundry));
+        setTotalItems(collection.totalItems);
+        setTotalPages(collection.totalPages);
+        onTotalChange?.(collection.totalItems);
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setLinkedLaundries([]);
+        setTotalItems(0);
+        setTotalPages(0);
+        onTotalChange?.(0);
+        toast.error(getApiErrorMessage(error, "Unable to load linked laundries"));
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [currentPage, debouncedSearch, laundryFilter, onTotalChange, statusFilter]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
-    useSortableTableData(filteredLaundries);
-  const pageCount = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
-  const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
-  const paginatedLaundries = useMemo(() => {
-    const startIndex = activePage * ITEMS_PER_PAGE;
-
-    return sortedData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [activePage, sortedData]);
+    useSortableTableData(linkedLaundries);
+  const activePage = totalPages > 0 ? Math.min(currentPage, totalPages - 1) : 0;
 
   const resetCurrentPage = () => {
     setCurrentPage(0);
@@ -123,11 +153,13 @@ const LinkedLaundries = () => {
   };
 
   const handleStatusFilterChange = (value) => {
+    setIsLoading(true);
     setStatusFilter(value);
     resetCurrentPage();
   };
 
   const handleLaundryFilterChange = (value) => {
+    setIsLoading(true);
     setLaundryFilter(value);
     resetCurrentPage();
   };
@@ -150,7 +182,7 @@ const LinkedLaundries = () => {
   };
 
   const requestDefaultAction = (laundry, action) => {
-    if (laundry.status === "Suspended") return;
+    if (laundry.status === "Suspend") return;
 
     if (
       action === "set" &&
@@ -181,14 +213,14 @@ const LinkedLaundries = () => {
 
   const handleConfirmUnlink = () => {
     if (!unlinkLaundry) return;
-    const isConnecting = unlinkLaundry.status === "Suspended";
+    const isConnecting = unlinkLaundry.status === "Suspend";
 
     setLinkedLaundries((current) =>
       current.map((laundry) =>
         laundry.id === unlinkLaundry.id
           ? {
               ...laundry,
-              status: isConnecting ? "Connected" : "Suspended",
+              status: isConnecting ? "Connected" : "Suspend",
               statusVariant: isConnecting ? "success" : "neutral",
               isDefault: false,
             }
@@ -259,7 +291,7 @@ const LinkedLaundries = () => {
           <Badge variant="warning" size="sm" leftIcon={<Star size={12} />}>
             Default
           </Badge>
-        ) : row.status === "Suspended" ? (
+        ) : row.status === "Suspend" ? (
           <span className="font-black text-(--theme-text-muted)">-</span>
         ) : (
           <Button
@@ -299,7 +331,7 @@ const LinkedLaundries = () => {
         <ActionDropdown
           items={[
             { label: "View Details", icon: Eye },
-            ...(row.status === "Suspended"
+            ...(row.status === "Suspend"
               ? []
               : [
                   {
@@ -314,11 +346,11 @@ const LinkedLaundries = () => {
                 ]),
             {
               label:
-                row.status === "Suspended"
+                row.status === "Suspend"
                   ? "Connect Laundry"
                   : "Unlink Laundry",
-              icon: row.status === "Suspended" ? Building2 : Unlink,
-              danger: row.status !== "Suspended",
+              icon: row.status === "Suspend" ? Building2 : Unlink,
+              danger: row.status !== "Suspend",
               onClick: () => setUnlinkLaundry(row),
             },
           ]}
@@ -360,8 +392,9 @@ const LinkedLaundries = () => {
       <div className="px-4 pb-4">
         <Table
           columns={columns}
-          data={paginatedLaundries}
+          data={sortedData}
           emptyText="No linked laundries found"
+          loading={isLoading}
           onSort={handleTableSort}
           rowKey="id"
           sortBy={sortBy}
@@ -370,9 +403,12 @@ const LinkedLaundries = () => {
         <Pagination
           forcePage={activePage}
           itemsPerPage={ITEMS_PER_PAGE}
-          onPageChange={({ selected }) => setCurrentPage(selected)}
-          pageCount={pageCount}
-          totalItems={sortedData.length}
+          onPageChange={({ selected }) => {
+            setIsLoading(true);
+            setCurrentPage(selected);
+          }}
+          pageCount={totalPages}
+          totalItems={totalItems}
         />
       </div>
 

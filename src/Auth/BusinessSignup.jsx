@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 import {
   ArrowRight,
   Building2,
@@ -16,22 +18,102 @@ import Button from "../Components/UI/Button";
 import Card from "../Components/UI/Card";
 import Dropdown from "../Components/UI/Dropdown";
 import Input from "../Components/UI/Input";
+import { getApiErrorMessage } from "../axios/api";
+import {
+  completeTenantProfile,
+  resendTenantSignupOtp,
+  signupTenant,
+  storeTenantSessionFromResponse,
+  verifyTenantSignupOtp,
+} from "../axios/auth/tenantAuth";
+import { toast } from "../Utils/toast";
 import OtpInput from "./components/OtpInput";
+
+const SHOW_PRICING_STEP = false;
 
 const businessSignupSteps = [
   { key: "account", label: "Account" },
   { key: "verify", label: "Verify" },
   { key: "profile", label: "Profile" },
-  { key: "plan", label: "Plan" },
+  ...(SHOW_PRICING_STEP ? [{ key: "plan", label: "Plan" }] : []),
   { key: "done", label: "Done" },
 ];
 
+const OTP_EXPIRY_SECONDS = 10 * 60;
+
+const formatOtpTime = (totalSeconds) => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
+const accountSignupSchema = Yup.object({
+  fullName: Yup.string().trim().required("Full name is required"),
+  businessEmail: Yup.string()
+    .trim()
+    .email("Please enter a valid email address")
+    .required("Business email is required"),
+  password: Yup.string()
+    .required("Password is required")
+    .matches(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/, {
+      message:
+        "Password must be at least 8 characters and include both letters and numbers",
+      excludeEmptyString: true,
+    }),
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref("password")], "Passwords do not match")
+    .required("Confirm password is required"),
+  acceptedTerms: Yup.boolean().oneOf(
+    [true],
+    "Please accept the Terms & Conditions and Privacy Policy",
+  ),
+});
+
+const accountInitialValues = {
+  fullName: "",
+  businessEmail: "",
+  password: "",
+  confirmPassword: "",
+  acceptedTerms: false,
+};
+
+const profileSchema = Yup.object({
+  businessName: Yup.string().trim().required("Business name is required"),
+  businessType: Yup.string().required("Business type is required"),
+  businessPhone: Yup.string().trim().required("Business phone is required"),
+  phoneCountryCode: Yup.string().required("Country code is required"),
+  address: Yup.string().trim().required("Business address is required"),
+  city: Yup.string().trim().required("City is required"),
+  state: Yup.string().trim().required("State / province is required"),
+  country: Yup.string().required("Country is required"),
+  postalCode: Yup.string().trim().required("Postal code is required"),
+});
+
+const profileInitialValues = {
+  businessName: "",
+  businessType: "hospital",
+  phoneCountryCode: "+1",
+  businessPhone: "",
+  address: "",
+  city: "",
+  state: "",
+  country: "United States",
+  postalCode: "",
+};
+
 const businessTypeOptions = [
-  { label: "Hotel", value: "Hotel" },
-  { label: "Hospital", value: "Hospital" },
-  { label: "Spa & Wellness", value: "Spa & Wellness" },
-  { label: "Restaurant", value: "Restaurant" },
-  { label: "Commercial Laundry", value: "Commercial Laundry" },
+  { label: "Hotel", value: "hotel" },
+  { label: "Hospital", value: "hospital" },
+  // { label: "Spa & Wellness", value: "Spa & Wellness" },
+  // { label: "Restaurant", value: "Restaurant" },
+  // { label: "Commercial Laundry", value: "Commercial Laundry" },
+];
+
+const phoneCountryOptions = [
+  { label: "🇺🇸 +1", value: "+1" },
+  { label: "🇵🇰 +92", value: "+92" },
+  { label: "🇬🇧 +44", value: "+44" },
+  { label: "🇦🇪 +971", value: "+971" },
 ];
 
 const countryOptions = [
@@ -40,6 +122,94 @@ const countryOptions = [
   { label: "United Kingdom", value: "United Kingdom" },
   { label: "United Arab Emirates", value: "United Arab Emirates" },
 ];
+
+const TENANT_SIGNUP_PROGRESS_KEY = "tenant-signup-progress";
+
+const writeTenantSignupProgress = (progress) => {
+  try {
+    sessionStorage.setItem(TENANT_SIGNUP_PROGRESS_KEY, JSON.stringify(progress));
+  } catch {
+    // Signup remains usable when browser storage is unavailable.
+  }
+};
+
+const clearTenantSignupProgress = () => {
+  try {
+    sessionStorage.removeItem(TENANT_SIGNUP_PROGRESS_KEY);
+  } catch {
+    // Navigation should not be blocked when browser storage is unavailable.
+  }
+};
+
+const readTenantSignupProgress = () => {
+  try {
+    const storedProgress = JSON.parse(
+      sessionStorage.getItem(TENANT_SIGNUP_PROGRESS_KEY),
+    );
+    const storedStep = Number(storedProgress?.currentStep);
+    const restoredStep =
+      !SHOW_PRICING_STEP && storedStep === 4
+        ? businessSignupSteps.length - 1
+        : storedStep;
+
+    return {
+      currentStep:
+        Number.isInteger(restoredStep) &&
+        restoredStep >= 0 &&
+        restoredStep < businessSignupSteps.length
+          ? restoredStep
+          : 0,
+      fullName:
+        typeof storedProgress?.fullName === "string"
+          ? storedProgress.fullName
+          : "",
+      email:
+        typeof storedProgress?.email === "string" ? storedProgress.email : "",
+      verifiedTenantUserId:
+        typeof storedProgress?.verifiedTenantUserId === "string"
+          ? storedProgress.verifiedTenantUserId
+          : "",
+      otpExpiresAt:
+        Number.isFinite(storedProgress?.otpExpiresAt)
+          ? storedProgress.otpExpiresAt
+          : null,
+      profile: {
+        ...profileInitialValues,
+        ...(storedProgress?.profile && typeof storedProgress.profile === "object"
+          ? storedProgress.profile
+          : null),
+      },
+      completedProfile:
+        storedProgress?.completedProfile &&
+        typeof storedProgress.completedProfile === "object"
+          ? {
+              businessName:
+                typeof storedProgress.completedProfile.businessName === "string"
+                  ? storedProgress.completedProfile.businessName
+                  : "",
+              businessType:
+                typeof storedProgress.completedProfile.businessType === "string"
+                  ? storedProgress.completedProfile.businessType
+                  : "",
+              status:
+                typeof storedProgress.completedProfile.status === "string"
+                  ? storedProgress.completedProfile.status
+                  : "Active",
+            }
+          : null,
+    };
+  } catch {
+    return {
+      currentStep: 0,
+      fullName: "",
+      email: "",
+      verifiedTenantUserId: "",
+      otpExpiresAt: null,
+      profile: profileInitialValues,
+      completedProfile: null,
+    };
+  }
+};
 
 const planOptions = [
   {
@@ -98,6 +268,32 @@ const maskBusinessEmail = (email) => {
   const [name, domain] = email.split("@");
   const visible = name.slice(0, 2) || "ja";
   return `${visible}***@${domain}`;
+};
+
+const getTenantUserId = (response) =>
+  response?.userId ??
+  response?.data?.userId ??
+  response?.user?.id ??
+  response?.user?._id ??
+  response?.data?.user?.id ??
+  response?.data?.user?._id;
+
+const getCompletedProfileDisplay = (response, submittedProfile) => {
+  const payload = response?.data ?? response;
+  const identity = payload?.user ?? payload?.tenant ?? payload;
+  const profile =
+    payload?.businessProfile ??
+    payload?.business ??
+    identity?.businessProfile ??
+    identity?.business ??
+    identity?.profile ??
+    identity;
+
+  return {
+    businessName: profile?.businessName ?? submittedProfile.businessName,
+    businessType: profile?.businessType ?? submittedProfile.businessType,
+    status: identity?.status ?? profile?.status ?? "Active",
+  };
 };
 
 const SummaryRow = ({ label, value, accent = false }) => (
@@ -174,27 +370,187 @@ const BusinessSignupStepper = ({ currentStep }) => (
 
 const BusinessSignup = () => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [savedProgress] = useState(readTenantSignupProgress);
+  const [currentStep, setCurrentStep] = useState(savedProgress.currentStep);
+  const [otpSecondsRemaining, setOtpSecondsRemaining] = useState(() =>
+    savedProgress.otpExpiresAt
+      ? Math.max(0, Math.ceil((savedProgress.otpExpiresAt - Date.now()) / 1000))
+      : 0,
+  );
+  const [otpExpiresAt, setOtpExpiresAt] = useState(savedProgress.otpExpiresAt);
+  const [otpError, setOtpError] = useState("");
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
+  const [verifiedTenantUserId, setVerifiedTenantUserId] = useState(
+    savedProgress.verifiedTenantUserId,
+  );
+  const [completedProfile, setCompletedProfile] = useState(
+    savedProgress.completedProfile,
+  );
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [selectedPlan, setSelectedPlan] = useState("Professional");
   const [values, setValues] = useState({
-    fullName: "",
-    businessEmail: "",
+    fullName: savedProgress.fullName,
+    businessEmail: savedProgress.email,
     phone: "",
     password: "",
     confirmPassword: "",
     acceptedTerms: false,
     otp: "",
-    businessName: "",
-    businessType: "Hospital",
-    businessPhone: "",
-    profileEmail: "",
-    address: "",
-    city: "",
-    state: "",
-    country: "United States",
-    postalCode: "",
+    businessName: savedProgress.profile.businessName,
+    businessType: savedProgress.profile.businessType,
+    businessPhone: savedProgress.profile.businessPhone,
+    profileEmail: savedProgress.email,
+    address: savedProgress.profile.address,
+    city: savedProgress.profile.city,
+    state: savedProgress.profile.state,
+    country: savedProgress.profile.country,
+    postalCode: savedProgress.profile.postalCode,
+    timezone: "",
+    avatar: "",
   });
+
+  const startOtpTimer = () => {
+    setOtpSecondsRemaining(OTP_EXPIRY_SECONDS);
+    setOtpExpiresAt(Date.now() + OTP_EXPIRY_SECONDS * 1000);
+  };
+
+  useEffect(() => {
+    if (currentStep !== 1 || !otpExpiresAt || otpSecondsRemaining <= 0) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setOtpSecondsRemaining(
+        Math.max(0, Math.ceil((otpExpiresAt - Date.now()) / 1000)),
+      );
+    }, 1000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [currentStep, otpExpiresAt, otpSecondsRemaining]);
+
+  const accountFormik = useFormik({
+    initialValues: {
+      ...accountInitialValues,
+      fullName: savedProgress.fullName,
+      businessEmail: savedProgress.email,
+    },
+    validationSchema: accountSignupSchema,
+    onSubmit: async (accountValues) => {
+      const fullName = accountValues.fullName.trim();
+      const email = accountValues.businessEmail.trim();
+
+      try {
+        const response = await signupTenant({
+          fullName,
+          email,
+          password: accountValues.password,
+          confirmPassword: accountValues.confirmPassword,
+        });
+
+        setValues((current) => ({
+          ...current,
+          ...accountValues,
+          fullName,
+          businessEmail: email,
+          profileEmail: email,
+          otp: "",
+        }));
+        toast.success(response?.message || "Verification code sent successfully");
+        setOtpError("");
+        setVerifiedTenantUserId("");
+        setCompletedProfile(null);
+        startOtpTimer();
+        setCurrentStep(1);
+      } catch (error) {
+        toast.error(
+          getApiErrorMessage(
+            error,
+            "Unable to create the account. Please try again.",
+          ),
+        );
+      }
+    },
+  });
+
+  const profileFormik = useFormik({
+    initialValues: savedProgress.profile,
+    validationSchema: profileSchema,
+    onSubmit: async (profileValues) => {
+      if (!verifiedTenantUserId) {
+        toast.error("Verified tenant user ID is missing. Please verify your email again.");
+        return;
+      }
+
+      const localPhone = profileValues.businessPhone
+        .replace(/\D/g, "")
+        .replace(/^0+/, "");
+      const phone = `${profileValues.phoneCountryCode}${localPhone}`;
+      const timezone =
+        Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+      try {
+        const response = await completeTenantProfile({
+          userId: verifiedTenantUserId,
+          businessName: profileValues.businessName,
+          businessType: profileValues.businessType,
+          phone,
+          address: profileValues.address,
+          city: profileValues.city,
+          state: profileValues.state,
+          country: profileValues.country,
+          postalCode: profileValues.postalCode,
+          timezone,
+          avatar: "",
+        });
+
+        storeTenantSessionFromResponse(response);
+        const completedProfileDisplay = getCompletedProfileDisplay(
+          response,
+          profileValues,
+        );
+        setCompletedProfile(completedProfileDisplay);
+        setValues((current) => ({
+          ...current,
+          ...profileValues,
+          businessName: completedProfileDisplay.businessName,
+          businessType: completedProfileDisplay.businessType,
+          businessPhone: phone,
+          timezone,
+          avatar: "",
+        }));
+        toast.success(response?.message || "Business profile saved successfully");
+        setCurrentStep(businessSignupSteps.length - 1);
+      } catch (error) {
+        toast.error(
+          getApiErrorMessage(
+            error,
+            "Unable to save the business profile. Please try again.",
+          ),
+        );
+      }
+    },
+  });
+
+  useEffect(() => {
+    writeTenantSignupProgress({
+      currentStep,
+      fullName: values.fullName,
+      email: values.businessEmail,
+      verifiedTenantUserId,
+      otpExpiresAt,
+      profile: profileFormik.values,
+      completedProfile,
+    });
+  }, [
+    currentStep,
+    completedProfile,
+    otpExpiresAt,
+    profileFormik.values,
+    values.businessEmail,
+    values.fullName,
+    verifiedTenantUserId,
+  ]);
 
   const setField = (field, value) => {
     setValues((current) => ({
@@ -209,18 +565,108 @@ const BusinessSignup = () => {
   const nextStep = () =>
     setCurrentStep((step) => Math.min(step + 1, businessSignupSteps.length - 1));
 
-  const handleAccountSubmit = (event) => {
-    event.preventDefault();
-    nextStep();
+  const getAccountFieldError = (field) =>
+    accountFormik.touched[field] && accountFormik.errors[field]
+      ? accountFormik.errors[field]
+      : "";
+
+  const bindAccountInput = (field) => ({
+    name: field,
+    onBlur: accountFormik.handleBlur,
+    onChange: (value) => accountFormik.setFieldValue(field, value),
+    value: accountFormik.values[field],
+    error: Boolean(getAccountFieldError(field)),
+    helperText: getAccountFieldError(field),
+  });
+
+  const getProfileFieldError = (field) =>
+    profileFormik.touched[field] && profileFormik.errors[field]
+      ? profileFormik.errors[field]
+      : "";
+
+  const bindProfileInput = (field) => ({
+    name: field,
+    onBlur: profileFormik.handleBlur,
+    onChange: (value) => profileFormik.setFieldValue(field, value),
+    value: profileFormik.values[field],
+    error: Boolean(getProfileFieldError(field)),
+    helperText: getProfileFieldError(field),
+  });
+
+  const handleVerifyOtp = async () => {
+    if (!/^\d{6}$/.test(values.otp)) {
+      setOtpError("Please enter the complete 6 digit OTP");
+      return;
+    }
+
+    if (otpSecondsRemaining <= 0) {
+      setOtpError("OTP has expired. Please request a new code.");
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setOtpError("");
+
+    try {
+      const response = await verifyTenantSignupOtp({
+        email: values.businessEmail,
+        otp: values.otp,
+      });
+      const userId = getTenantUserId(response);
+
+      if (!userId) {
+        throw new Error("Email verified, but no tenant user ID was returned");
+      }
+
+      storeTenantSessionFromResponse(response);
+      setVerifiedTenantUserId(userId);
+      toast.success(response?.message || "Email verified successfully");
+      setCurrentStep(2);
+    } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        "Unable to verify the OTP. Please try again.",
+      );
+      setOtpError(message);
+      toast.error(message);
+    } finally {
+      setIsVerifyingOtp(false);
+    }
   };
 
-  const selectedPlanData =
-    planOptions.find((plan) => plan.name === selectedPlan) || planOptions[1];
+  const handleResendOtp = async () => {
+    setIsResendingOtp(true);
+    setOtpError("");
+
+    try {
+      const response = await resendTenantSignupOtp({
+        email: values.businessEmail,
+      });
+      setField("otp", "");
+      startOtpTimer();
+      toast.success(response?.message || "A new verification code was sent");
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Unable to resend the OTP. Please try again.",
+        ),
+      );
+    } finally {
+      setIsResendingOtp(false);
+    }
+  };
+
+  const completedBusinessType =
+    completedProfile?.businessType || values.businessType;
+  const completedBusinessTypeLabel =
+    businessTypeOptions.find((option) => option.value === completedBusinessType)
+      ?.label ?? completedBusinessType;
 
   const renderStepContent = () => {
     if (currentStep === 0) {
       return (
-        <form className="grid gap-4" onSubmit={handleAccountSubmit}>
+        <form className="grid gap-4" onSubmit={accountFormik.handleSubmit}>
           <div>
             <h1 className="m-0 text-2xl text-center font-black text-(--theme-text-primary)">
               Create Business Account
@@ -229,47 +675,47 @@ const BusinessSignup = () => {
           </div>
           <Input
             label="Full Name"
-            onChange={(value) => setField("fullName", value)}
             placeholder="Jane Smith"
             required
-            value={values.fullName}
+            {...bindAccountInput("fullName")}
           />
           <Input
             label="Business Email"
-            onChange={(value) => setField("businessEmail", value)}
             placeholder="jane@yourcompany.com"
             required
             type="email"
-            value={values.businessEmail}
+            {...bindAccountInput("businessEmail")}
           />
-          <Input
+          {/* <Input
             label="Phone Number"
             onChange={(value) => setField("phone", value)}
             placeholder="+1 (555) 000-0000"
             required
             value={values.phone}
-          />
+          /> */}
           <Input
             label="Password"
-            onChange={(value) => setField("password", value)}
-            placeholder="Min. 8 characters"
+            placeholder="8+ characters with letters and numbers"
             required
             type="password"
-            value={values.password}
+            {...bindAccountInput("password")}
           />
           <Input
             label="Confirm Password"
-            onChange={(value) => setField("confirmPassword", value)}
             placeholder="Re-enter your password"
             required
             type="password"
-            value={values.confirmPassword}
+            {...bindAccountInput("confirmPassword")}
           />
           <label className="flex items-start gap-3 text-sm font-semibold text-(--theme-text-secondary)">
             <input
-              checked={values.acceptedTerms}
+              aria-describedby="accepted-terms-error"
+              aria-invalid={Boolean(getAccountFieldError("acceptedTerms"))}
+              checked={accountFormik.values.acceptedTerms}
               className="mt-0.5 h-5 w-5 accent-(--color-aurora-teal)"
-              onChange={(event) => setField("acceptedTerms", event.target.checked)}
+              name="acceptedTerms"
+              onBlur={accountFormik.handleBlur}
+              onChange={accountFormik.handleChange}
               type="checkbox"
             />
             <span>
@@ -283,7 +729,21 @@ const BusinessSignup = () => {
               </button>
             </span>
           </label>
-          <Button fullWidth rightIcon={<ArrowRight size={17} />} size="lg" type="submit">
+          {getAccountFieldError("acceptedTerms") && (
+            <p
+              className="m-0 text-xs text-(--color-overdue)"
+              id="accepted-terms-error"
+            >
+              {getAccountFieldError("acceptedTerms")}
+            </p>
+          )}
+          <Button
+            fullWidth
+            loading={accountFormik.isSubmitting}
+            rightIcon={<ArrowRight size={17} />}
+            size="lg"
+            type="submit"
+          >
             Create Account
           </Button>
           <p className="m-0 text-center text-sm font-semibold text-(--theme-text-secondary)">
@@ -322,26 +782,54 @@ const BusinessSignup = () => {
           </p>
           <OtpInput
             autoFocus
+            error={Boolean(otpError)}
+            helperText={otpError}
             label={null}
-            onChange={(value) => setField("otp", value)}
+            onChange={(value) => {
+              setField("otp", value);
+              if (otpError) setOtpError("");
+            }}
             size="lg"
             value={values.otp}
           />
-          <Button fullWidth onClick={nextStep} rightIcon={<ArrowRight size={17} />} size="lg">
+          <p
+            aria-live={otpSecondsRemaining === 0 ? "polite" : "off"}
+            className="m-0 text-sm font-bold text-(--theme-text-secondary)"
+          >
+            {otpSecondsRemaining > 0
+              ? `Code expires in ${formatOtpTime(otpSecondsRemaining)}`
+              : "This verification code has expired."}
+          </p>
+          <Button
+            disabled={otpSecondsRemaining <= 0}
+            fullWidth
+            loading={isVerifyingOtp}
+            onClick={handleVerifyOtp}
+            rightIcon={<ArrowRight size={17} />}
+            size="lg"
+          >
             Verify Email
           </Button>
           <div className="grid gap-3 text-sm font-semibold text-(--theme-text-secondary)">
             <p className="m-0">
               Didn't receive it?{" "}
-              <button className="border-0 bg-transparent p-0 font-black text-(--color-aurora-teal)" type="button">
-                Resend code
+              <button
+                className="border-0 bg-transparent p-0 font-black text-(--color-aurora-teal) disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isResendingOtp}
+                onClick={handleResendOtp}
+                type="button"
+              >
+                {isResendingOtp ? "Sending..." : "Resend code"}
               </button>
             </p>
             <p className="m-0">
               Wrong address?{" "}
               <button
                 className="border-0 bg-transparent p-0 font-black text-(--color-aurora-teal)"
-                onClick={() => setCurrentStep(0)}
+                onClick={() => {
+                  setOtpError("");
+                  setCurrentStep(0);
+                }}
                 type="button"
               >
                 Change email
@@ -354,89 +842,100 @@ const BusinessSignup = () => {
 
     if (currentStep === 2) {
       return (
-        <form
-          className="grid gap-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            nextStep();
-          }}
-        >
+        <form className="grid gap-4" onSubmit={profileFormik.handleSubmit}>
           <div>
             <h1 className="m-0 text-2xl font-black text-(--theme-text-primary)">
               Set Up Business Profile
             </h1>
             <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-secondary)">
-              Add your business details to continue to plan selection.
+              Add your business details to finish setting up your account.
             </p>
           </div>
           <Input
             label="Business Name"
-            onChange={(value) => setField("businessName", value)}
             placeholder="e.g. Grand Hyatt Hotel"
             required
-            value={values.businessName}
+            {...bindProfileInput("businessName")}
           />
           <Dropdown
             label="Business Type"
-            onChange={(value) => setField("businessType", value)}
+            name="businessType"
+            onChange={(value) => profileFormik.setFieldValue("businessType", value)}
             options={businessTypeOptions}
-            value={values.businessType}
+            value={profileFormik.values.businessType}
           />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Business Phone"
-              onChange={(value) => setField("businessPhone", value)}
-              placeholder="+1 (555) 000-0000"
-              value={values.businessPhone}
+          <div className="grid gap-4 sm:grid-cols-[160px_minmax(0,1fr)]">
+            <Dropdown
+              label="Country Code"
+              name="phoneCountryCode"
+              onChange={(value) =>
+                profileFormik.setFieldValue("phoneCountryCode", value)
+              }
+              options={phoneCountryOptions}
+              value={profileFormik.values.phoneCountryCode}
             />
             <Input
-              label="Business Email"
-              onChange={(value) => setField("profileEmail", value)}
-              placeholder="ops@company.com"
-              type="email"
-              value={values.profileEmail}
+              label="Business Phone"
+              placeholder="555 000 0000"
+              required
+              type="tel"
+              {...bindProfileInput("businessPhone")}
             />
           </div>
           <Input
+            disabled
+            helperText="Verified signup email"
+            label="Business Email"
+            type="email"
+            value={values.businessEmail}
+          />
+          <Input
             label="Business Address"
-            onChange={(value) => setField("address", value)}
             placeholder="Street address"
-            value={values.address}
+            required
+            {...bindProfileInput("address")}
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               label="City"
-              onChange={(value) => setField("city", value)}
               placeholder="City"
-              value={values.city}
+              required
+              {...bindProfileInput("city")}
             />
             <Input
               label="State / Province"
-              onChange={(value) => setField("state", value)}
               placeholder="State"
-              value={values.state}
+              required
+              {...bindProfileInput("state")}
             />
             <Dropdown
               label="Country"
-              onChange={(value) => setField("country", value)}
+              name="country"
+              onChange={(value) => profileFormik.setFieldValue("country", value)}
               options={countryOptions}
-              value={values.country}
+              value={profileFormik.values.country}
             />
             <Input
               label="Postal Code"
-              onChange={(value) => setField("postalCode", value)}
               placeholder="00000"
-              value={values.postalCode}
+              required
+              {...bindProfileInput("postalCode")}
             />
           </div>
-          <Button fullWidth rightIcon={<ArrowRight size={17} />} size="lg" type="submit">
-            Continue
+          <Button
+            fullWidth
+            loading={profileFormik.isSubmitting}
+            rightIcon={<ArrowRight size={17} />}
+            size="lg"
+            type="submit"
+          >
+            Complete Profile
           </Button>
         </form>
       );
     }
 
-    if (currentStep === 3) {
+    if (SHOW_PRICING_STEP && currentStep === 3) {
       return (
         <div className="grid gap-8">
           <div className="mx-auto max-w-2xl text-center">
@@ -577,14 +1076,19 @@ const BusinessSignup = () => {
           </p>
         </div>
         <div className="rounded-2xl border border-(--theme-border-soft) bg-(--button-ghost-bg) p-4 text-left">
-          <SummaryRow label="Business Name" value={values.businessName || "Grand Hotel"} />
-          <SummaryRow label="Business Type" value={values.businessType || "Hospital"} />
+          <SummaryRow
+            label="Business Name"
+            value={completedProfile?.businessName || values.businessName || "Not provided"}
+          />
+          <SummaryRow
+            label="Business Type"
+            value={completedBusinessTypeLabel || "Not provided"}
+          />
           <SummaryRow
             accent
-            label="Plan"
-            value={`${selectedPlanData.name} - 14-Day Trial`}
+            label="Account Status"
+            value={completedProfile?.status || "Active"}
           />
-          <SummaryRow accent label="Account Status" value="Active" />
         </div>
         <div className="text-left">
           <p className="m-0 mb-3 text-xs font-black uppercase tracking-[0.16em] text-(--theme-text-muted)">
@@ -610,7 +1114,10 @@ const BusinessSignup = () => {
         </div>
         <Button
           fullWidth
-          onClick={() => navigate("/business/dashboard")}
+          onClick={() => {
+            clearTenantSignupProgress();
+            navigate("/business/dashboard");
+          }}
           rightIcon={<ArrowRight size={17} />}
           size="lg"
         >
@@ -620,8 +1127,8 @@ const BusinessSignup = () => {
     );
   };
 
-  const isPlanStep = currentStep === 3;
-  const isDoneStep = currentStep === 4;
+  const isPlanStep = SHOW_PRICING_STEP && currentStep === 3;
+  const isDoneStep = currentStep === businessSignupSteps.length - 1;
 
   return (
     <main className="relative flex min-h-screen items-center justify-center px-4 py-8">

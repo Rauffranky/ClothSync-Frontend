@@ -2,6 +2,10 @@ export const AUTH_ENDPOINTS = Object.freeze({
   TENANT_LOGIN: "/tenant-auth/login",
   TENANT_LOGOUT: "/tenant-auth/logout",
   TENANT_PROFILE: "/tenant-auth/me",
+  TENANT_SIGNUP: "/tenant-auth/signup",
+  TENANT_VERIFY_OTP: "/tenant-auth/verify-otp",
+  TENANT_RESEND_OTP: "/tenant-auth/resend-otp",
+  TENANT_COMPLETE_PROFILE: "/tenant-auth/complete-profile",
 });
 
 // Kept as a named export for simple imports and backwards compatibility.
@@ -13,4 +17,13 @@ export const TENANT_CATEGORY_ENDPOINTS = Object.freeze({
   DETAILS: (id) => `/tenant-categories/show/${id}`,
   UPDATE: (id) => `/tenant-categories/update/${id}`,
   UPDATE_STATUS: (id) => `/tenant-categories/update-status/${id}`,
+});
+
+export const TENANT_SCANNER_ENDPOINTS = Object.freeze({
+  CREATE: "/tenant-scanners/create",
+});
+
+export const TENANT_LAUNDRY_ENDPOINTS = Object.freeze({
+  LIST: "/tenant-laundries/show",
+  PENDING_INVITES: "/tenant-laundries/pending-invites",
 });

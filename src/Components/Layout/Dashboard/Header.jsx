@@ -8,26 +8,25 @@ import {
   toggleThemeMode,
 } from "../../../Utils/themeMode";
 import { getFlatPortalItems, portalGroups } from "./nav";
-import { getAuthenticatedTenant } from "../../../axios/auth/tenantAuth";
+import {
+  getAuthenticatedTenant,
+  getTenantAccessToken,
+  getTenantSessionUser,
+  setTenantSessionUser,
+} from "../../../axios/auth/tenantAuth";
 
 const Header = ({ portalKey, onOpenSidebar }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [themeMode, setThemeMode] = useState(getThemeMode);
-  const [tenantProfile, setTenantProfile] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("authUser")) || null;
-    } catch {
-      return null;
-    }
-  });
+  const [tenantProfile, setTenantProfile] = useState(getTenantSessionUser);
 
   useEffect(() => {
     applyThemeMode(themeMode);
   }, [themeMode]);
 
   useEffect(() => {
-    if (portalKey !== "business" || !localStorage.getItem("accessToken")) return;
+    if (portalKey !== "business" || !getTenantAccessToken()) return;
 
     let isActive = true;
 
@@ -36,7 +35,7 @@ const Header = ({ portalKey, onOpenSidebar }) => {
         if (!isActive) return;
         const profile = response?.data ?? response;
         setTenantProfile(profile);
-        localStorage.setItem("authUser", JSON.stringify(profile));
+        setTenantSessionUser(profile);
       })
       .catch(() => {
         // Keep the last stored profile when a background refresh fails.

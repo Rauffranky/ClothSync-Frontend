@@ -46,10 +46,20 @@ const stats = [
   },
 ];
 
-const Stats = () => {
+const Stats = ({ linkedTotal, pendingTotal }) => {
+  const displayStats = stats.map((item) => {
+    if (item.label === "Total Linked") {
+      return { ...item, value: linkedTotal ?? "-" };
+    }
+    if (item.label === "Pending Requests") {
+      return { ...item, value: pendingTotal ?? "-" };
+    }
+    return item;
+  });
+
   return (
     <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
-      {stats.map((item) => {
+      {displayStats.map((item) => {
         const Icon = item.icon;
 
         return (

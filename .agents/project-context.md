@@ -147,18 +147,42 @@ Re-check these facts in source during every related task.
 Confirmed API-backed areas:
 
 - Business login calls `loginTenant` and stores session information.
+- The Business signup Account step calls `POST /tenant-auth/signup` with
+  `fullName`, `email`, `password`, and `confirmPassword`, then advances to email
+  verification after the backend accepts the request and sends an OTP.
+- Business signup verifies the email with `POST /tenant-auth/verify-otp` using
+  `email` and a six-digit `otp`. It can request a new code with
+  `POST /tenant-auth/resend-otp` using `email`; the UI applies a 10-minute OTP
+  expiry countdown and restarts it after a successful resend.
+- After verification, Business signup saves the business profile with
+  `POST /tenant-auth/complete-profile`, using the verified response's `userId`,
+  business details, an internationalized phone number, and the browser timezone.
+  A successful save currently skips pricing and opens Done, where business name
+  and type come from the completion response (falling back to submitted values)
+  and status defaults to Active when the response omits it.
+- Non-sensitive signup progress and the completion display fields are stored in
+  `sessionStorage` so Account, Verify, Profile, and Done survive a same-tab page
+  refresh; passwords and OTP values are never persisted.
 - Tenant categories list, create, details, update, and status actions use tenant
   category services.
+- Tenant scanner creation calls `POST /tenant-scanners/create` from the Add
+  Scanner modal with device configuration and English/Arabic translation data;
+  the scanner list, stats, edit, status, and details flows still use local data.
+- Tenant linked laundries and pending laundry invitations use separate paginated
+  GET services. Linked-list search, status, and default filters and pending-list
+  search are sent as backend query parameters. Linked laundry status filters send
+  backend values `active`/`suspend`, displayed as Connected/Suspend in the UI.
 
 Partial or placeholder areas:
 
 - Laundry login navigates without a backend request.
 - Super Admin login navigates without a backend request.
 - Forgot-password email, OTP, and reset steps are UI-only.
-- Signup submit handlers must be inspected; visible forms do not guarantee API
-  integration.
-- Many Tenant features import local `data.js`, including assets, linked
-  laundries, scanners, staff, tags, and asset-detail subviews. Treat them as
+- Business signup completion presentation remains UI-only. Pricing is currently
+  hidden entirely, and profile completion opens Done directly. Laundry signup
+  remains UI-only.
+- Many Tenant features import local `data.js`, including assets, scanners,
+  staff, tags, and asset-detail subviews. Treat them as
   sample data unless the same feature also calls a domain service.
 
 When integrating a placeholder feature, do not retain hidden mock fallback data
@@ -178,7 +202,7 @@ Shared client facts:
 
 - Base URL is `import.meta.env.VITE_API_BASE_URL || ""`.
 - Default content type is `application/json`.
-- The request interceptor reads `accessToken` from `localStorage` and attaches a
+- The request interceptor reads `accessToken` from `sessionStorage` and attaches a
   Bearer authorization header.
 - The response interceptor currently passes responses/errors through.
 - `src/axios/api.js` returns `response.data`, not the full Axios response.
@@ -191,6 +215,13 @@ before adding/removing `.data` at a consumer.
 Current endpoints:
 
 - `POST /tenant-auth/login`.
+- `POST /tenant-auth/signup` (currently consumed by the Business signup Account
+  step to start signup and send an email OTP).
+- `POST /tenant-auth/verify-otp` with `{ email, otp }`.
+- `POST /tenant-auth/resend-otp` with `{ email }`.
+- `POST /tenant-auth/complete-profile` with `{ userId, businessName,
+  businessType, phone, address, city, state, country, postalCode, timezone }` in
+  the current frontend integration.
 - `GET /tenant-auth/logout`.
 - `GET /tenant-auth/me`.
 - `GET /tenant-categories/show`.
@@ -198,6 +229,13 @@ Current endpoints:
 - `GET /tenant-categories/show/:id`.
 - `PUT /tenant-categories/update/:id`.
 - `PUT /tenant-categories/update-status/:id` with `{ status }`.
+- `POST /tenant-scanners/create` with `{ scannerId, scannerType, scannerMode,
+  assignedOperatorId?, status, signalStatus, firmwareVersion, batteryLevel,
+  translations: { en, ar } }`.
+- `GET /tenant-laundries/show` with optional `page`, `limit`, `keywords`,
+  `status`, `dispatchMode`, and `isDefault` query parameters.
+- `GET /tenant-laundries/pending-invites` with optional `page`, `limit`, and
+  `keywords` query parameters.
 - Category services send `x-language`, defaulting to `en`.
 
 These facts are not permission to guess future contracts. Use the exact method,
@@ -210,8 +248,11 @@ Business login accepts `accessToken`, `access_token`, or `token`, then stores:
 - `refreshToken` when returned.
 - `authUser` as JSON when returned.
 
-`clearTenantSession` removes all three. Theme preference is separately stored as
-`theme-mode`. Never print or expose stored values.
+All three authentication values use `sessionStorage`, so they are scoped to the
+current browser tab/session and are cleared when that tab closes. Legacy auth
+keys are removed from `localStorage`; `clearTenantSession` removes the session
+values as well. Theme preference is separately stored as `theme-mode` in
+`localStorage`. Never print or expose stored values.
 
 There is currently no automatic refresh-token flow or global 401 redirect. Do
 not claim these behaviors exist; design them explicitly when requested.

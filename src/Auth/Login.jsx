@@ -9,7 +9,11 @@ import Input from "../Components/UI/Input";
 import Tabs from "../Components/UI/Tabs";
 import { portalTabs } from "./authConfig";
 import OtpInput from "./components/OtpInput";
-import { loginTenant } from "../axios/auth/tenantAuth";
+import {
+  clearTenantSession,
+  loginTenant,
+  storeTenantSessionFromResponse,
+} from "../axios/auth/tenantAuth";
 import { getApiErrorMessage } from "../axios/api";
 import { toast } from "../Utils/toast";
 
@@ -94,22 +98,11 @@ const Login = ({ portal }) => {
             email: values.email,
             password: values.password,
           });
-          const authData = response?.data ?? response;
-          const accessToken =
-            authData?.accessToken ?? authData?.access_token ?? authData?.token;
+          const accessToken = storeTenantSessionFromResponse(response);
 
           if (!accessToken) {
+            clearTenantSession();
             throw new Error("Login succeeded, but no access token was returned");
-          }
-
-          localStorage.setItem("accessToken", accessToken);
-
-          if (authData?.refreshToken) {
-            localStorage.setItem("refreshToken", authData.refreshToken);
-          }
-
-          if (authData?.user) {
-            localStorage.setItem("authUser", JSON.stringify(authData.user));
           }
 
           toast.success(response?.message || "Login successful");

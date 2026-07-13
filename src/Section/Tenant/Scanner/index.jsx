@@ -4,9 +4,48 @@ import Button from "../../../Components/UI/Button";
 import ScannerStats from "./ScannerStats";
 import ScannerTable from "./ScannerTable";
 import AddScannerModal from "./AddScannerModal";
+import { createTenantScanner } from "../../../axios/scanners/tenantScanners";
+import { getApiErrorMessage } from "../../../axios/api";
+import { toast } from "../../../Utils/toast";
 
 const ScannerManagementIndex = () => {
   const [isAddScannerOpen, setIsAddScannerOpen] = useState(false);
+
+  const handleCreateScanner = async (values) => {
+    const payload = {
+      scannerId: values.scannerId,
+      scannerType: values.scannerType.toLowerCase(),
+      scannerMode: values.scannerMode.toLowerCase(),
+      ...(values.assignedOperatorId
+        ? { assignedOperatorId: values.assignedOperatorId }
+        : {}),
+      status: values.status.toLowerCase(),
+      signalStatus: values.signalStatus,
+      firmwareVersion: values.firmwareVersion,
+      batteryLevel: values.batteryLevel,
+      translations: {
+        en: {
+          name: values.scannerName,
+          zoneName: values.zoneName,
+          notes: values.customNotes,
+        },
+        ar: {
+          name: values.scannerName,
+          zoneName: values.zoneName,
+          notes: values.customNotes,
+        },
+      },
+    };
+
+    try {
+      const response = await createTenantScanner(payload);
+      toast.success(response?.message || "Scanner created successfully");
+      return response;
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to create scanner"));
+      throw error;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -30,7 +69,7 @@ const ScannerManagementIndex = () => {
       <AddScannerModal
         isOpen={isAddScannerOpen}
         onClose={() => setIsAddScannerOpen(false)}
-        onSubmit={() => setIsAddScannerOpen(false)}
+        onSubmit={handleCreateScanner}
       />
     </div>
   );

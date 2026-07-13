@@ -1,17 +1,23 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Card from "../../../Components/UI/Card";
 import Tabs from "../../../Components/UI/Tabs";
-import { laundries, pendingRequests } from "./data";
 import LinkedLaundries from "./LinkedLaundries";
 import PendingRequest from "./PendingRequest";
 import Stats from "./Stats";
 
 const Laundries = () => {
   const [activeTab, setActiveTab] = useState("linked");
+  const [totals, setTotals] = useState({});
+  const handleLinkedTotalChange = useCallback((total) => {
+    setTotals((current) => ({ ...current, linked: total }));
+  }, []);
+  const handlePendingTotalChange = useCallback((total) => {
+    setTotals((current) => ({ ...current, pending: total }));
+  }, []);
 
   return (
     <div className="space-y-5">
-      <Stats />
+      <Stats linkedTotal={totals.linked} pendingTotal={totals.pending} />
 
       <Card padding="0" rounded="18px">
         <div className="border-b border-(--theme-border) px-4 py-4">
@@ -22,12 +28,12 @@ const Laundries = () => {
               {
                 label: "Linked Laundries",
                 value: "linked",
-                count: laundries.length,
+                count: totals.linked,
               },
               {
                 label: "Pending Requests",
                 value: "pending",
-                count: pendingRequests.length,
+                count: totals.pending,
               },
             ]}
             onChange={setActiveTab}
@@ -35,7 +41,11 @@ const Laundries = () => {
           />
         </div>
 
-        {activeTab === "linked" ? <LinkedLaundries /> : <PendingRequest />}
+        {activeTab === "linked" ? (
+          <LinkedLaundries onTotalChange={handleLinkedTotalChange} />
+        ) : (
+          <PendingRequest onTotalChange={handlePendingTotalChange} />
+        )}
       </Card>
     </div>
   );

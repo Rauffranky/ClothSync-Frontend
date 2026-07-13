@@ -29,6 +29,11 @@ const scannerModeOptions = [
   { label: "Auto", value: "Auto" },
 ];
 
+const signalStatusOptions = [
+  { label: "Online", value: "online" },
+  { label: "Offline", value: "offline" },
+];
+
 const initialFormState = {
   scannerName: "",
   scannerId: "",
@@ -36,7 +41,11 @@ const initialFormState = {
   scannerMode: "Entry",
   zoneName: "",
   assignedOperator: null,
+  assignedOperatorId: "",
   status: "Active",
+  signalStatus: "online",
+  firmwareVersion: "",
+  batteryLevel: 100,
   customNotes: "",
 };
 
@@ -57,6 +66,26 @@ const scannerValidationSchema = yup.object({
     then: (schema) => schema.trim().required("Zone name is required"),
     otherwise: (schema) => schema.notRequired(),
   }),
+});
+
+const createScannerValidationSchema = scannerValidationSchema.shape({
+  scannerMode: yup.string().required("Scanner mode is required"),
+  assignedOperatorId: yup
+    .string()
+    .trim()
+    .uuid("Assigned operator ID must be a valid UUID"),
+  signalStatus: yup
+    .string()
+    .oneOf(["online", "offline"])
+    .required("Signal status is required"),
+  firmwareVersion: yup.string().trim().required("Firmware version is required"),
+  batteryLevel: yup
+    .number()
+    .typeError("Battery level must be a number")
+    .integer("Battery level must be a whole number")
+    .min(0, "Battery level cannot be below 0")
+    .max(100, "Battery level cannot exceed 100")
+    .required("Battery level is required"),
 });
 
 const scannerTypeCards = [
@@ -95,31 +124,53 @@ const AddScannerModal = ({
     ...initialFormState,
     ...initialValues,
     assignedOperator: initialValues?.assignedOperator ?? null,
+    assignedOperatorId: initialValues?.assignedOperatorId ?? "",
   };
 
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: resolvedInitialValues,
-    validationSchema: scannerValidationSchema,
-    onSubmit: (values, { resetForm }) => {
-      const payload = {
+    validationSchema:
+      mode === "add" ? createScannerValidationSchema : scannerValidationSchema,
+    onSubmit: async (values, { resetForm, setSubmitting }) => {
+      const sharedPayload = {
         scannerName: values.scannerName.trim(),
         scannerId: values.scannerId.trim(),
         scannerType: values.scannerType,
-        assignedOperator: values.assignedOperator,
         status: values.status,
         customNotes: values.customNotes.trim(),
-        ...(values.scannerType === "Fixed"
+      };
+      const payload =
+        mode === "add"
           ? {
+              ...sharedPayload,
               scannerMode: values.scannerMode,
+              assignedOperatorId: values.assignedOperatorId.trim(),
+              signalStatus: values.signalStatus,
+              firmwareVersion: values.firmwareVersion.trim(),
+              batteryLevel: Number(values.batteryLevel),
               zoneName: values.zoneName.trim(),
             }
-          : {}),
-      };
+          : {
+              ...sharedPayload,
+              assignedOperator: values.assignedOperator,
+              ...(values.scannerType === "Fixed"
+                ? {
+                    scannerMode: values.scannerMode,
+                    zoneName: values.zoneName.trim(),
+                  }
+                : {}),
+            };
 
-      onSubmit?.(payload);
-      resetForm();
-      onClose?.();
+      try {
+        await onSubmit?.(payload);
+        resetForm();
+        onClose?.();
+      } catch {
+        // The submit owner displays the API error and the modal stays open.
+      } finally {
+        setSubmitting(false);
+      }
     },
   });
   const wasOpenRef = useRef(false);
@@ -144,16 +195,16 @@ const AddScannerModal = ({
 
   const handleScannerTypeChange = (nextType) => {
     formik.setFieldValue("scannerType", nextType);
-    if (nextType === "Fixed") {
+    if (nextType === "Fixed" || mode === "add") {
       formik.setFieldValue("scannerMode", formik.values.scannerMode || "Entry");
-      return;
+    } else {
+      formik.setFieldValue("scannerMode", "", false);
     }
-
-    formik.setFieldValue("scannerMode", "", false);
-    formik.setFieldValue("zoneName", "", false);
+    if (nextType !== "Fixed") formik.setFieldValue("zoneName", "", false);
   };
 
   const handleClose = () => {
+    if (formik.isSubmitting) return;
     formik.resetForm();
     onClose?.();
   };
@@ -162,12 +213,19 @@ const AddScannerModal = ({
     <Modal
       footer={
         <>
-          <Button onClick={handleClose} rounded="12px" size="sm" variant="secondary">
+          <Button
+            disabled={formik.isSubmitting}
+            onClick={handleClose}
+            rounded="12px"
+            size="sm"
+            variant="secondary"
+          >
             Cancel
           </Button>
           <Button
             form="add-scanner-form"
             leftIcon={<CircleCheck size={16} />}
+            loading={formik.isSubmitting}
             rounded="12px"
             size="sm"
             type="submit"
@@ -179,6 +237,7 @@ const AddScannerModal = ({
       }
       onClose={handleClose}
       open={isOpen}
+      closeOnBackdrop={!formik.isSubmitting}
       title={mode === "edit" ? "Edit Scanner" : "Add New Scanner"}
       width={720}
     >
@@ -339,7 +398,7 @@ const AddScannerModal = ({
           </div>
         </div>
 
-        {formik.values.scannerType === "Fixed" && (
+        {(mode === "add" || formik.values.scannerType === "Fixed") && (
           <>
             <div>
               <div className="mb-2 flex items-center justify-between gap-3">
@@ -391,29 +450,84 @@ const AddScannerModal = ({
               )}
             </div>
 
-            <Input
-              error={hasFieldError("zoneName")}
-              helperText={getFieldError("zoneName")}
-              label="Zone Name"
-              leftIcon={<MapPin size={18} />}
-              name="zoneName"
-              onBlur={formik.handleBlur}
-              onChange={(value) => setField("zoneName", value)}
-              placeholder="e.g gate number, area etc"
-              value={formik.values.zoneName}
-            />
+            {formik.values.scannerType === "Fixed" && (
+              <Input
+                error={hasFieldError("zoneName")}
+                helperText={getFieldError("zoneName")}
+                label="Zone Name"
+                leftIcon={<MapPin size={18} />}
+                name="zoneName"
+                onBlur={formik.handleBlur}
+                onChange={(value) => setField("zoneName", value)}
+                placeholder="e.g gate number, area etc"
+                value={formik.values.zoneName}
+              />
+            )}
           </>
         )}
 
-        <Dropdown
-          label="Assigned Operator"
-          leftIcon={<User size={16} className="text-(--theme-text-muted)" />}
-          onChange={(value) => setField("assignedOperator", value)}
-          options={operatorOptions}
-          placeholder="Search staff member... (optional)"
-          search
-          value={formik.values.assignedOperator}
-        />
+        {mode === "add" ? (
+          <>
+            <div className="grid gap-5 md:grid-cols-2">
+              <Input
+                error={hasFieldError("assignedOperatorId")}
+                helperText={getFieldError("assignedOperatorId")}
+                label="Assigned Operator ID"
+                leftIcon={<User size={16} />}
+                name="assignedOperatorId"
+                onBlur={formik.handleBlur}
+                onChange={(value) => setField("assignedOperatorId", value)}
+                placeholder="Optional operator UUID"
+                value={formik.values.assignedOperatorId}
+              />
+
+              <Dropdown
+                label="Signal Status"
+                onChange={(value) => setField("signalStatus", value)}
+                options={signalStatusOptions}
+                value={formik.values.signalStatus}
+              />
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <Input
+                error={hasFieldError("firmwareVersion")}
+                helperText={getFieldError("firmwareVersion")}
+                label="Firmware Version"
+                name="firmwareVersion"
+                onBlur={formik.handleBlur}
+                onChange={(value) => setField("firmwareVersion", value)}
+                placeholder="e.g. 1.0.0"
+                required
+                value={formik.values.firmwareVersion}
+              />
+
+              <Input
+                error={hasFieldError("batteryLevel")}
+                helperText={getFieldError("batteryLevel")}
+                label="Battery Level"
+                max={100}
+                min={0}
+                name="batteryLevel"
+                onBlur={formik.handleBlur}
+                onChange={(value) => setField("batteryLevel", value)}
+                required
+                type="number"
+                value={formik.values.batteryLevel}
+              />
+            </div>
+          </>
+        ) : (
+          <Dropdown
+            label="Assigned Operator"
+            leftIcon={<User size={16} className="text-(--theme-text-muted)" />}
+            onChange={(value) => setField("assignedOperator", value)}
+            options={operatorOptions}
+            placeholder="Search staff member... (optional)"
+            search
+            value={formik.values.assignedOperator}
+          />
+        )}
 
         <Input
           label="Custom Notes"
