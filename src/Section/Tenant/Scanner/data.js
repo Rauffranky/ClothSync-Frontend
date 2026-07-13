@@ -23,7 +23,7 @@ export const scannerStats = [
         label: "Inactive Scanners",
         subtext: "offline / disabled",
         icon: WifiOff,
-        variant: "neutral",
+        variant: "danger",
     },
     {
         id: "fixed",
@@ -143,7 +143,7 @@ export const scannerStatusOptions = [
 export const scannerStatusVariantMap = {
     Active: "success",
     Warning: "warning",
-    Inactive: "neutral",
+    Inactive: "danger",
 };
 
 export const scannerLocationOptions = [

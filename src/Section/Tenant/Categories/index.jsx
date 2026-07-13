@@ -74,7 +74,7 @@ const normalizeCategory = (category) => {
     description:
       category.description || category.translations?.en?.description || "",
     status: status === "active" ? "Active" : "Inactive",
-    statusVariant: status === "active" ? "success" : "neutral",
+    statusVariant: status === "active" ? "success" : "danger",
     usage: isUsed ? "In Use" : "Not in Use",
     usageState: isUsed ? "used" : "unused",
     assets: assetCount || null,
@@ -245,7 +245,7 @@ const Categories = () => {
           ? {
               ...category,
               status: nextStatus,
-              statusVariant: nextStatus === "Active" ? "success" : "neutral",
+              statusVariant: nextStatus === "Active" ? "success" : "danger",
             }
           : category,
       ),

@@ -182,7 +182,7 @@ const ScannerTable = () => {
             icon={row.type === "Fixed" ? Radio : AlertTriangle}
             variant={
               row.status === "Inactive"
-                ? "neutral"
+                ? "danger"
                 : row.status === "Warning"
                   ? "warning"
                   : "purple"

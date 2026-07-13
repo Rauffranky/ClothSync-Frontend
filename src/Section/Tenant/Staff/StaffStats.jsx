@@ -26,7 +26,7 @@ const StaffStats = ({ data = [] }) => {
       value: inactiveCount,
       label: "Inactive Staff",
       icon: UserRoundX,
-      variant: "neutral",
+      variant: "danger",
     },
     {
       value: limitedCount,

@@ -219,7 +219,7 @@ const TagsTable = () => {
         const isActive = String(row.tagStatus).toLowerCase() === "active";
 
         return (
-          <Badge size="sm" variant={isActive ? "success" : "neutral"}>
+          <Badge size="sm" variant={isActive ? "success" : "danger"}>
             {row.tagStatus}
           </Badge>
         );

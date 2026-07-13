@@ -11,7 +11,7 @@ const detailIconMap = {
 const statusVariantMap = {
   Active: "success",
   Warning: "warning",
-  Inactive: "neutral",
+  Inactive: "danger",
 };
 
 const HeaderCard = ({ data }) => {

@@ -55,7 +55,7 @@ export const staffMembers = [
     permission: "Limited Access",
     permissionVariant: "neutral",
     status: "Inactive",
-    statusVariant: "neutral",
+    statusVariant: "danger",
     lastActive: "5 days ago",
     avatarVariant: "warning",
   },

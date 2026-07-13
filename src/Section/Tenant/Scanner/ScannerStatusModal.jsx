@@ -82,7 +82,14 @@ const ScannerStatusModal = ({ isOpen, onClose, actionData, onConfirm }) => {
                 <h3 className="m-0 text-lg font-bold text-(--theme-text-primary)">
                   {actionData.scanner.name}
                 </h3>
-                <Badge size="sm" variant={isDeactivate ? "neutral" : "success"}>
+                <Badge
+                  size="sm"
+                  variant={
+                    actionData.scanner.status === "Inactive"
+                      ? "danger"
+                      : "success"
+                  }
+                >
                   {actionData.scanner.status}
                 </Badge>
                 <Badge size="sm" variant={actionData.scanner.type === "Portable" ? "warning" : "purple"}>

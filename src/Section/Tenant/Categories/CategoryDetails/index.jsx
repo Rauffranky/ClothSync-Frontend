@@ -119,7 +119,7 @@ const CategoryDetails = () => {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge size="sm" variant={category.status === "Active" ? "success" : "neutral"}>
+            <Badge size="sm" variant={category.status === "Active" ? "success" : "danger"}>
               {category.status}
             </Badge>
             <Badge size="sm" variant="purple">

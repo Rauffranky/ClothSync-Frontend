@@ -98,7 +98,12 @@ const StaffStatusModalContent = ({
                 <h3 className="m-0 text-lg font-bold text-(--theme-text-primary)">
                   {staff.name}
                 </h3>
-                <Badge size="sm" variant={isDeactivate ? "success" : "neutral"}>
+                <Badge
+                  size="sm"
+                  variant={
+                    staff.status === "Inactive" ? "danger" : staff.statusVariant
+                  }
+                >
                   {staff.status}
                 </Badge>
                 <Badge size="sm" variant={staff.permissionVariant}>

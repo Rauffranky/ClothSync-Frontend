@@ -45,6 +45,7 @@ const getPermissionVariant = (permission) => {
 
 const getStatusVariant = (status) => {
   if (status === "Active") return "success";
+  if (status === "Inactive") return "danger";
   if (status === "Pending Invite") return "warning";
   return "neutral";
 };
