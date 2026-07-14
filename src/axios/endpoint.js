@@ -29,6 +29,7 @@ export const TENANT_SCANNER_ENDPOINTS = Object.freeze({
 
 export const TENANT_LAUNDRY_ENDPOINTS = Object.freeze({
   LIST: "/tenant-laundries/show",
+  DETAILS: (id) => `/tenant-laundries/show/${id}`,
   PENDING_INVITES: "/tenant-laundries/pending-invites",
   SUMMARY: "/tenant-laundries/summary",
   SEND_INVITE: "/tenant-laundries/send-invite",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
     ArrowLeft,
@@ -27,12 +27,55 @@ import DispatchBatchesTab from "./Tabs/DispatchBatchesTab";
 import InventoryTab from "./Tabs/InventoryTab";
 import ActivityLogTab from "./Tabs/ActivityLogTab";
 
-import { laundryDetails } from "./data";
+import { laundryDetails as staticLaundryDetails } from "./data";
+import { getTenantLaundryDetails } from "../../../../axios/laundries/tenantLaundries";
+import { normalizeLinkedLaundry } from "../utils";
+import { formatDate } from "../../../../Utils/date";
 
 const LinkedLaundryDetail = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const [activeTab, setActiveTab] = useState("overview");
+    const [laundryDetails, setLaundryDetails] = useState(staticLaundryDetails);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!id) return;
+        let isActive = true;
+        setIsLoading(true);
+
+        getTenantLaundryDetails(id)
+            .then((res) => {
+                if (!isActive) return;
+                const rawData = res?.data?.laundry || res?.data?.data || res?.data;
+                const normalized = normalizeLinkedLaundry(rawData);
+                
+                setLaundryDetails(prev => ({
+                    ...prev,
+                    id: normalized.id || prev.id,
+                    name: normalized.name || prev.name,
+                    status: normalized.status || prev.status,
+                    statusVariant: normalized.statusVariant || prev.statusVariant,
+                    isDefault: normalized.isDefault,
+                    contact: {
+                        ...prev.contact,
+                        name: normalized.contact !== "-" ? normalized.contact : prev.contact.name,
+                        email: normalized.email !== "-" ? normalized.email : prev.contact.email,
+                        phone: rawData?.businessProfile?.phone || rawData?.phone || prev.contact.phone,
+                        address: normalized.location !== "-" ? normalized.location : prev.contact.address,
+                        linkedSince: rawData?.createdAt ? formatDate(rawData.createdAt) : prev.contact.linkedSince
+                    }
+                }));
+            })
+            .catch(console.error)
+            .finally(() => {
+                if (isActive) setIsLoading(false);
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, [id]);
 
     const tabOptions = [
         { label: "Overview", value: "overview" },

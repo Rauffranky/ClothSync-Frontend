@@ -340,7 +340,7 @@ const LinkedLaundries = ({ onTotalChange }) => {
       render: (_, row) => (
         <ActionDropdown
           items={[
-            { label: "View Details", icon: Eye, onClick: () => navigate(`/business/linked-laundries/${row.id}`) },
+            { label: "View Details", icon: Eye, onClick: () => navigate(`/business/linked-laundries/${row.apiId || row.id}`) },
             ...(row.status === "Suspend"
               ? []
               : [
