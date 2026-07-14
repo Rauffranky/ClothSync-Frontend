@@ -19,7 +19,7 @@ import Pagination from "../../../Components/UI/Pagination";
 import Table from "../../../Components/UI/Table";
 import IconWrapper from "../../../Components/UI/IconWrapper";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
-import { getTenantLaundries } from "../../../axios/laundries/tenantLaundries";
+import { getTenantLaundries, sendTenantLaundryInvite } from "../../../axios/laundries/tenantLaundries";
 import { getApiErrorMessage } from "../../../axios/api";
 import { toast } from "../../../Utils/toast";
 import { getPaginatedCollection, normalizeLinkedLaundry } from "./utils";
@@ -74,8 +74,16 @@ const LinkedLaundries = ({ onTotalChange }) => {
   const inviteLaundryFormik = useFormik({
     initialValues: inviteLaundryInitialValues,
     validationSchema: inviteLaundryValidationSchema,
-    onSubmit: () => {
-      closeInviteModal();
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        const response = await sendTenantLaundryInvite({ email: values.email });
+        toast.success(response?.message || "Invitation sent successfully");
+        closeInviteModal();
+      } catch (error) {
+        toast.error(getApiErrorMessage(error, "Failed to send invitation"));
+      } finally {
+        setSubmitting(false);
+      }
     },
   });
 

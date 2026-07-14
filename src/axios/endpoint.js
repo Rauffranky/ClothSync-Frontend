@@ -31,4 +31,7 @@ export const TENANT_LAUNDRY_ENDPOINTS = Object.freeze({
   LIST: "/tenant-laundries/show",
   PENDING_INVITES: "/tenant-laundries/pending-invites",
   SUMMARY: "/tenant-laundries/summary",
+  SEND_INVITE: "/tenant-laundries/send-invite",
+  RESEND_INVITE: (id) => `/tenant-laundries/resend-invite/${id}`,
+  CANCEL_INVITE: (id) => `/tenant-laundries/cancel-invite/${id}`,
 });
