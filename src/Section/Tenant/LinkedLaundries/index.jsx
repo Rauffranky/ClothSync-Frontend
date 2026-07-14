@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Card from "../../../Components/UI/Card";
 import Tabs from "../../../Components/UI/Tabs";
 import LinkedLaundries from "./LinkedLaundries";
@@ -6,7 +7,13 @@ import PendingRequest from "./PendingRequest";
 import Stats from "./Stats";
 
 const Laundries = () => {
-  const [activeTab, setActiveTab] = useState("linked");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") === "pending" ? "pending" : "linked";
+
+  const handleTabChange = (val) => {
+    setSearchParams({ tab: val }, { replace: true });
+  };
+
   const [totals, setTotals] = useState({});
   const handleLinkedTotalChange = useCallback((total) => {
     setTotals((current) => ({ ...current, linked: total }));
@@ -36,7 +43,7 @@ const Laundries = () => {
                 count: totals.pending,
               },
             ]}
-            onChange={setActiveTab}
+            onChange={handleTabChange}
             value={activeTab}
           />
         </div>

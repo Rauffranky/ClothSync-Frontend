@@ -123,8 +123,9 @@ export const normalizePendingInvite = (invite) => {
         ? invite.laundryId
         : {};
   const rawStatus = String(invite?.status || "pending").toLowerCase();
-  const status = ["pending", "sent", "invite_sent"].includes(rawStatus)
-    ? "Invite Sent"
+  
+  const status = ["pending", "accepted", "cancelled", "expired", "rejected"].includes(rawStatus)
+    ? titleCase(rawStatus)
     : titleCase(rawStatus) || "Pending";
 
   return {
@@ -140,9 +141,14 @@ export const normalizePendingInvite = (invite) => {
     statusVariant:
       rawStatus === "accepted"
         ? "success"
-        : rawStatus === "expired" || rawStatus === "rejected"
+        : rawStatus === "expired" || rawStatus === "rejected" || rawStatus === "cancelled"
           ? "danger"
-          : "neutral",
+          : rawStatus === "pending"
+            ? "warning"
+            : "neutral",
     sentAt: invite?.sentAt || invite?.createdAt || invite?.invitedAt || null,
+    resentAt: invite?.resentAt || null,
+    expiresAt: invite?.expiresAt || null,
+    rejectReason: rawStatus === "rejected" ? (invite?.rejectReason || invite?.reason || "-") : "-",
   };
 };

@@ -6,7 +6,7 @@ import IconWrapper from "../../../Components/UI/IconWrapper";
 import Input from "../../../Components/UI/Input";
 import Pagination from "../../../Components/UI/Pagination";
 import Table from "../../../Components/UI/Table";
-import { 
+import {
   getPendingTenantLaundryInvites,
   resendTenantLaundryInvite,
   cancelTenantLaundryInvite
@@ -63,7 +63,7 @@ const PendingRequest = ({ onTotalChange }) => {
     },
     {
       key: "sentAt",
-      label: "Sent On",
+      label: "Created At",
       render: (value) => (
         <span className="text-sm font-semibold text-(--theme-text-muted)">
           {value ? formatDateWithUserPreferences(value) : "-"}
@@ -71,19 +71,53 @@ const PendingRequest = ({ onTotalChange }) => {
       ),
     },
     {
+      key: "resentAt",
+      label: "Resent At",
+      render: (value) => (
+        <span className="text-sm font-semibold text-(--theme-text-muted)">
+          {value ? formatDateWithUserPreferences(value) : "-"}
+        </span>
+      ),
+    },
+    {
+      key: "expiresAt",
+      label: "Expired At",
+      render: (value) => (
+        <span className="text-sm font-semibold text-(--theme-text-muted)">
+          {value ? formatDateWithUserPreferences(value) : "-"}
+        </span>
+      ),
+    },
+    {
+      key: "rejectReason",
+      label: "Reject Reason",
+      render: (value, row) => (
+        <span className="text-sm font-semibold text-(--theme-text-muted)">
+          {row.status.toLowerCase() === "rejected" ? value || "-" : "-"}
+        </span>
+      ),
+    },
+    {
       key: "actions",
       label: "Actions",
       align: "center",
-      render: (_, row) => (
-        <ActionDropdown
-          items={[
-            { label: "View Detail", icon: Eye, onClick: () => setViewDetailRequest(row) },
-            { label: "Resend", icon: Send, onClick: () => setPendingAction({ action: "resend", request: row }) },
-            { label: "Cancel Invite", icon: Ban, danger: true, onClick: () => setPendingAction({ action: "cancel", request: row }) },
-          ]}
-          width={180}
-        />
-      ),
+      render: (_, row) => {
+        const isActionDisabled = ["cancelled", "rejected", "expired"].includes(row.status.toLowerCase());
+        
+        if (isActionDisabled) {
+          return <span className="text-sm font-bold text-(--theme-text-muted)">-</span>;
+        }
+
+        return (
+          <ActionDropdown
+            items={[
+              { label: "Resend", icon: Send, onClick: () => setPendingAction({ action: "resend", request: row }) },
+              { label: "Cancel Invite", icon: Ban, danger: true, onClick: () => setPendingAction({ action: "cancel", request: row }) },
+            ]}
+            width={180}
+          />
+        );
+      },
     },
   ], []);
 
@@ -152,10 +186,11 @@ const PendingRequest = ({ onTotalChange }) => {
       } else if (action === "cancel") {
         const response = await cancelTenantLaundryInvite(request.id);
         toast.success(response?.message || "Invitation cancelled successfully");
-        setRequests((current) => current.filter((r) => r.id !== request.id));
-        const newTotal = totalItems > 0 ? totalItems - 1 : 0;
-        setTotalItems(newTotal);
-        onTotalChange?.(newTotal);
+        setRequests((current) =>
+          current.map((r) =>
+            r.id === request.id ? { ...r, status: "Cancelled", statusVariant: "danger" } : r
+          )
+        );
       }
       setPendingAction(null);
     } catch (error) {
