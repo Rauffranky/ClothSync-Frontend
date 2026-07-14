@@ -16,6 +16,7 @@ const NotFoundPage = lazy(() => import("../Page/Common/NotFoundPage"));
 const SuperAdminDashboard = lazy(() => import("../Page/Dashboard/SuperAdmin/DashboardPage"));
 const TenantDashboard = lazy(() => import("../Page/Dashboard/Tenant/DashboardPage"));
 const LinkedLaundriesPage = lazy(() => import("../Page/Dashboard/Tenant/LinkedLaundriesPage"));
+const LinkedLaundryDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/LinkedLaundryDetailsPage"));
 const CategoriesPage = lazy(() => import("../Page/Dashboard/Tenant/CategoriesPage"));
 const CategoryDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/CategoryDetailsPage"));
 const LaundryDashboard = lazy(() => import("../Page/Dashboard/Laundry/DashboardPage"));
@@ -67,6 +68,7 @@ const AppRoutes = () => {
           <Route path="/business" element={<Navigate to="/business/dashboard" replace />} />
           <Route path="/business/dashboard" element={<TenantDashboard />} />
           <Route path="/business/linked-laundries" element={<LinkedLaundriesPage />} />
+          <Route path="/business/linked-laundries/:id" element={<LinkedLaundryDetailsPage />} />
           <Route path="/business/categories" element={<CategoriesPage />} />
           <Route path="/business/categories/:id" element={<CategoryDetailsPage />} />
           <Route path="/business/assets" element={<AssetsPage />} />

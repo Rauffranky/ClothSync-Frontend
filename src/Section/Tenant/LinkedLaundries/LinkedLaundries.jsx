@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import {
@@ -54,6 +55,7 @@ const inviteLaundryValidationSchema = Yup.object({
 });
 
 const LinkedLaundries = ({ onTotalChange }) => {
+  const navigate = useNavigate();
   const [linkedLaundries, setLinkedLaundries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchValue, setSearchValue] = useState("");
@@ -338,7 +340,7 @@ const LinkedLaundries = ({ onTotalChange }) => {
       render: (_, row) => (
         <ActionDropdown
           items={[
-            { label: "View Details", icon: Eye },
+            { label: "View Details", icon: Eye, onClick: () => navigate(`/business/linked-laundries/${row.id}`) },
             ...(row.status === "Suspend"
               ? []
               : [

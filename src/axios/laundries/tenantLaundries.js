@@ -18,3 +18,6 @@ export const resendTenantLaundryInvite = (id) =>
 
 export const cancelTenantLaundryInvite = (id) =>
   api.put(TENANT_LAUNDRY_ENDPOINTS.CANCEL_INVITE(id));
+
+export const getTenantLaundryInviteDetails = (token) =>
+  api.get(TENANT_LAUNDRY_ENDPOINTS.INVITE_DETAILS, { params: { token } });

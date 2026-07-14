@@ -16,6 +16,7 @@ import { formatDate } from "../../../Utils/date";
 import { toast } from "../../../Utils/toast";
 import { getPaginatedCollection, normalizePendingInvite } from "./utils";
 import PendingActionModal from "./PendingActionModal";
+import InviteDetailModal from "./InviteDetailModal";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -30,6 +31,7 @@ const PendingRequest = ({ onTotalChange }) => {
 
   const [pendingAction, setPendingAction] = useState(null);
   const [isActionSubmitting, setIsActionSubmitting] = useState(false);
+  const [viewDetailRequest, setViewDetailRequest] = useState(null);
 
   const columns = useMemo(() => [
     {
@@ -75,7 +77,7 @@ const PendingRequest = ({ onTotalChange }) => {
       render: (_, row) => (
         <ActionDropdown
           items={[
-            { label: "View Detail", icon: Eye, onClick: () => {} },
+            { label: "View Detail", icon: Eye, onClick: () => setViewDetailRequest(row) },
             { label: "Resend", icon: Send, onClick: () => setPendingAction({ action: "resend", request: row }) },
             { label: "Cancel Invite", icon: Ban, danger: true, onClick: () => setPendingAction({ action: "cancel", request: row }) },
           ]}
@@ -200,6 +202,12 @@ const PendingRequest = ({ onTotalChange }) => {
         actionData={pendingAction}
         onConfirm={handleActionConfirm}
         isSubmitting={isActionSubmitting}
+      />
+
+      <InviteDetailModal
+        isOpen={Boolean(viewDetailRequest)}
+        onClose={() => setViewDetailRequest(null)}
+        request={viewDetailRequest}
       />
     </>
   );
