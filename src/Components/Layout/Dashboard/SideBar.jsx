@@ -255,12 +255,11 @@ const SideBar = ({
         />
       )}
 
-      {/* Mobile Sidebar */}
       <aside
         className={[
           "fixed z-9999 top-0 left-0 h-screen w-72 max-w-[86vw] lg:hidden",
           "transform transition-transform duration-300 ease-in-out will-change-transform",
-          "bg-(--layout-sidebar-bg) shadow-(--layout-panel-shadow) border-r border-(--theme-border)",
+          "bg-(--theme-bg) shadow-(--layout-panel-shadow) border-r border-(--theme-border) backdrop-blur-3xl",
           isOpen ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
       >
