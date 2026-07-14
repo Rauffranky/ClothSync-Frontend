@@ -12,7 +12,7 @@ import {
   cancelTenantLaundryInvite
 } from "../../../axios/laundries/tenantLaundries";
 import { getApiErrorMessage } from "../../../axios/api";
-import { formatDate } from "../../../Utils/date";
+import { formatDateWithUserPreferences } from "../../../Utils/date";
 import { toast } from "../../../Utils/toast";
 import { getPaginatedCollection, normalizePendingInvite } from "./utils";
 import PendingActionModal from "./PendingActionModal";
@@ -66,7 +66,7 @@ const PendingRequest = ({ onTotalChange }) => {
       label: "Sent On",
       render: (value) => (
         <span className="text-sm font-semibold text-(--theme-text-muted)">
-          {value ? formatDate(value) : "-"}
+          {value ? formatDateWithUserPreferences(value) : "-"}
         </span>
       ),
     },

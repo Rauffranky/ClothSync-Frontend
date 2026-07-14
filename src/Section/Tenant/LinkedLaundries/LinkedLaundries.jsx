@@ -8,7 +8,6 @@ import {
   Plus,
   Search,
   Star,
-  StarOff,
   Unlink,
 } from "lucide-react";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
@@ -27,7 +26,6 @@ import { getPaginatedCollection, normalizeLinkedLaundry } from "./utils";
 import InviteLaundryModal from "./InviteLaundryModal";
 import UnlinkLaundryModal from "./UnlinkLaundryModal";
 import DefaultConfirmModal from "./DefaultConfirmModal";
-import DefaultBlockedModal from "./DefaultBlockedModal";
 
 const ITEMS_PER_PAGE = 3;
 
@@ -64,7 +62,6 @@ const LinkedLaundries = ({ onTotalChange }) => {
   const [laundryFilter, setLaundryFilter] = useState("all");
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [unlinkLaundry, setUnlinkLaundry] = useState(null);
-  const [defaultBlockedLaundry, setDefaultBlockedLaundry] = useState(null);
   const [defaultAction, setDefaultAction] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
@@ -163,13 +160,11 @@ const LinkedLaundries = ({ onTotalChange }) => {
   };
 
   const handleStatusFilterChange = (value) => {
-    setIsLoading(true);
     setStatusFilter(value);
     resetCurrentPage();
   };
 
   const handleLaundryFilterChange = (value) => {
-    setIsLoading(true);
     setLaundryFilter(value);
     resetCurrentPage();
   };
@@ -183,42 +178,30 @@ const LinkedLaundries = ({ onTotalChange }) => {
     setUnlinkLaundry(null);
   };
 
-  const closeDefaultBlockedModal = () => {
-    setDefaultBlockedLaundry(null);
-  };
-
   const closeDefaultConfirmModal = () => {
     setDefaultAction(null);
   };
 
   const requestDefaultAction = (laundry, action) => {
     if (laundry.status === "Suspend") return;
-
-    if (
-      action === "set" &&
-      currentDefaultLaundry &&
-      currentDefaultLaundry.id !== laundry.id
-    ) {
-      setDefaultBlockedLaundry(laundry);
-      return;
-    }
-
     setDefaultAction({ action, laundry });
   };
 
   const handleConfirmDefaultAction = () => {
     if (!defaultAction) return;
-
-    const { action, laundry } = defaultAction;
-
-    setLinkedLaundries((current) =>
-      current.map((item) =>
-        item.id === laundry.id
-          ? { ...item, isDefault: action === "set" }
-          : item,
-      ),
-    );
+    const newDefaultLaundry = defaultAction.laundry;
     setDefaultAction(null);
+    
+    // Optimistically update UI - mark new default and unmark old default
+    setLinkedLaundries((current) =>
+      current.map((laundry) => ({
+        ...laundry,
+        isDefault: laundry.id === newDefaultLaundry.id,
+      })),
+    );
+    
+    // Refresh the data after setting default
+    setCurrentPage(0);
   };
 
   const handleConfirmUnlink = () => {
@@ -250,18 +233,21 @@ const LinkedLaundries = ({ onTotalChange }) => {
         <div className="flex min-w-0 items-center gap-3">
           <IconWrapper
             icon={Building2}
-            variant="info"
+            variant={row.isDefault ? "warning" : "info"}
             sizeClassName="h-9 w-9 shrink-0"
             roundedClassName="rounded-xl"
             iconSize={17}
           />
-          <div className="min-w-0">
-            <p className="m-0 truncate  text-(--theme-text-primary)">
+          <div className="min-w-0 flex items-center gap-2">
+            <p className="m-0 truncate text-(--theme-text-primary)">
               {row.name}
             </p>
-            <p className="m-0 mt-0.5 text-xs font-semibold text-(--theme-text-muted)">
+            {/* {row.isDefault && (
+              <Star size={14} className="text-(--color-warning) shrink-0" fill="currentColor" />
+            )} */}
+            {/* <p className="m-0 mt-0.5 text-xs font-semibold text-(--theme-text-muted)">
               {row.id}
-            </p>
+            </p> */}
           </div>
         </div>
       ),
@@ -305,7 +291,7 @@ const LinkedLaundries = ({ onTotalChange }) => {
           <span className="font-black text-(--theme-text-muted)">-</span>
         ) : (
           <Button
-            leftIcon={<StarOff size={13} />}
+            leftIcon={<Star size={13} />}
             onClick={() => requestDefaultAction(row, "set")}
             size={{ minHeight: 28, padding: "0 10px", fontSize: "0.75rem" }}
             variant="ghost"
@@ -341,17 +327,14 @@ const LinkedLaundries = ({ onTotalChange }) => {
         <ActionDropdown
           items={[
             { label: "View Details", icon: Eye, onClick: () => navigate(`/business/linked-laundries/${row.apiId || row.id}`) },
-            ...(row.status === "Suspend"
+            ...(row.status === "Suspend" || row.isDefault
               ? []
               : [
                   {
-                    label: row.isDefault ? "Unset Default" : "Set As Default",
-                    icon: row.isDefault ? StarOff : Star,
+                    label: "Set As Default",
+                    icon: Star,
                     onClick: () =>
-                      requestDefaultAction(
-                        row,
-                        row.isDefault ? "unset" : "set",
-                      ),
+                      requestDefaultAction(row, "set"),
                   },
                 ]),
             {
@@ -440,12 +423,6 @@ const LinkedLaundries = ({ onTotalChange }) => {
         onClose={closeDefaultConfirmModal}
         actionData={defaultAction}
         onConfirm={handleConfirmDefaultAction}
-      />
-
-      <DefaultBlockedModal
-        isOpen={Boolean(defaultBlockedLaundry)}
-        onClose={closeDefaultBlockedModal}
-        blockedLaundry={defaultBlockedLaundry}
         currentDefaultLaundry={currentDefaultLaundry}
       />
     </>

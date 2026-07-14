@@ -5,7 +5,7 @@ import Button from "../../../Components/UI/Button";
 import Badge from "../../../Components/UI/Badge";
 import { getTenantLaundryInviteDetails } from "../../../axios/laundries/tenantLaundries";
 import { getApiErrorMessage } from "../../../axios/api";
-import { formatDate } from "../../../Utils/date";
+import { formatDateWithUserPreferences } from "../../../Utils/date";
 
 const InviteDetailModal = ({ isOpen, onClose, request }) => {
   const [details, setDetails] = useState(null);
@@ -94,7 +94,7 @@ const InviteDetailModal = ({ isOpen, onClose, request }) => {
                   <span className="text-xs font-bold uppercase tracking-wider">Expires At</span>
                 </div>
                 <p className="mt-2 font-semibold text-(--theme-text-primary)">
-                  {details.expiresAt ? formatDate(details.expiresAt) : "-"}
+                  {details.expiresAt ? formatDateWithUserPreferences(details.expiresAt) : "-"}
                 </p>
               </div>
             </div>

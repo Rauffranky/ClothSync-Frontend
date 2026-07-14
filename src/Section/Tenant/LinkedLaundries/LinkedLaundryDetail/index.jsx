@@ -30,7 +30,7 @@ import ActivityLogTab from "./Tabs/ActivityLogTab";
 import { laundryDetails as staticLaundryDetails } from "./data";
 import { getTenantLaundryDetails } from "../../../../axios/laundries/tenantLaundries";
 import { normalizeLinkedLaundry } from "../utils";
-import { formatDate } from "../../../../Utils/date";
+import { formatDateWithUserPreferences } from "../../../../Utils/date";
 
 const LinkedLaundryDetail = () => {
     const navigate = useNavigate();
@@ -63,7 +63,7 @@ const LinkedLaundryDetail = () => {
                         email: normalized.email !== "-" ? normalized.email : prev.contact.email,
                         phone: rawData?.businessProfile?.phone || rawData?.phone || prev.contact.phone,
                         address: normalized.location !== "-" ? normalized.location : prev.contact.address,
-                        linkedSince: rawData?.createdAt ? formatDate(rawData.createdAt) : prev.contact.linkedSince
+                        linkedSince: rawData?.createdAt ? formatDateWithUserPreferences(rawData.createdAt) : prev.contact.linkedSince
                     }
                 }));
             })

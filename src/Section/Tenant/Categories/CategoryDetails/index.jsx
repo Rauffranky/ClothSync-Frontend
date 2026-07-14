@@ -6,7 +6,7 @@ import Card from "../../../../Components/UI/Card";
 import { getTenantCategoryDetails } from "../../../../axios/categories/tenantCategories";
 import { getApiErrorMessage } from "../../../../axios/api";
 import { toast } from "../../../../Utils/toast";
-import { formatDate } from "../../../../Utils/date";
+import { formatDateWithUserPreferences } from "../../../../Utils/date";
 
 const normalizeDetails = (category) => {
   const status = String(category.status || "inactive").toLowerCase();
@@ -30,8 +30,8 @@ const normalizeDetails = (category) => {
     usage: isUsed ? "In Use" : "Not in Use",
     assets,
     // washLimit: category.washLimit ?? category.maximumWashLimit ?? "-",
-    created: formatDate(category.createdAt || category.created),
-    updated: formatDate(category.updatedAt || category.lastUpdated),
+    created: formatDateWithUserPreferences(category.createdAt || category.created),
+    updated: formatDateWithUserPreferences(category.updatedAt || category.lastUpdated),
   };
 };
 

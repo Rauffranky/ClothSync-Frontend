@@ -80,16 +80,19 @@ export const normalizeLinkedLaundry = (record) => {
       translation?.name ||
       profile?.businessName ||
       laundry?.businessName ||
+      laundry?.fullName ||
       laundry?.name ||
       record?.laundryName ||
       "Unnamed Laundry",
     contact:
       record?.contactName ||
       profile?.contactName ||
+      laundry?.contactPersonName ||
       laundry?.owner?.fullName ||
       laundry?.user?.fullName ||
       "-",
     email:
+      record?.contactEmail ||
       record?.email ||
       profile?.email ||
       laundry?.email ||
@@ -106,9 +109,9 @@ export const normalizeLinkedLaundry = (record) => {
     statusVariant: isConnected ? "success" : isSuspended ? "neutral" : "warning",
     isDefault: Boolean(record?.isDefault),
     dispatchMode: record?.dispatchMode || "-",
-    batches: Number(record?.batches ?? record?.batchCount ?? 0),
-    itemsSent: Number(record?.itemsSent ?? record?.sentItemsCount ?? 0),
-    missing: Number(record?.missing ?? record?.missingItemsCount ?? 0),
+    batches: Number(record?.batches ?? record?.batchCount ?? record?.totalBatchesCount ?? 0),
+    itemsSent: Number(record?.itemsSent ?? record?.sentItemsCount ?? record?.itemsCurrentlySentCount ?? 0),
+    missing: Number(record?.missing ?? record?.missingItemsCount ?? record?.delayedItemsCount ?? 0),
   };
 };
 

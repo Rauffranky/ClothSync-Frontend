@@ -24,3 +24,6 @@ export const getTenantLaundryInviteDetails = (token) =>
 
 export const getTenantLaundryDetails = (id) =>
   api.get(TENANT_LAUNDRY_ENDPOINTS.DETAILS(id));
+
+export const setTenantLaundryAsDefault = (id) =>
+  api.put(TENANT_LAUNDRY_ENDPOINTS.SET_DEFAULT(id));

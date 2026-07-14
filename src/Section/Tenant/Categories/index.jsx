@@ -19,7 +19,7 @@ import {
 } from "../../../axios/categories/tenantCategories";
 import { getApiErrorMessage } from "../../../axios/api";
 import { toast } from "../../../Utils/toast";
-import { formatDate } from "../../../Utils/date";
+import { formatDateWithUserPreferences } from "../../../Utils/date";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -78,8 +78,8 @@ const normalizeCategory = (category) => {
     usage: isUsed ? "In Use" : "Not in Use",
     usageState: isUsed ? "used" : "unused",
     assets: assetCount || null,
-    created: formatDate(category.createdAt || category.created),
-    lastUpdated: formatDate(category.updatedAt || category.lastUpdated),
+    created: formatDateWithUserPreferences(category.createdAt || category.created),
+    lastUpdated: formatDateWithUserPreferences(category.updatedAt || category.lastUpdated),
   };
 };
 
