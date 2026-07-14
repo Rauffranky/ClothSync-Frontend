@@ -64,3 +64,29 @@ export const getAuthenticatedTenant = () =>
   api.get(AUTH_ENDPOINTS.TENANT_PROFILE);
 
 export const logoutTenant = () => api.get(AUTH_ENDPOINTS.TENANT_LOGOUT);
+
+export const forgotTenantPassword = ({ email }) =>
+  api.post(AUTH_ENDPOINTS.TENANT_FORGOT_PASSWORD, {
+    email: email.trim(),
+  });
+
+export const verifyTenantForgotPasswordOtp = ({ email, otp }) =>
+  api.post(AUTH_ENDPOINTS.TENANT_VERIFY_FORGOT_PASSWORD_OTP, {
+    email: email.trim(),
+    otp,
+  });
+
+export const resetTenantPassword = ({ email, otp, password, confirmPassword }) =>
+  api.post(AUTH_ENDPOINTS.TENANT_RESET_PASSWORD, {
+    email: email.trim(),
+    otp,
+    password,
+    confirmPassword,
+  });
+
+export const changeTenantPassword = ({ currentPassword, newPassword, confirmNewPassword }) =>
+  api.post(AUTH_ENDPOINTS.TENANT_CHANGE_PASSWORD, {
+    currentPassword,
+    newPassword,
+    confirmNewPassword,
+  });

@@ -4,9 +4,13 @@ import {
   Cuboid,
   Hourglass,
   RefreshCw,
-  } from "lucide-react";
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import Card from "../../../Components/UI/Card";
 import IconWrapper from "../../../Components/UI/IconWrapper";
+import { getTenantLaundrySummary } from "../../../axios/laundries/tenantLaundries";
+import { toast } from "../../../Utils/toast";
+import { getApiErrorMessage } from "../../../axios/api";
 
 const stats = [
   {
@@ -47,12 +51,39 @@ const stats = [
 ];
 
 const Stats = ({ linkedTotal, pendingTotal }) => {
+  const [summary, setSummary] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getTenantLaundrySummary();
+        setSummary(response?.data || response || {});
+      } catch (error) {
+        toast.error(getApiErrorMessage(error, "Failed to load summary stats"));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSummary();
+  }, []);
+
   const displayStats = stats.map((item) => {
     if (item.label === "Total Linked") {
-      return { ...item, value: linkedTotal ?? "-" };
+      return { ...item, value: isLoading ? "..." : (linkedTotal ?? summary?.totalLinked ?? summary?.total_linked ?? "-") };
     }
     if (item.label === "Pending Requests") {
-      return { ...item, value: pendingTotal ?? "-" };
+      return { ...item, value: isLoading ? "..." : (pendingTotal ?? summary?.pendingRequests ?? summary?.pending_requests ?? "-") };
+    }
+    if (item.label === "Active Dispatches") {
+      return { ...item, value: isLoading ? "..." : (summary?.activeDispatches ?? summary?.active_dispatches ?? "-") };
+    }
+    if (item.label === "Items Currently Sent") {
+      return { ...item, value: isLoading ? "..." : (summary?.itemsCurrentlySent ?? summary?.items_currently_sent ?? summary?.itemsSent ?? summary?.items_sent ?? "-") };
+    }
+    if (item.label === "Delayed Items") {
+      return { ...item, value: isLoading ? "..." : (summary?.delayedItems ?? summary?.delayed_items ?? "-") };
     }
     return item;
   });

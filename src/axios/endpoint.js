@@ -6,6 +6,10 @@ export const AUTH_ENDPOINTS = Object.freeze({
   TENANT_VERIFY_OTP: "/tenant-auth/verify-otp",
   TENANT_RESEND_OTP: "/tenant-auth/resend-otp",
   TENANT_COMPLETE_PROFILE: "/tenant-auth/complete-profile",
+  TENANT_FORGOT_PASSWORD: "/tenant-auth/forgot-password",
+  TENANT_VERIFY_FORGOT_PASSWORD_OTP: "/tenant-auth/verify-forgot-password-otp",
+  TENANT_RESET_PASSWORD: "/tenant-auth/reset-password",
+  TENANT_CHANGE_PASSWORD: "/tenant-auth/change-password",
 });
 
 // Kept as a named export for simple imports and backwards compatibility.
@@ -26,4 +30,5 @@ export const TENANT_SCANNER_ENDPOINTS = Object.freeze({
 export const TENANT_LAUNDRY_ENDPOINTS = Object.freeze({
   LIST: "/tenant-laundries/show",
   PENDING_INVITES: "/tenant-laundries/pending-invites",
+  SUMMARY: "/tenant-laundries/summary",
 });

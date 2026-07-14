@@ -13,6 +13,9 @@ import {
   clearTenantSession,
   loginTenant,
   storeTenantSessionFromResponse,
+  forgotTenantPassword,
+  verifyTenantForgotPasswordOtp,
+  resetTenantPassword,
 } from "../axios/auth/tenantAuth";
 import { getApiErrorMessage } from "../axios/api";
 import { toast } from "../Utils/toast";
@@ -115,19 +118,51 @@ const Login = ({ portal }) => {
         return;
       }
 
-      formik.setTouched({});
-
       if (forgotStep === "email") {
-        setForgotStep("otp");
+        try {
+          const response = await forgotTenantPassword({ email: values.forgotEmail });
+          toast.success(response?.message || "OTP sent successfully");
+          setForgotStep("otp");
+          formik.setTouched({});
+        } catch (error) {
+          toast.error(getApiErrorMessage(error, "Failed to send OTP. Please try again."));
+        } finally {
+          setSubmitting(false);
+        }
         return;
       }
 
       if (forgotStep === "otp") {
-        setForgotStep("reset");
+        try {
+          const response = await verifyTenantForgotPasswordOtp({
+            email: values.forgotEmail,
+            otp: values.otp,
+          });
+          toast.success(response?.message || "OTP verified successfully");
+          setForgotStep("reset");
+          formik.setTouched({});
+        } catch (error) {
+          toast.error(getApiErrorMessage(error, "Failed to verify OTP. Please try again."));
+        } finally {
+          setSubmitting(false);
+        }
         return;
       }
 
-      closeForgotPassword();
+      try {
+        const response = await resetTenantPassword({
+          email: values.forgotEmail,
+          otp: values.otp,
+          password: values.newPassword,
+          confirmPassword: values.confirmPassword,
+        });
+        toast.success(response?.message || "Password reset successfully. You can now login.");
+        closeForgotPassword();
+      } catch (error) {
+        toast.error(getApiErrorMessage(error, "Failed to reset password. Please try again."));
+      } finally {
+        setSubmitting(false);
+      }
     },
   });
 

@@ -6,3 +6,6 @@ export const getTenantLaundries = (params) =>
 
 export const getPendingTenantLaundryInvites = (params) =>
   api.get(TENANT_LAUNDRY_ENDPOINTS.PENDING_INVITES, { params });
+
+export const getTenantLaundrySummary = () =>
+  api.get(TENANT_LAUNDRY_ENDPOINTS.SUMMARY);
