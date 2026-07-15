@@ -9,6 +9,7 @@ import LandingLayout from "../Components/Layout/Landing";
 
 const HomePage = lazy(() => import("../Page/Landing/HomePage"));
 const AuthPage = lazy(() => import("../Page/Auth/AuthPage"));
+const StaffEmailVerificationPage = lazy(() => import("../Page/Auth/StaffEmailVerificationPage"));
 const SuperAdminLoginPage = lazy(() => import("../Page/Auth/SuperAdminLoginPage"));
 const NotFoundPage = lazy(() => import("../Page/Common/NotFoundPage"));
 
@@ -27,6 +28,7 @@ const AssetDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetDetail
 const ScannersPage = lazy(() => import("../Page/Dashboard/Tenant/ScannersPage"));
 const ScannerDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/ScannerDetailsPage"));
 const StaffPage = lazy(() => import("../Page/Dashboard/Tenant/StaffPage"));
+const StaffRolesPage = lazy(() => import("../Page/Dashboard/Tenant/StaffRolesPage"));
 const TagsPage = lazy(() => import("../Page/Dashboard/Tenant/TagsPage"));
 const TagDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/TagDetailsPage"));
 
@@ -44,6 +46,7 @@ const AppRoutes = () => {
         <Route path="/superadmin/login" element={<SuperAdminLoginPage />} />
         <Route path="/business/login" element={<AuthPage defaultMode="login" defaultRole="business" />} />
         <Route path="/business/signup" element={<AuthPage defaultMode="signup" defaultRole="business" />} />
+        <Route path="/business/staff/verify-email" element={<StaffEmailVerificationPage />} />
         <Route path="/laundry/login" element={<AuthPage defaultMode="login" defaultRole="laundry" />} />
         <Route path="/laundry/signup" element={<AuthPage defaultMode="signup" defaultRole="laundry" />} />
 
@@ -76,6 +79,7 @@ const AppRoutes = () => {
           <Route path="/business/scanners" element={<ScannersPage />} />
           <Route path="/business/scanners/:id" element={<ScannerDetailsPage />} />
           <Route path="/business/staff" element={<StaffPage />} />
+          <Route path="/business/staff-roles" element={<StaffRolesPage />} />
           <Route path="/business/tags" element={<TagsPage />} />
           <Route path="/business/tags/:id" element={<TagDetailsPage />} />
 

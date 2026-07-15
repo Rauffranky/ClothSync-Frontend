@@ -29,6 +29,7 @@ import {
   ChartNoAxesCombined,
   ShieldAlert,
   UsersRound,
+  UserRoundKey,
 } from "lucide-react";
 
 export const NAV_MENU = [
@@ -184,6 +185,12 @@ export const NAV = {
       label: "Staff",
       href: "/business/staff",
       Icon: UsersRound,
+    },
+    {
+      id: 113,
+      label: "Staff Roles",
+      href: "/business/staff-roles",
+      Icon: UserRoundKey,
     },
     {
       id: 107,

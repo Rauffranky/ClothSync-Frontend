@@ -1,11 +1,15 @@
 import { useEffect, useState, useMemo } from "react";
-import { Building2, Search, Eye, Send, Ban } from "lucide-react";
+import { Building2, Search, Send, Ban } from "lucide-react";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Badge from "../../../Components/UI/Badge";
 import IconWrapper from "../../../Components/UI/IconWrapper";
 import Input from "../../../Components/UI/Input";
 import Pagination from "../../../Components/UI/Pagination";
 import Table from "../../../Components/UI/Table";
+import {
+  getSearchQuery,
+  useDebouncedSearch,
+} from "../../../Hooks/useDebouncedSearch";
 import { 
   getPendingTenantLaundryInvites,
   resendTenantLaundryInvite,
@@ -18,16 +22,17 @@ import { getPaginatedCollection, normalizePendingInvite } from "./utils";
 import PendingActionModal from "./PendingActionModal";
 import InviteDetailModal from "./InviteDetailModal";
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
 
 const PendingRequest = ({ onTotalChange }) => {
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchValue, setSearchValue] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debouncedSearch = useDebouncedSearch(searchValue);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [pendingAction, setPendingAction] = useState(null);
   const [isActionSubmitting, setIsActionSubmitting] = useState(false);
@@ -71,13 +76,22 @@ const PendingRequest = ({ onTotalChange }) => {
       ),
     },
     {
+      key: "resentAt",
+      label: "Resent On",
+      render: (value) => (
+        <span className="text-sm font-semibold text-(--theme-text-muted)">
+          {value ? formatDateWithUserPreferences(value) : "-"}
+        </span>
+      ),
+    },
+    {
       key: "actions",
       label: "Actions",
       align: "center",
       render: (_, row) => (
         <ActionDropdown
           items={[
-            { label: "View Detail", icon: Eye, onClick: () => setViewDetailRequest(row) },
+            // { label: "View Detail", icon: Eye, onClick: () => setViewDetailRequest(row) },
             { label: "Resend", icon: Send, onClick: () => setPendingAction({ action: "resend", request: row }) },
             { label: "Cancel Invite", icon: Ban, danger: true, onClick: () => setPendingAction({ action: "cancel", request: row }) },
           ]}
@@ -86,20 +100,6 @@ const PendingRequest = ({ onTotalChange }) => {
       ),
     },
   ], []);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      const nextSearch = searchValue.trim();
-
-      if (nextSearch !== debouncedSearch) {
-        setCurrentPage(0);
-        setIsLoading(true);
-        setDebouncedSearch(nextSearch);
-      }
-    }, 400);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [debouncedSearch, searchValue]);
 
   useEffect(() => {
     let isActive = true;
@@ -138,9 +138,17 @@ const PendingRequest = ({ onTotalChange }) => {
     return () => {
       isActive = false;
     };
-  }, [currentPage, debouncedSearch, onTotalChange]);
+  }, [currentPage, debouncedSearch, onTotalChange, refreshKey]);
 
   const activePage = totalPages > 0 ? Math.min(currentPage, totalPages - 1) : 0;
+
+  const handleSearchChange = (value) => {
+    if (getSearchQuery(value) !== debouncedSearch) {
+      setIsLoading(true);
+    }
+    setSearchValue(value);
+    setCurrentPage(0);
+  };
 
   const handleActionConfirm = async (actionData) => {
     const { action, request } = actionData;
@@ -149,6 +157,8 @@ const PendingRequest = ({ onTotalChange }) => {
       if (action === "resend") {
         const response = await resendTenantLaundryInvite(request.id);
         toast.success(response?.message || "Invitation resent successfully");
+        setIsLoading(true);
+        setRefreshKey((current) => current + 1);
       } else if (action === "cancel") {
         const response = await cancelTenantLaundryInvite(request.id);
         toast.success(response?.message || "Invitation cancelled successfully");
@@ -171,7 +181,7 @@ const PendingRequest = ({ onTotalChange }) => {
         <div className="mb-4 max-w-md">
           <Input
             leftIcon={<Search size={16} />}
-            onChange={setSearchValue}
+            onChange={handleSearchChange}
             placeholder="Search pending invitations..."
             value={searchValue}
           />

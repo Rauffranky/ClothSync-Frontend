@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { useSortableTableData } from "../../Hooks/useSortableTableData";
 import TableSkeleton from "./TableSkeleton";
 
 const getValue = (row, accessor) => {
@@ -14,6 +15,15 @@ const alignClasses = {
   left: "text-left justify-start",
   center: "text-center justify-center",
   right: "text-right justify-end",
+};
+
+const isColumnSortable = (column) => {
+  if (typeof column.sortable === "boolean") return column.sortable;
+
+  const columnKey = String(column.sortKey || column.accessor || column.key || "")
+    .toLowerCase();
+
+  return columnKey !== "action" && columnKey !== "actions";
 };
 
 const Table = ({
@@ -36,6 +46,18 @@ const Table = ({
   cellClassName = "",
   compact = false,
 }) => {
+  const {
+    handleSort: handleInternalSort,
+    sortedData: internallySortedData,
+    sortBy: internalSortBy,
+    sortDirection: internalSortDirection,
+  } = useSortableTableData(data);
+  const hasExternalSort = typeof onSort === "function";
+  const activeSortBy = hasExternalSort ? sortBy : internalSortBy;
+  const activeSortDirection = hasExternalSort
+    ? sortDirection
+    : internalSortDirection;
+  const displayedData = hasExternalSort ? data : internallySortedData;
   const hasActions = Boolean(actions);
   const resolvedColumns =
     columns.length > 0
@@ -53,7 +75,7 @@ const Table = ({
 
   const getSortDirection = (column) => {
     const sortKey = column.sortKey || column.accessor || column.key;
-    return sortBy === sortKey ? sortDirection : undefined;
+    return activeSortBy === sortKey ? activeSortDirection : undefined;
   };
 
   const renderSortIcon = (direction) => {
@@ -63,13 +85,18 @@ const Table = ({
   };
 
   const handleSort = (column) => {
-    if (!column.sortable || !onSort) return;
+    if (!isColumnSortable(column)) return;
 
     const sortKey = column.sortKey || column.accessor || column.key;
     const currentDirection = getSortDirection(column);
     const nextDirection = currentDirection === "asc" ? "desc" : "asc";
 
-    onSort(sortKey, nextDirection, column);
+    if (hasExternalSort) {
+      onSort(sortKey, nextDirection, column);
+      return;
+    }
+
+    handleInternalSort(sortKey, nextDirection);
   };
 
   const renderCell = (row, column, rowIndex) => {
@@ -116,6 +143,7 @@ const Table = ({
                   {visibleColumns.map((column) => {
                     const direction = getSortDirection(column);
                     const alignClass = alignClasses[column.align || "left"];
+                    const sortable = isColumnSortable(column);
 
                     return (
                       <th
@@ -126,18 +154,18 @@ const Table = ({
                       >
                         <button
                           type="button"
-                          disabled={!column.sortable || !onSort}
+                          disabled={!sortable}
                           onClick={() => handleSort(column)}
                           className={[
                             "flex w-full min-w-0 items-center gap-2 bg-transparent p-0 font-inherit text-inherit",
                             alignClass,
-                            column.sortable && onSort
+                            sortable
                               ? "cursor-pointer hover:text-(--theme-text-primary)"
                               : "cursor-default",
                           ].join(" ")}
                         >
                           <span className="whitespace-nowrap">{column.label}</span>
-                          {column.sortable && onSort && (
+                          {sortable && (
                             <span className={direction ? "text-(--color-aurora-teal)" : ""}>
                               {renderSortIcon(direction)}
                             </span>
@@ -158,7 +186,7 @@ const Table = ({
                 </tr>
               </thead>
 
-              {data.length === 0 ? (
+              {displayedData.length === 0 ? (
                 <tbody>
                   <tr>
                     <td
@@ -171,7 +199,7 @@ const Table = ({
                 </tbody>
               ) : (
                 <tbody>
-                  {data.map((row, rowIndex) => (
+                  {displayedData.map((row, rowIndex) => (
                     <tr
                       key={getRowKey(row, rowIndex)}
                       onClick={() => onRowClick?.(row, rowIndex)}

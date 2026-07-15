@@ -1,5 +1,4 @@
 import Card from "../../../../../Components/UI/Card";
-import IconWrapper from "../../../../../Components/UI/IconWrapper";
 import Badge from "../../../../../Components/UI/Badge";
 import { activityLogs } from "../data";
 

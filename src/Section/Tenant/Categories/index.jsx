@@ -8,6 +8,10 @@ import Dropdown from "../../../Components/UI/Dropdown";
 import Input from "../../../Components/UI/Input";
 import Modal from "../../../Components/UI/Modal";
 import Pagination from "../../../Components/UI/Pagination";
+import {
+  getSearchQuery,
+  useDebouncedSearch,
+} from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import CategoriesTable from "./CategoriesTable";
 import Stats from "./Stats";
@@ -87,27 +91,15 @@ const Categories = () => {
   const [categoryRows, setCategoryRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchValue, setSearchValue] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debouncedSearch = useDebouncedSearch(searchValue);
   const [statusFilter, setStatusFilter] = useState("all");
   const [usageFilter, setUsageFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      const nextSearch = searchValue.trim();
-
-      if (nextSearch !== debouncedSearch) {
-        setIsLoading(true);
-        setDebouncedSearch(nextSearch);
-      }
-    }, 400);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [debouncedSearch, searchValue]);
 
   useEffect(() => {
     let isActive = true;
@@ -138,9 +130,26 @@ const Categories = () => {
               rows.length,
           ),
         );
+        setTotalPages(
+          Number(
+            pagination?.totalPages ??
+              pagination?.pages ??
+              Math.ceil(
+                Number(
+                  pagination?.totalItems ??
+                    pagination?.totalDocs ??
+                    pagination?.total ??
+                    rows.length,
+                ) / ITEMS_PER_PAGE,
+              ),
+          ),
+        );
       })
       .catch((error) => {
         if (isActive) {
+          setCategoryRows([]);
+          setTotalItems(0);
+          setTotalPages(0);
           toast.error(getApiErrorMessage(error, "Unable to load categories"));
         }
       })
@@ -164,14 +173,16 @@ const Categories = () => {
 
   const { handleSort, sortedData, sortBy, sortDirection } =
     useSortableTableData(filteredCategories);
-  const pageCount = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
+  const activePage = totalPages > 0 ? Math.min(currentPage, totalPages - 1) : 0;
 
   const resetCurrentPage = () => {
     setCurrentPage(0);
   };
 
   const handleSearchChange = (value) => {
+    if (getSearchQuery(value) !== debouncedSearch) {
+      setIsLoading(true);
+    }
     setSearchValue(value);
     resetCurrentPage();
   };
@@ -352,7 +363,7 @@ const Categories = () => {
                 setIsLoading(true);
                 setCurrentPage(selected);
               }}
-              pageCount={pageCount}
+              pageCount={totalPages}
               totalItems={totalItems}
             />
           </div>

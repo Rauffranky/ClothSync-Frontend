@@ -3,33 +3,39 @@ import Modal from "../../../Components/UI/Modal";
 import Button from "../../../Components/UI/Button";
 import Alert from "../../../Components/UI/Alert";
 
-const UnlinkLaundryModal = ({ isOpen, onClose, laundry, onConfirm }) => {
+const UnlinkLaundryModal = ({
+  isOpen,
+  onClose,
+  laundry,
+  onConfirm,
+  isSubmitting = false,
+}) => {
   return (
     <Modal
       footer={
         <>
-          <Button onClick={onClose} size="sm" variant="secondary">
+          <Button
+            disabled={isSubmitting}
+            onClick={onClose}
+            size="sm"
+            variant="secondary"
+          >
             Cancel
           </Button>
           <Button
             leftIcon={<Unlink size={18} />}
+            loading={isSubmitting}
             onClick={onConfirm}
             size="sm"
-            variant={laundry?.status === "Suspend" ? "success" : "danger"}
+            variant="danger"
           >
-            {laundry?.status === "Suspend"
-              ? "Connect Laundry"
-              : "Unlink Laundry"}
+            Unlink Laundry
           </Button>
         </>
       }
-      onClose={onClose}
+      onClose={isSubmitting ? undefined : onClose}
       open={isOpen}
-      title={
-        laundry?.status === "Suspend"
-          ? "Connect Laundry"
-          : "Unlink Laundry"
-      }
+      title="Unlink Laundry"
       width={520}
     >
       {laundry && (
@@ -37,28 +43,13 @@ const UnlinkLaundryModal = ({ isOpen, onClose, laundry, onConfirm }) => {
           <Alert
             leftIcon={<AlertTriangle size={18} />}
             rounded="rounded-xl"
-            variant={laundry.status === "Suspend" ? "info" : "danger"}
+            variant="danger"
           >
-            <p className="m-0 font-bold">
-              {laundry.status === "Suspend"
-                ? "Confirm connect request"
-                : "Confirm unlink request"}
-            </p>
+            <p className="m-0 font-bold">Confirm unlink request</p>
             <p className="m-0 mt-1 text-sm">
-              {laundry.status === "Suspend" ? (
-                <>
-                  You are about to connect{" "}
-                  <span className="font-black">{laundry.name}</span>{" "}
-                  again for this tenant account.
-                </>
-              ) : (
-                <>
-                  You are about to unlink{" "}
-                  <span className="font-black">{laundry.name}</span>{" "}
-                  from this tenant account. This will move the laundry to
-                  Suspend status instead of deleting it.
-                </>
-              )}
+              You are about to unlink{" "}
+              <span className="font-black">{laundry.name}</span> from this tenant
+              account.
             </p>
           </Alert>
 

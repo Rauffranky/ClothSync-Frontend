@@ -1,3 +1,5 @@
+import Card from "./Card";
+
 const Tabs = ({
   items = [],
   value,
@@ -7,18 +9,22 @@ const Tabs = ({
   rounded = "14px",
 }) => {
   return (
-    <div
-      className={`grid gap-1.5 rounded-2xl border p-1.5 ${className}`}
-      style={{
-        background:
-          "linear-gradient(145deg, var(--theme-surface-strong), var(--theme-surface))",
-        borderColor: "var(--theme-border-soft)",
-        boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.16)",
-      }}
+    <Card
+    shadow="none"
+      padding="10px"
+      className={`${className}`}
+      // style={{
+      //   background:
+      //     "linear-gradient(145deg, var(--theme-surface-strong), var(--theme-surface))",
+      //   borderColor: "var(--theme-border-soft)",
+      //   boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.16)",
+      // }}
     >
       <div
         className="grid gap-1.5"
-        style={{ gridTemplateColumns: `repeat(${items.length || 1}, minmax(0, 1fr))` }}
+        style={{
+          gridTemplateColumns: `repeat(${items.length || 1}, minmax(0, 1fr))`,
+        }}
       >
         {items.map((item) => {
           const isActive = item.value === value;
@@ -35,7 +41,9 @@ const Tabs = ({
                 color: isActive
                   ? "var(--button-primary-text)"
                   : "var(--theme-text-secondary)",
-                background: isActive ? "var(--gradient-aurora-flow)" : "transparent",
+                background: isActive
+                  ? "var(--gradient-aurora-flow)"
+                  : "transparent",
                 borderColor: isActive ? "transparent" : "transparent",
                 boxShadow: isActive
                   ? "0 12px 22px rgba(20, 184, 166, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22)"
@@ -66,7 +74,7 @@ const Tabs = ({
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 };
 
