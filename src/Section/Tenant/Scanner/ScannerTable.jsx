@@ -51,7 +51,11 @@ import {
 
 const ITEMS_PER_PAGE = 10;
 
-const ScannerTable = ({ onScannerUpdated, refreshKey = 0 }) => {
+const ScannerTable = ({
+  onCollectionStateChange,
+  onScannerUpdated,
+  refreshKey = 0,
+}) => {
   const navigate = useNavigate();
   const [scannerRows, setScannerRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -125,6 +129,8 @@ const ScannerTable = ({ onScannerUpdated, refreshKey = 0 }) => {
   useEffect(() => {
     let isActive = true;
 
+    onCollectionStateChange?.({ status: "loading" });
+
     getTenantScanners({
       page: currentPage + 1,
       limit: ITEMS_PER_PAGE,
@@ -146,6 +152,10 @@ const ScannerTable = ({ onScannerUpdated, refreshKey = 0 }) => {
         setTotalItems(collection.totalItems);
         setTotalPages(collection.totalPages);
         setLoadError("");
+        onCollectionStateChange?.({
+          status: "success",
+          summary: collection.summary,
+        });
       })
       .catch((error) => {
         if (!isActive) return;
@@ -154,6 +164,7 @@ const ScannerTable = ({ onScannerUpdated, refreshKey = 0 }) => {
         setTotalItems(0);
         setTotalPages(0);
         setLoadError(message);
+        onCollectionStateChange?.({ status: "error", error: message });
       })
       .finally(() => {
         if (isActive) setIsLoading(false);
@@ -167,6 +178,7 @@ const ScannerTable = ({ onScannerUpdated, refreshKey = 0 }) => {
     debouncedSearch,
     localRefreshKey,
     modeFilter,
+    onCollectionStateChange,
     operatorFilter,
     refreshKey,
     statusFilter,
@@ -393,7 +405,7 @@ const ScannerTable = ({ onScannerUpdated, refreshKey = 0 }) => {
     },
     {
       key: "location",
-      label: "Location",
+      label: "Zone",
       sortable: true,
       render: (_, row) => (
         <span

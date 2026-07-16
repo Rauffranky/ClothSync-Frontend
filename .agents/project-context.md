@@ -185,10 +185,15 @@ Confirmed API-backed areas:
   from `GET /tenant-staff/show`; the selected staff UUID is sent as
   `assignedOperatorId`. The dedicated `/business/scanners/warnings` screen uses
   `GET /tenant-scanners/warnings` with separate pagination and is available
-  beneath Scanners in the business sidebar. Scanner summary cards use
-  `GET /tenant-scanners/summary`. Scanner details use
-  `GET /tenant-scanners/show/:id` and render device, battery, nested operator,
-  ownership/audit, and English/Arabic translation data. Scanner detail routes
+  beneath Scanners in the business sidebar. Scanner summary cards share the
+  scanner-list request and use the `{ key, label, count }[]` returned in
+  `GET /tenant-scanners/show` under `data.counts`; no separate summary request
+  is made.
+  Scanner details use `GET /tenant-scanners/show/:id` and render the returned
+  scanner identity/configuration, reads, zone, notes, tenant/laundry ownership,
+  the nested `createdByUser` identity/role, and the nested operator's `user.id`,
+  `user.name`, and `user.email`. Fields not present in the current detail contract, such as
+  battery, firmware, and signal status, are not fabricated in the UI. Scanner detail routes
   keep All Scanners selected in the sidebar, while the warning route selects
   Scanner Warnings and uses the `Scanners / Warnings` header. Activate/deactivate actions use
   `PUT /tenant-scanners/update-status/:id`. Mock scan logs are no longer shown
@@ -310,7 +315,9 @@ Current endpoints:
 - `PUT /tenant-categories/update-status/:id` with `{ status }`.
 - `POST /tenant-scanners/create` with `{ scannerId, scannerType, scannerMode,
   assignedOperatorId?, status, translations: { en, ar } }`.
-- `GET /tenant-scanners/show` with `page`, `limit`, and optional `keywords`,
+- `GET /tenant-scanners/show` returns `data.items`, `data.pagination`, and
+  `data.counts` for the six scanner summary cards. It accepts `page`, `limit`,
+  and optional `keywords`,
   `scannerType` (`fixed`/`portable`), `scannerMode`
   (`entry`/`exit`/`manual`/`auto`), `status`
   (`active`/`inactive`/`warning`), `signalStatus`
@@ -319,9 +326,6 @@ Current endpoints:
   request shape.
 - `GET /tenant-scanners/warnings` with `page` and `limit` returns scanners that
   require attention for the Scanner warnings panel.
-- `GET /tenant-scanners/summary` returns `totalScanners`, `activeScanners`,
-  `inactiveScanners`, `fixedScanners`, `portableScanners`, and
-  `scannerWarnings` for the scanner summary cards.
 - `GET /tenant-scanners/show/:id` loads one scanner by its backend UUID for the
   scanner details screen.
 - `PUT /tenant-scanners/update-status/:id` updates one scanner by UUID with

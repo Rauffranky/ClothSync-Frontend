@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Plus } from "lucide-react";
 import Button from "../../../Components/UI/Button";
 import ScannerStats from "./ScannerStats";
@@ -11,6 +11,41 @@ import { toast } from "../../../Utils/toast";
 const ScannerManagementIndex = () => {
   const [isAddScannerOpen, setIsAddScannerOpen] = useState(false);
   const [scannerRefreshKey, setScannerRefreshKey] = useState(0);
+  const [summaryState, setSummaryState] = useState({
+    summary: null,
+    isLoading: true,
+    loadError: "",
+  });
+
+  const handleCollectionStateChange = useCallback((nextState) => {
+    setSummaryState((current) => {
+      if (nextState.status === "loading") {
+        return {
+          ...current,
+          isLoading: !current.summary,
+          loadError: "",
+        };
+      }
+
+      if (nextState.status === "success") {
+        return {
+          summary: nextState.summary ?? current.summary,
+          isLoading: false,
+          loadError: "",
+        };
+      }
+
+      return {
+        summary: current.summary,
+        isLoading: false,
+        loadError: current.summary ? "" : nextState.error,
+      };
+    });
+  }, []);
+
+  const refreshScanners = () => {
+    setScannerRefreshKey((current) => current + 1);
+  };
 
   const handleCreateScanner = async (values) => {
     const payload = {
@@ -38,7 +73,7 @@ const ScannerManagementIndex = () => {
     try {
       const response = await createTenantScanner(payload);
       toast.success(response?.message || "Scanner created successfully");
-      setScannerRefreshKey((current) => current + 1);
+      refreshScanners();
       return response;
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Unable to create scanner"));
@@ -60,13 +95,17 @@ const ScannerManagementIndex = () => {
       </div>
 
       {/* Stats Overview */}
-      <ScannerStats refreshKey={scannerRefreshKey} />
+      <ScannerStats
+        isLoading={summaryState.isLoading}
+        loadError={summaryState.loadError}
+        onRetry={refreshScanners}
+        summary={summaryState.summary}
+      />
 
       {/* Main Table */}
       <ScannerTable
-        onScannerUpdated={() =>
-          setScannerRefreshKey((current) => current + 1)
-        }
+        onCollectionStateChange={handleCollectionStateChange}
+        onScannerUpdated={refreshScanners}
         refreshKey={scannerRefreshKey}
       />
 

@@ -1,13 +1,10 @@
 
-import { useEffect, useState } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import Alert from "../../../Components/UI/Alert";
 import Button from "../../../Components/UI/Button";
 import Card from "../../../Components/UI/Card";
 import CardSkeleton from "../../../Components/UI/CardSkeleton";
 import IconWrapper from "../../../Components/UI/IconWrapper";
-import { getApiErrorMessage } from "../../../axios/api";
-import { getTenantScannerSummary } from "../../../axios/scanners/tenantScanners";
 import { scannerStats } from "./data";
 
 const summaryKeys = {
@@ -19,43 +16,7 @@ const summaryKeys = {
   warnings: "scannerWarnings",
 };
 
-const ScannerStats = ({ refreshKey = 0 }) => {
-  const [summary, setSummary] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
-  const [retryKey, setRetryKey] = useState(0);
-
-  useEffect(() => {
-    let isActive = true;
-
-    getTenantScannerSummary()
-      .then((response) => {
-        if (!isActive) return;
-        setSummary(response?.data ?? response ?? null);
-        setLoadError("");
-      })
-      .catch((error) => {
-        if (!isActive) return;
-        setSummary(null);
-        setLoadError(
-          getApiErrorMessage(error, "Unable to load scanner summary"),
-        );
-      })
-      .finally(() => {
-        if (isActive) setIsLoading(false);
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [refreshKey, retryKey]);
-
-  const retryLoad = () => {
-    setIsLoading(true);
-    setLoadError("");
-    setRetryKey((current) => current + 1);
-  };
-
+const ScannerStats = ({ isLoading, loadError, onRetry, summary }) => {
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
@@ -78,7 +39,7 @@ const ScannerStats = ({ refreshKey = 0 }) => {
             <span>{loadError}</span>
             <Button
               leftIcon={<RefreshCw size={14} />}
-              onClick={retryLoad}
+              onClick={onRetry}
               size="sm"
               variant="secondary"
             >

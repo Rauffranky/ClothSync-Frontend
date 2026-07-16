@@ -18,6 +18,18 @@ const getScannerRows = (payload) => {
     return Array.isArray(rows) ? rows : [];
 };
 
+export const normalizeScannerCounts = (counts) => {
+    if (Array.isArray(counts)) {
+        return Object.fromEntries(
+            counts
+                .filter((item) => item?.key)
+                .map((item) => [item.key, Number(item.count) || 0]),
+        );
+    }
+
+    return counts && typeof counts === "object" ? counts : null;
+};
+
 export const normalizeScanner = (scanner, index = 0) => {
     const translations = scanner?.translations || {};
     const translation = translations?.en || scanner?.translation || {};
@@ -69,6 +81,9 @@ export const normalizeScanner = (scanner, index = 0) => {
 export const getScannerPaginatedCollection = (response, limit) => {
     const payload = response?.data ?? response ?? {};
     const rows = getScannerRows(payload);
+    const summary = normalizeScannerCounts(
+        payload?.counts ?? payload?.summary ?? response?.counts,
+    );
     const pagination = payload?.pagination || response?.pagination || {};
     const totalItems = Number(
         pagination?.totalItems ?? pagination?.totalDocs ?? pagination?.total ?? rows.length,
@@ -81,6 +96,7 @@ export const getScannerPaginatedCollection = (response, limit) => {
 
     return {
         rows,
+        summary,
         totalItems: Number.isFinite(totalItems) ? totalItems : 0,
         totalPages: Number.isFinite(totalPages) ? totalPages : 0,
     };
@@ -215,7 +231,7 @@ export const scannerModeOptions = [
 ];
 
 export const scannerStatusOptions = [
-    { label: "All Statuses", value: "all" },
+    { label: "All Status", value: "all" },
     { label: "Active", value: "active" },
     { label: "Warning", value: "warning" },
     { label: "Inactive", value: "inactive" },

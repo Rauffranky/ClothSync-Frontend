@@ -28,7 +28,6 @@ export const TENANT_SCANNER_ENDPOINTS = Object.freeze({
   CREATE: "/tenant-scanners/create",
   LIST: "/tenant-scanners/show",
   DETAILS: (id) => `/tenant-scanners/show/${id}`,
-  SUMMARY: "/tenant-scanners/summary",
   WARNINGS: "/tenant-scanners/warnings",
   UPDATE: (id) => `/tenant-scanners/update/${id}`,
   UPDATE_STATUS: (id) => `/tenant-scanners/update-status/${id}`,

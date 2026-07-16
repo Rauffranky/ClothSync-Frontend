@@ -2,20 +2,18 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   AlertTriangle,
-  Battery,
   Cpu,
+  FileText,
   Gauge,
+  History,
   Logs,
+  MapPin,
   RefreshCw,
-  ShieldAlert,
   UserRound,
-  Wifi,
 } from "lucide-react";
 import Alert from "../../../../Components/UI/Alert";
-import Badge from "../../../../Components/UI/Badge";
 import Button from "../../../../Components/UI/Button";
 import Card from "../../../../Components/UI/Card";
-import ProgressBar from "../../../../Components/UI/ProgressBar";
 import { getApiErrorMessage } from "../../../../axios/api";
 import { getTenantScannerDetails } from "../../../../axios/scanners/tenantScanners";
 import { formatDateTime } from "../../../../Utils/date";
@@ -25,16 +23,9 @@ import HeaderCard from "./HeaderCard";
 const summaryItems = [
   { key: "lastActivity", label: "Last Activity", icon: Logs },
   { key: "reads", label: "Total Reads", icon: Gauge },
-  { key: "location", label: "Location", icon: Cpu },
-  { key: "operator", label: "Operator", icon: ShieldAlert },
+  { key: "location", label: "Zone", icon: MapPin },
+  { key: "operator", label: "Operator", icon: UserRound },
 ];
-
-const signalLabels = {
-  low_signal: "Low Signal",
-  offline: "Offline",
-  online: "Online",
-  warning: "Warning",
-};
 
 const DetailField = ({ label, value, mono = false }) => (
   <div>
@@ -126,9 +117,14 @@ const ScannerDetailsIndex = () => {
     );
   }
 
-  const batteryLevel = Number(scanner.batteryLevel) || 0;
   const assignedOperator = scanner.assignedOperator || {};
   const assignedOperatorUser = assignedOperator.user || {};
+  const createdByUser = scanner.createdByUser || {};
+  const creatorRole = createdByUser.role
+    ? String(createdByUser.role)
+        .replace(/[_-]+/g, " ")
+        .replace(/\b\w/g, (character) => character.toUpperCase())
+    : null;
 
   return (
     <div className="space-y-6">
@@ -169,57 +165,31 @@ const ScannerDetailsIndex = () => {
           </div>
           <dl className="grid gap-4 sm:grid-cols-2">
             <DetailField label="Scanner ID" mono value={scanner.id} />
-            <DetailField label="Firmware" value={scanner.firmwareVersion} />
             <DetailField label="Scanner Type" value={scanner.scannerTypeLabel || scanner.type} />
             <DetailField label="Scanner Mode" value={scanner.scannerModeLabel || scanner.mode} />
             <DetailField label="Status" value={scanner.statusLabel || scanner.status} />
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-(--theme-text-muted)">
-                Signal
-              </dt>
-              <dd className="m-0 mt-2">
-                <Badge
-                  leftIcon={<Wifi size={12} />}
-                  size="sm"
-                  variant={scanner.signalStatus === "online" ? "success" : "warning"}
-                >
-                  {signalLabels[scanner.signalStatus] || scanner.signalStatus}
-                </Badge>
-              </dd>
-            </div>
-            <DetailField label="Locale" value={scanner.locale} />
-            <DetailField label="Laundry ID" mono value={scanner.laundryId} />
           </dl>
         </Card>
 
         <Card padding="20px" rounded="18px">
           <div className="mb-5 flex items-center gap-3">
-            <Battery size={19} className="text-(--color-aurora-teal)" />
+            <History size={19} className="text-(--color-aurora-teal)" />
             <h2 className="m-0 text-lg font-black text-(--theme-text-primary)">
-              Battery & Notes
+              Ownership & Audit
             </h2>
           </div>
-          <div className="space-y-5">
-            <div>
-              <div className="mb-2 flex items-center justify-between text-sm font-bold text-(--theme-text-secondary)">
-                <span>Battery Level</span>
-                <span>{batteryLevel}%</span>
-              </div>
-              <ProgressBar
-                heightClass="h-2"
-                value={batteryLevel}
-                variant={batteryLevel <= 20 ? "danger" : "success"}
-              />
-            </div>
-            <div>
-              <p className="m-0 text-xs font-bold uppercase tracking-wide text-(--theme-text-muted)">
-                Notes
-              </p>
-              <p className="m-0 mt-2 text-sm font-medium leading-relaxed text-(--theme-text-secondary)">
-                {scanner.customNotes || "No notes provided."}
-              </p>
-            </div>
-          </div>
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <DetailField label="Created By" value={createdByUser.name} />
+            <DetailField label="Creator Role" value={creatorRole} />
+            <DetailField
+              label="Created At"
+              value={formatDateTime(scanner.createdAt)}
+            />
+            <DetailField
+              label="Updated At"
+              value={formatDateTime(scanner.updatedAt)}
+            />
+          </dl>
         </Card>
       </div>
 
@@ -232,31 +202,26 @@ const ScannerDetailsIndex = () => {
             </h2>
           </div>
           <dl className="grid gap-4 sm:grid-cols-2">
-            <DetailField label="Full Name" value={assignedOperatorUser.fullName} />
+            <DetailField
+              label="Name"
+              value={assignedOperatorUser.name || assignedOperatorUser.fullName}
+            />
             <DetailField label="Email" value={assignedOperatorUser.email} />
-            <DetailField label="Phone" value={assignedOperatorUser.phone} />
-            <DetailField label="Staff Status" value={assignedOperator.status} />
-            <DetailField label="Location" value={assignedOperator.locationName} />
-            <DetailField label="Language" value={assignedOperator.language} />
-            <DetailField
-              label="Invited At"
-              value={formatDateTime(assignedOperator.invitedAt)}
-            />
-            <DetailField label="Operator Created By" mono value={assignedOperator.createdBy} />
-            <DetailField
-              label="Operator Created At"
-              value={formatDateTime(assignedOperator.createdAt)}
-            />
-            <DetailField
-              label="Operator Updated At"
-              value={formatDateTime(assignedOperator.updatedAt)}
-            />
           </dl>
         </Card>
 
-
+        <Card padding="20px" rounded="18px">
+          <div className="mb-5 flex items-center gap-3">
+            <FileText size={19} className="text-(--color-aurora-teal)" />
+            <h2 className="m-0 text-lg font-black text-(--theme-text-primary)">
+              Notes
+            </h2>
+          </div>
+          <p className="m-0 text-sm font-medium leading-relaxed text-(--theme-text-secondary)">
+            {scanner.customNotes || "No notes provided."}
+          </p>
+        </Card>
       </div>
-
     </div>
   );
 };

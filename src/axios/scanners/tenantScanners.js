@@ -10,9 +10,6 @@ export const getTenantScanners = (params = {}) =>
 export const getTenantScannerDetails = (id) =>
   api.get(TENANT_SCANNER_ENDPOINTS.DETAILS(id), { timeout: 15000 });
 
-export const getTenantScannerSummary = () =>
-  api.get(TENANT_SCANNER_ENDPOINTS.SUMMARY, { timeout: 15000 });
-
 export const getTenantScannerWarnings = (params = {}) =>
   api.get(TENANT_SCANNER_ENDPOINTS.WARNINGS, { params, timeout: 15000 });
 

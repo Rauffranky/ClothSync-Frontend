@@ -7,7 +7,7 @@ const ScannerDetailsPage = () => {
     meta: [
       {
         name: "description",
-        content: "View scanner activity, logs, and configuration details.",
+        content: "View scanner configuration, activity, audit, and operator details.",
       },
     ],
   });
