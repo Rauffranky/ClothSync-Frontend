@@ -151,7 +151,7 @@ Re-check these facts in source during every related task.
 
 Confirmed API-backed areas:
 
-- Business login calls `loginTenant` and stores session information.
+- Business and Laundry logins call their respective login APIs and store session information.
 - The Business signup Account step calls `POST /tenant-auth/signup` with
   `fullName`, `email`, `password`, and `confirmPassword`, then advances to email
   verification after the backend accepts the request and sends an OTP.
@@ -230,7 +230,6 @@ Confirmed API-backed areas:
 
 Partial or placeholder areas:
 
-- Laundry login navigates without a backend request.
 - Super Admin login navigates without a backend request.
 - Forgot-password email, OTP, and reset steps are UI-only.
 - Business signup completion presentation remains UI-only. Pricing is currently

@@ -9,26 +9,26 @@ export const getPaginatedCollection = (response, collectionKeys, limit) => {
   const rows = Array.isArray(payload)
     ? payload
     : collectionKeys.reduce(
-        (collection, key) => collection || payload?.[key],
-        null,
-      ) ||
-      payload?.items ||
-      payload?.docs ||
-      payload?.results ||
-      [];
+      (collection, key) => collection || payload?.[key],
+      null,
+    ) ||
+    payload?.items ||
+    payload?.docs ||
+    payload?.results ||
+    [];
   const pagination =
     payload?.pagination || payload?.meta || root?.pagination || root?.meta || payload;
   const totalItems = Number(
     pagination?.totalItems ??
-      pagination?.totalDocs ??
-      pagination?.total ??
-      pagination?.count ??
-      rows.length,
+    pagination?.totalDocs ??
+    pagination?.total ??
+    pagination?.count ??
+    rows.length,
   );
   const totalPages = Number(
     pagination?.totalPages ??
-      pagination?.pages ??
-      Math.ceil(totalItems / limit),
+    pagination?.pages ??
+    Math.ceil(totalItems / limit),
   );
 
   return {
@@ -225,10 +225,15 @@ export const normalizePendingInvite = (invite) => {
         ? "success"
         : rawStatus === "pending"
           ? "warning"
-        : rawStatus === "expired" || rawStatus === "rejected"
-          ? "danger"
-          : "neutral",
+          : rawStatus === "expired" || rawStatus === "rejected"
+            ? "danger"
+            : rawStatus === "pending"
+              ? "warning"
+              : "neutral",
     sentAt: invite?.sentAt || invite?.createdAt || invite?.invitedAt || null,
+    resentAt: invite?.resentAt || null,
+    expiresAt: invite?.expiresAt || null,
+    rejectReason: rawStatus === "rejected" ? (invite?.rejectReason || invite?.reason || "-") : "-",
   };
 };
 

@@ -17,6 +17,12 @@ import {
   verifyTenantForgotPasswordOtp,
   resetTenantPassword,
 } from "../axios/auth/tenantAuth";
+import { 
+  loginLaundry,
+  forgotLaundryPassword,
+  verifyLaundryForgotPasswordOtp,
+  resetLaundryPassword,
+} from "../axios/auth/laundryAuth";
 import { getApiErrorMessage } from "../axios/api";
 import { toast } from "../Utils/toast";
 
@@ -91,13 +97,14 @@ const Login = ({ portal }) => {
     validationSchema: isForgotFlow ? validationSchema : loginSchema,
     onSubmit: async (values, { setSubmitting }) => {
       if (!isForgotFlow) {
-        if (portal.value !== "business") {
+        if (portal.value !== "business" && portal.value !== "laundry") {
           navigate(portal.dashboardPath);
           return;
         }
 
         try {
-          const response = await loginTenant({
+          const loginFn = portal.value === "business" ? loginTenant : loginLaundry;
+          const response = await loginFn({
             email: values.email,
             password: values.password,
           });
@@ -120,7 +127,8 @@ const Login = ({ portal }) => {
 
       if (forgotStep === "email") {
         try {
-          const response = await forgotTenantPassword({ email: values.forgotEmail });
+          const forgotFn = portal.value === "business" ? forgotTenantPassword : forgotLaundryPassword;
+          const response = await forgotFn({ email: values.forgotEmail });
           toast.success(response?.message || "OTP sent successfully");
           setForgotStep("otp");
           formik.setTouched({});
@@ -134,7 +142,8 @@ const Login = ({ portal }) => {
 
       if (forgotStep === "otp") {
         try {
-          const response = await verifyTenantForgotPasswordOtp({
+          const verifyFn = portal.value === "business" ? verifyTenantForgotPasswordOtp : verifyLaundryForgotPasswordOtp;
+          const response = await verifyFn({
             email: values.forgotEmail,
             otp: values.otp,
           });
@@ -150,7 +159,8 @@ const Login = ({ portal }) => {
       }
 
       try {
-        const response = await resetTenantPassword({
+        const resetFn = portal.value === "business" ? resetTenantPassword : resetLaundryPassword;
+        const response = await resetFn({
           email: values.forgotEmail,
           otp: values.otp,
           password: values.newPassword,

@@ -10,7 +10,7 @@ import {
   getSearchQuery,
   useDebouncedSearch,
 } from "../../../Hooks/useDebouncedSearch";
-import { 
+import {
   getPendingTenantLaundryInvites,
   resendTenantLaundryInvite,
   cancelTenantLaundryInvite
@@ -68,7 +68,7 @@ const PendingRequest = ({ onTotalChange }) => {
     },
     {
       key: "sentAt",
-      label: "Sent On",
+      label: "Created At",
       render: (value) => (
         <span className="text-sm font-semibold text-(--theme-text-muted)">
           {value ? formatDateWithUserPreferences(value) : "-"}
@@ -162,10 +162,11 @@ const PendingRequest = ({ onTotalChange }) => {
       } else if (action === "cancel") {
         const response = await cancelTenantLaundryInvite(request.id);
         toast.success(response?.message || "Invitation cancelled successfully");
-        setRequests((current) => current.filter((r) => r.id !== request.id));
-        const newTotal = totalItems > 0 ? totalItems - 1 : 0;
-        setTotalItems(newTotal);
-        onTotalChange?.(newTotal);
+        setRequests((current) =>
+          current.map((r) =>
+            r.id === request.id ? { ...r, status: "Cancelled", statusVariant: "danger" } : r
+          )
+        );
       }
       setPendingAction(null);
     } catch (error) {
