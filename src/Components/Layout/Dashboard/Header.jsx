@@ -76,7 +76,15 @@ const Header = ({ portalKey, onOpenSidebar }) => {
     .join("")
     .toUpperCase();
 
-  const isDetailPage = activeItem && pathname !== `${activePortal?.basePath}/${activeItem.segment}`;
+  const isNestedPage =
+    activeItem &&
+    pathname !== `${activePortal?.basePath}/${activeItem.segment}`;
+  const nestedPageLabel =
+    pathname === "/business/scanners/warnings"
+      ? "Warnings"
+      : pathname === "/business/staff-roles"
+        ? "Roles"
+        : "Details";
 
   return (
     <header className="sticky top-0 z-30 border-b border-(--theme-border) bg-(--layout-header-bg) px-4 py-3 backdrop-blur-[18px] backdrop-saturate-150">
@@ -91,7 +99,7 @@ const Header = ({ portalKey, onOpenSidebar }) => {
             >
               <Menu size={20} />
             </button>
-            {isDetailPage && (
+            {isNestedPage && (
               <Button
                 variant="secondary"
                 size="sm"
@@ -102,9 +110,9 @@ const Header = ({ portalKey, onOpenSidebar }) => {
             <div className="min-w-0">
               <p className="m-0 truncate text-lg font-medium text-(--theme-text-primary)">
                 {activeItem?.label || "Dashboard"}
-                {isDetailPage && (
+                {isNestedPage && (
                   <span className="text-(--theme-text-muted) font-semibold ml-2">
-                    / <span className="ml-1 text-(--theme-text-secondary)">Details</span>
+                    / <span className="ml-1 text-(--theme-text-secondary)">{nestedPageLabel}</span>
                   </span>
                 )}
               </p>

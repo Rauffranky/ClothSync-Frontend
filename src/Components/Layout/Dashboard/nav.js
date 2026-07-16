@@ -29,7 +29,6 @@ import {
   ChartNoAxesCombined,
   ShieldAlert,
   UsersRound,
-  UserRoundKey,
 } from "lucide-react";
 
 export const NAV_MENU = [
@@ -179,18 +178,36 @@ export const NAV = {
       label: "Scanners",
       href: "/business/scanners",
       Icon: ScanQrCode,
+      submenus: [
+        {
+          id: 1061,
+          label: "All Scanners",
+          href: "/business/scanners",
+        },
+        {
+          id: 1062,
+          label: "Scanner Warnings",
+          href: "/business/scanners/warnings",
+        },
+      ],
     },
     {
       id: 112,
       label: "Staff",
       href: "/business/staff",
       Icon: UsersRound,
-    },
-    {
-      id: 113,
-      label: "Staff Roles",
-      href: "/business/staff-roles",
-      Icon: UserRoundKey,
+      submenus: [
+        {
+          id: 1121,
+          label: "All Staff",
+          href: "/business/staff",
+        },
+        {
+          id: 1122,
+          label: "Staff Roles",
+          href: "/business/staff-roles",
+        },
+      ],
     },
     {
       id: 107,

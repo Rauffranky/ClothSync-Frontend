@@ -1,8 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
-  MapPin,
   Filter,
   AlertTriangle,
   Radio,
@@ -10,15 +9,18 @@ import {
   Eye,
   Pencil,
   Power,
+  RefreshCw,
 } from "lucide-react";
 import {
-  scannersData,
   scannerTypeOptions,
   scannerModeOptions,
-  scannerLocationOptions,
   scannerStatusOptions,
   scannerStatusVariantMap,
+  getScannerPaginatedCollection,
+  normalizeScanner,
 } from "./data";
+import Alert from "../../../Components/UI/Alert";
+import Button from "../../../Components/UI/Button";
 import IconWrapper from "../../../Components/UI/IconWrapper";
 import Input from "../../../Components/UI/Input";
 import Card from "../../../Components/UI/Card";
@@ -29,70 +31,156 @@ import Badge from "../../../Components/UI/Badge";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import AddScannerModal from "./AddScannerModal";
 import ScannerStatusModal from "./ScannerStatusModal";
-import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
+import {
+  getSearchQuery,
+  useDebouncedSearch,
+} from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
+import { getApiErrorMessage } from "../../../axios/api";
+import { getTenantStaff } from "../../../axios/staff/tenantStaff";
+import {
+  getTenantScanners,
+  updateTenantScanner,
+  updateTenantScannerStatus,
+} from "../../../axios/scanners/tenantScanners";
+import { toast } from "../../../Utils/toast";
+import {
+  getStaffPaginatedCollection,
+  normalizeStaffMember,
+} from "../Staff/data";
 
 const ITEMS_PER_PAGE = 10;
 
-const ScannerTable = () => {
+const ScannerTable = ({ onScannerUpdated, refreshKey = 0 }) => {
   const navigate = useNavigate();
-  const [scannerRows, setScannerRows] = useState(scannersData);
+  const [scannerRows, setScannerRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [localRefreshKey, setLocalRefreshKey] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebouncedSearch(searchValue);
   const [typeFilter, setTypeFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
-  const [locationFilter, setLocationFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [operatorFilter, setOperatorFilter] = useState("all");
+  const [operatorOptions, setOperatorOptions] = useState([
+    { label: "All Operators", value: "all" },
+  ]);
+  const [isOperatorLoading, setIsOperatorLoading] = useState(true);
+  const [operatorLoadError, setOperatorLoadError] = useState("");
+  const [operatorLoadKey, setOperatorLoadKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [statusModalState, setStatusModalState] = useState({
     isOpen: false,
     action: null,
     scanner: null,
   });
+  const [isStatusSubmitting, setIsStatusSubmitting] = useState(false);
   const [editScannerState, setEditScannerState] = useState({
     isOpen: false,
     scanner: null,
   });
 
-  const filteredScanners = useMemo(() => {
-    return scannerRows.filter((scanner) => {
-      const search = debouncedSearch.toLowerCase();
-      const matchesSearch =
-        !search ||
-        [scanner.name, scanner.id, scanner.operator, scanner.location]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-          .includes(search);
-      const matchesType = typeFilter === "all" || scanner.type === typeFilter;
-      const matchesMode = modeFilter === "all" || scanner.mode === modeFilter;
-      const matchesLocation =
-        locationFilter === "all" || scanner.location === locationFilter;
-      const matchesStatus =
-        statusFilter === "all" || scanner.status === statusFilter;
+  useEffect(() => {
+    let isActive = true;
 
-      return (
-        matchesSearch &&
-        matchesType &&
-        matchesMode &&
-        matchesLocation &&
-        matchesStatus
-      );
-    });
-  }, [scannerRows, debouncedSearch, typeFilter, modeFilter, locationFilter, statusFilter]);
+    getTenantStaff({ page: 1, limit: 100, status: "active" })
+      .then((response) => {
+        if (!isActive) return;
+
+        const activeOperators = getStaffPaginatedCollection(response, 1, 100)
+          .rows.map(normalizeStaffMember)
+          .filter((staff) => staff.apiId && staff.status === "Active")
+          .map((staff) => ({
+            label: staff.name,
+            searchLabel: `${staff.name} ${staff.email}`,
+            value: staff.apiId,
+          }));
+
+        setOperatorOptions([
+          { label: "All Operators", value: "all" },
+          ...activeOperators,
+        ]);
+        setOperatorLoadError("");
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setOperatorOptions([{ label: "All Operators", value: "all" }]);
+        setOperatorFilter("all");
+        setOperatorLoadError(
+          getApiErrorMessage(error, "Unable to load operators"),
+        );
+      })
+      .finally(() => {
+        if (isActive) setIsOperatorLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [operatorLoadKey]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    getTenantScanners({
+      page: currentPage + 1,
+      limit: ITEMS_PER_PAGE,
+      ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
+      ...(typeFilter !== "all" ? { scannerType: typeFilter } : {}),
+      ...(modeFilter !== "all" ? { scannerMode: modeFilter } : {}),
+      ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+      ...(operatorFilter !== "all"
+        ? { assignedOperatorId: operatorFilter }
+        : {}),
+    })
+      .then((response) => {
+        if (!isActive) return;
+        const collection = getScannerPaginatedCollection(
+          response,
+          ITEMS_PER_PAGE,
+        );
+        setScannerRows(collection.rows.map(normalizeScanner));
+        setTotalItems(collection.totalItems);
+        setTotalPages(collection.totalPages);
+        setLoadError("");
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        const message = getApiErrorMessage(error, "Unable to load scanners");
+        setScannerRows([]);
+        setTotalItems(0);
+        setTotalPages(0);
+        setLoadError(message);
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [
+    currentPage,
+    debouncedSearch,
+    localRefreshKey,
+    modeFilter,
+    operatorFilter,
+    refreshKey,
+    statusFilter,
+    typeFilter,
+  ]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
-    useSortableTableData(filteredScanners);
-  const pageCount = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
-  const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
-  const paginatedScanners = useMemo(() => {
-    const startIndex = activePage * ITEMS_PER_PAGE;
-    return sortedData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [activePage, sortedData]);
+    useSortableTableData(scannerRows);
+  const activePage = totalPages > 0 ? Math.min(currentPage, totalPages - 1) : 0;
 
   const resetCurrentPage = () => setCurrentPage(0);
 
   const handleSearchChange = (value) => {
+    if (getSearchQuery(value) !== debouncedSearch) setIsLoading(true);
     setSearchValue(value);
     resetCurrentPage();
   };
@@ -100,6 +188,24 @@ const ScannerTable = () => {
   const handleTableSort = (nextSortBy, nextSortDirection) => {
     handleSort(nextSortBy, nextSortDirection);
     resetCurrentPage();
+  };
+
+  const handleFilterChange = (setter, value) => {
+    setIsLoading(true);
+    setter(value || "all");
+    resetCurrentPage();
+  };
+
+  const retryLoad = () => {
+    setIsLoading(true);
+    setLoadError("");
+    setLocalRefreshKey((current) => current + 1);
+  };
+
+  const retryOperators = () => {
+    setIsOperatorLoading(true);
+    setOperatorLoadError("");
+    setOperatorLoadKey((current) => current + 1);
   };
 
   const openStatusModal = (scanner, action) => {
@@ -118,20 +224,29 @@ const ScannerTable = () => {
     });
   };
 
-  const handleStatusConfirm = ({ scanner, action }) => {
-    const nextStatus = action === "deactivate" ? "Inactive" : "Active";
+  const handleStatusConfirm = async ({ scanner, action }) => {
+    const nextStatus = action === "deactivate" ? "inactive" : "active";
 
-    setScannerRows((current) =>
-      current.map((item) =>
-        item.id === scanner.id
-          ? {
-              ...item,
-              status: nextStatus,
-            }
-          : item,
-      ),
-    );
-    resetCurrentPage();
+    try {
+      setIsStatusSubmitting(true);
+      const response = await updateTenantScannerStatus(
+        scanner.apiId,
+        nextStatus,
+      );
+      toast.success(
+        response?.message ||
+          `Scanner ${nextStatus === "active" ? "activated" : "deactivated"} successfully`,
+      );
+      setIsLoading(true);
+      if (onScannerUpdated) onScannerUpdated();
+      else setLocalRefreshKey((current) => current + 1);
+      return response;
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to update scanner status"));
+      throw error;
+    } finally {
+      setIsStatusSubmitting(false);
+    }
   };
 
   const openEditScannerModal = (scanner) => {
@@ -144,8 +259,8 @@ const ScannerTable = () => {
         scannerType: scanner.type,
         scannerMode: scanner.mode,
         zoneName: scanner.location,
-        assignedOperator: scanner.operator === "Unassigned" ? null : scanner.operator,
-        customNotes: "",
+        assignedOperatorId: scanner.assignedOperatorId,
+        customNotes: scanner.customNotes,
       },
     });
   };
@@ -157,20 +272,50 @@ const ScannerTable = () => {
     });
   };
 
-  const handleEditScannerSubmit = (updatedScanner) => {
+  const handleEditScannerSubmit = async (updatedScanner) => {
     if (!editScannerState.scanner) return;
+    if (!editScannerState.scanner.apiId) {
+      const error = new Error("Scanner backend ID is missing");
+      toast.error(error.message);
+      throw error;
+    }
 
-    setScannerRows((current) =>
-      current.map((item) =>
-        item.id === editScannerState.scanner.id
-          ? {
-              ...item,
-              ...updatedScanner,
-            }
-          : item,
-      ),
-    );
-    resetCurrentPage();
+    const payload = {
+      scannerId: updatedScanner.scannerId,
+      scannerType: updatedScanner.scannerType.toLowerCase(),
+      scannerMode: updatedScanner.scannerMode.toLowerCase(),
+      ...(updatedScanner.assignedOperatorId
+        ? { assignedOperatorId: updatedScanner.assignedOperatorId }
+        : {}),
+      status: updatedScanner.status.toLowerCase(),
+      translations: {
+        en: {
+          name: updatedScanner.scannerName,
+          zoneName: updatedScanner.zoneName,
+          notes: updatedScanner.customNotes,
+        },
+        ar: {
+          name: updatedScanner.scannerName,
+          zoneName: updatedScanner.zoneName,
+          notes: updatedScanner.customNotes,
+        },
+      },
+    };
+
+    try {
+      const response = await updateTenantScanner(
+        editScannerState.scanner.apiId,
+        payload,
+      );
+      toast.success(response?.message || "Scanner updated successfully");
+      setIsLoading(true);
+      if (onScannerUpdated) onScannerUpdated();
+      else setLocalRefreshKey((current) => current + 1);
+      return response;
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to update scanner"));
+      throw error;
+    }
   };
 
   const columns = [
@@ -315,7 +460,7 @@ const ScannerTable = () => {
             {
               label: "View Details",
               icon: Eye,
-              onClick: () => navigate(`/business/scanners/${row.id}`),
+              onClick: () => navigate(`/business/scanners/${row.apiId}`),
             },
             {
               label: "Edit Scanner",
@@ -354,71 +499,107 @@ const ScannerTable = () => {
             leftIcon={
               <Filter size={14} className="text-(--theme-text-muted)" />
             }
-            onChange={(val) => {
-              setTypeFilter(val);
-              resetCurrentPage();
-            }}
+            onChange={(value) => handleFilterChange(setTypeFilter, value)}
             options={scannerTypeOptions}
             value={typeFilter}
           />
         </div>
         <div className="w-full ">
           <Dropdown
-            onChange={(val) => {
-              setModeFilter(val);
-              resetCurrentPage();
-            }}
+            onChange={(value) => handleFilterChange(setModeFilter, value)}
             options={scannerModeOptions}
             value={modeFilter}
           />
         </div>
         <div className="w-full ">
           <Dropdown
-            onChange={(val) => {
-              setStatusFilter(val);
-              resetCurrentPage();
-            }}
+            onChange={(value) => handleFilterChange(setStatusFilter, value)}
             options={scannerStatusOptions}
             value={statusFilter}
           />
         </div>
         <div className="w-full ">
           <Dropdown
-            leftIcon={
-              <MapPin size={14} className="text-(--theme-text-muted)" />
+            disabled={isOperatorLoading || Boolean(operatorLoadError)}
+            onChange={(value) => handleFilterChange(setOperatorFilter, value)}
+            options={
+              isOperatorLoading
+                ? [{ label: "Loading operators...", value: "all" }]
+                : operatorLoadError
+                  ? [{ label: "Operators unavailable", value: "all" }]
+                  : operatorOptions
             }
-            onChange={(val) => {
-              setLocationFilter(val);
-              resetCurrentPage();
-            }}
-            options={scannerLocationOptions}
-            value={locationFilter}
+            search
+            value={operatorFilter}
           />
         </div>
       </div>
 
       <div className="px-4 pb-4">
+        {operatorLoadError && (
+          <Alert
+            className="mb-4 justify-between"
+            leftIcon={<AlertTriangle size={18} />}
+            variant="warning"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{operatorLoadError}</span>
+              <Button
+                leftIcon={<RefreshCw size={14} />}
+                onClick={retryOperators}
+                size="xs"
+                variant="secondary"
+              >
+                Try Again
+              </Button>
+            </div>
+          </Alert>
+        )}
+        {loadError && (
+          <Alert
+            className="mb-4 justify-between"
+            leftIcon={<AlertTriangle size={18} />}
+            variant="danger"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{loadError}</span>
+              <Button
+                leftIcon={<RefreshCw size={14} />}
+                onClick={retryLoad}
+                size="xs"
+                variant="secondary"
+              >
+                Try Again
+              </Button>
+            </div>
+          </Alert>
+        )}
         <Table
           columns={columns}
-          data={paginatedScanners}
+          data={sortedData}
           emptyText="No scanners found matching criteria"
+          loading={isLoading}
           onSort={handleTableSort}
-          rowKey="id"
+          rowKey={(row) => row.apiId || row.id}
           sortBy={sortBy}
           sortDirection={sortDirection}
         />
         <Pagination
           forcePage={activePage}
           itemsPerPage={ITEMS_PER_PAGE}
-          onPageChange={({ selected }) => setCurrentPage(selected)}
-          pageCount={pageCount}
-          totalItems={sortedData.length}
+          onPageChange={({ selected }) => {
+            setIsLoading(true);
+            setCurrentPage(selected);
+          }}
+          pageCount={totalPages}
+          totalItems={totalItems}
         />
       </div>
 
       <ScannerStatusModal
         actionData={statusModalState.scanner ? statusModalState : null}
         isOpen={statusModalState.isOpen}
+        isSubmitting={isStatusSubmitting}
         onClose={closeStatusModal}
         onConfirm={handleStatusConfirm}
       />
