@@ -33,9 +33,10 @@ const statusOptions = [
   { label: "Inactive", value: "inactive" },
 ];
 
-const languageOptions = [
-  { label: "English", value: "en" },
-  { label: "Arabic", value: "ar" },
+const useOptions = [
+  { label: "All Usage", value: "all" },
+  { label: "In Use", value: "in use" },
+  { label: "Not In Use", value: "not in use" },
 ];
 
 const addCategoryInitialValues = {
@@ -55,10 +56,9 @@ const addCategoryValidationSchema = Yup.object({
   // arabicDescription: Yup.string().trim(),
 });
 
-const normalizeCategory = (category, language = "en") => {
+const normalizeCategory = (category) => {
   const status = String(category.status || "inactive").toLowerCase();
-  const translation =
-    category.translations?.[language] || category.translations?.en || {};
+  const translation = category.translations?.en || {};
   const assetCount = Number(
     category.assetCount ?? category.assetsCount ?? category.assets?.length ?? 0,
   );
@@ -94,7 +94,7 @@ const Categories = () => {
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebouncedSearch(searchValue);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [languageFilter, setLanguageFilter] = useState("en");
+  const [useFilter, setUseFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -105,15 +105,13 @@ const Categories = () => {
   useEffect(() => {
     let isActive = true;
 
-    getTenantCategories(
-      {
-        page: currentPage + 1,
-        limit: ITEMS_PER_PAGE,
-        ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
-        ...(statusFilter !== "all" ? { status: statusFilter } : {}),
-      },
-      languageFilter,
-    )
+    getTenantCategories({
+      page: currentPage + 1,
+      limit: ITEMS_PER_PAGE,
+      ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
+      ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+      ...(useFilter !== "all" ? { use: useFilter } : {}),
+    })
       .then((response) => {
         if (!isActive) return;
         const payload = response?.data ?? response;
@@ -124,9 +122,7 @@ const Categories = () => {
             payload?.docs ||
             payload?.results ||
             [];
-        setCategoryRows(
-          rows.map((category) => normalizeCategory(category, languageFilter)),
-        );
+        setCategoryRows(rows.map(normalizeCategory));
         const pagination = payload?.pagination || payload?.meta || payload;
         setTotalItems(
           Number(
@@ -166,7 +162,7 @@ const Categories = () => {
     return () => {
       isActive = false;
     };
-  }, [currentPage, debouncedSearch, languageFilter, statusFilter, refreshKey]);
+  }, [currentPage, debouncedSearch, refreshKey, statusFilter, useFilter]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
     useSortableTableData(categoryRows);
@@ -190,9 +186,9 @@ const Categories = () => {
     resetCurrentPage();
   };
 
-  const handleLanguageFilterChange = (value) => {
+  const handleUseFilterChange = (value) => {
     setIsLoading(true);
-    setLanguageFilter(value);
+    setUseFilter(value);
     resetCurrentPage();
   };
 
@@ -331,9 +327,9 @@ const Categories = () => {
               value={statusFilter}
             />
             <Dropdown
-              onChange={handleLanguageFilterChange}
-              options={languageOptions}
-              value={languageFilter}
+              onChange={handleUseFilterChange}
+              options={useOptions}
+              value={useFilter}
             />
             <Button
               leftIcon={<Plus size={16} />}

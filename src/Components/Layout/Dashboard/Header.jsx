@@ -13,6 +13,7 @@ import {
   getTenantAccessToken,
   getTenantSessionUser,
   setTenantSessionUser,
+  TENANT_SESSION_USER_UPDATED_EVENT,
 } from "../../../axios/auth/tenantAuth";
 
 const Header = ({ portalKey, onOpenSidebar }) => {
@@ -26,6 +27,24 @@ const Header = ({ portalKey, onOpenSidebar }) => {
   }, [themeMode]);
 
   useEffect(() => {
+    const handleTenantProfileUpdate = (event) => {
+      setTenantProfile(event.detail ?? getTenantSessionUser());
+    };
+
+    window.addEventListener(
+      TENANT_SESSION_USER_UPDATED_EVENT,
+      handleTenantProfileUpdate,
+    );
+
+    return () => {
+      window.removeEventListener(
+        TENANT_SESSION_USER_UPDATED_EVENT,
+        handleTenantProfileUpdate,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     if (portalKey !== "business" || !getTenantAccessToken()) return;
 
     let isActive = true;
@@ -34,8 +53,12 @@ const Header = ({ portalKey, onOpenSidebar }) => {
       .then((response) => {
         if (!isActive) return;
         const profile = response?.data ?? response;
-        setTenantProfile(profile);
-        setTenantSessionUser(profile);
+        const mergedProfile = {
+          ...getTenantSessionUser(),
+          ...profile,
+        };
+        setTenantProfile(mergedProfile);
+        setTenantSessionUser(mergedProfile);
       })
       .catch(() => {
         // Keep the last stored profile when a background refresh fails.
@@ -66,8 +89,12 @@ const Header = ({ portalKey, onOpenSidebar }) => {
   }, [activePortal?.key, pathname]);
 
   const profileName =
-    tenantProfile?.name || tenantProfile?.fullName || activePortal?.user.name || "User";
-  const profileInitials = profileName
+    tenantProfile?.businessName ||
+    tenantProfile?.name ||
+    tenantProfile?.fullName ||
+    activePortal?.user.name ||
+    "User";
+  const profileInitials = String(profileName)
     .trim()
     .split(/\s+/)
     .filter(Boolean)
@@ -151,10 +178,18 @@ const Header = ({ portalKey, onOpenSidebar }) => {
               </p>
             </div>
             <span
-              className="grid h-9 w-9 place-items-center rounded-xl text-xs font-black text-white"
+              className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl text-xs font-black text-white"
               style={{ background: activePortal?.accent }}
             >
-              {profileInitials}
+              {tenantProfile?.avatar ? (
+                <img
+                  alt={`${profileName} avatar`}
+                  className="h-full w-full object-cover"
+                  src={tenantProfile.avatar}
+                />
+              ) : (
+                profileInitials
+              )}
             </span>
           </div>
         </div>

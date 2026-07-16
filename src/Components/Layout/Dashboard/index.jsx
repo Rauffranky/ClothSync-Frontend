@@ -1,5 +1,11 @@
-import { useMemo, useState, Suspense } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import {
+  getTenantAccessToken,
+  getTenantSessionUser,
+  setTenantSessionUser,
+} from "../../../axios/auth/tenantSession";
+import { getTenantSettingsProfile } from "../../../axios/settings/tenantSettings";
 import Header from "./Header";
 import SideBar from "./SideBar";
 
@@ -8,12 +14,50 @@ const DashboardLayout = ({ portalKey }) => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] =
     useState(false);
+  const [haveTenantPreferencesLoaded, setHaveTenantPreferencesLoaded] =
+    useState(false);
   const activePortalKey = useMemo(() => {
     if (portalKey) return portalKey;
     if (pathname.startsWith("/business")) return "business";
     if (pathname.startsWith("/laundry")) return "laundry";
     return "superadmin";
   }, [pathname, portalKey]);
+
+  useEffect(() => {
+    if (activePortalKey !== "business" || !getTenantAccessToken()) {
+      return undefined;
+    }
+
+    let isActive = true;
+
+    getTenantSettingsProfile()
+      .then((response) => {
+        if (!isActive) return;
+
+        const settingsProfile = response?.data?.profile || response?.profile;
+        if (settingsProfile) {
+          setTenantSessionUser({
+            ...getTenantSessionUser(),
+            ...settingsProfile,
+          });
+        }
+      })
+      .catch(() => {
+        // Existing session defaults keep the portal usable if settings fail.
+      })
+      .finally(() => {
+        if (isActive) setHaveTenantPreferencesLoaded(true);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [activePortalKey]);
+
+  const areTenantPreferencesReady =
+    activePortalKey !== "business" ||
+    !getTenantAccessToken() ||
+    haveTenantPreferencesLoaded;
 
   return (
     <div className="min-h-screen bg-(--theme-page-background) text-(--theme-text-primary)">
@@ -46,7 +90,13 @@ const DashboardLayout = ({ portalKey }) => {
                 </div>
               }
             >
-              <Outlet />
+              {areTenantPreferencesReady ? (
+                <Outlet />
+              ) : (
+                <div className="flex min-h-[50vh] items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-(--color-aurora-teal)/30 border-t-(--color-aurora-teal)" />
+                </div>
+              )}
             </Suspense>
           </main>
         </div>
