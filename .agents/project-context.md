@@ -118,7 +118,7 @@ Dashboard routes:
   `/business/categories`, `/business/categories/:id`, `/business/assets`,
   `/business/assets/:id`, `/business/scanners`, `/business/scanners/:id`,
   `/business/scanners/warnings`, `/business/staff`, `/business/staff-roles`,
-  `/business/tags`, and `/business/tags/:id`.
+  `/business/tags`, `/business/tags/:id`, and `/business/settings`.
 - Laundry: `/laundry/dashboard`.
 - Each portal root redirects to its dashboard.
 
@@ -169,10 +169,10 @@ Confirmed API-backed areas:
   `sessionStorage` so Account, Verify, Profile, and Done survive a same-tab page
   refresh; passwords and OTP values are never persisted.
 - Tenant categories list, create, details, update, and status actions use tenant
-  category services. The list sends backend `page`, `limit`, `keywords`, and
-  `status` filters, plus the selected `en`/`ar` value through the `x-language`
-  header; unsupported client-only usage filtering is not applied to paginated
-  results. Category summary cards use `GET /tenant-categories/summary` and
+  category services. The list sends backend `page`, `limit`, `keywords`,
+  `status`, and `use` (`in use`/`not in use`) filters; the inactive All Usage
+  option is omitted from the request. Category summary cards use
+  `GET /tenant-categories/summary` and
   refresh after category create, update, or status mutations.
 - Tenant scanners list through `GET /tenant-scanners/show` with backend
   pagination and optional `keywords`, `scannerType`, `scannerMode`, `status`,
@@ -203,6 +203,25 @@ Confirmed API-backed areas:
   Non-default linked laundries can be unlinked through the live unlink service;
   the UI blocks unlinking the current default until another laundry is set as
   default.
+- Tenant General Settings loads the authenticated profile, IANA time zones, and
+  supported date formats from the tenant settings APIs. Updating a selected
+  logo first uploads the file through the shared multipart upload service, then
+  sends the returned file string as `avatar` in the profile update payload. The
+  dashboard shell hydrates the saved settings profile before rendering Business
+  routes, merges it into the tenant session without allowing the auth profile
+  refresh to discard settings, and tenant API-backed date/time displays use the
+  shared preference-aware formatter in `src/Utils/date.js`. That formatter
+  applies the saved IANA `timezone` and exact `dateFormat` contract globally;
+  the related hook also reacts to same-tab tenant-profile updates.
+- Tenant Notification Settings loads the server-defined preference rows from
+  `GET /tenant-notification-preferences/show`. In-app and email switches edit
+  those rows locally until Save Changes sends the exact `preferences` array to
+  `PUT /tenant-notification-preferences/update`; Discard restores the last
+  server-authoritative values.
+- Tenant Security Settings changes the authenticated tenant password through
+  `POST /tenant-auth/change-password` with `currentPassword`, `newPassword`, and
+  `confirmNewPassword`. The form validates confirmation locally, blocks repeat
+  submission, and clears password fields only after backend success.
 
 Partial or placeholder areas:
 
@@ -215,6 +234,11 @@ Partial or placeholder areas:
 - Many Tenant features import local `data.js`, including assets, scanners,
   tags, and asset-detail subviews. Treat them as
   sample data unless the same feature also calls a domain service.
+- Tenant Settings is available at `/business/settings` and uses the shared
+  global `Tabs` component for General, Notifications, and Security. The active
+  non-default tab is stored in the `tab` URL query parameter so it survives a
+  refresh and can be linked directly; missing or invalid values select General.
+  Active-session controls clearly report that their APIs are not connected.
 
 When integrating a placeholder feature, do not retain hidden mock fallback data
 unless the user explicitly requests offline/sample behavior.
@@ -258,7 +282,26 @@ Current endpoints:
   the current frontend integration.
 - `GET /tenant-auth/logout`.
 - `GET /tenant-auth/me`.
-- `GET /tenant-categories/show`.
+- `POST /tenant-auth/change-password` with
+  `{ currentPassword, newPassword, confirmNewPassword }`.
+- `GET /tenant-settings/timezones` lists valid IANA time zones for General
+  Settings.
+- `GET /tenant-settings/date-formats` lists supported profile date formats.
+- `GET /tenant-settings/profile` returns `data.profile` for General Settings.
+- `PUT /tenant-settings/profile` updates required `businessName`, `language`,
+  `timezone`, and `dateFormat`, plus nullable string `avatar`.
+- `GET /tenant-notification-preferences/show` returns the tenant's ordered
+  notification preference rows, including `notificationKey`, display metadata,
+  `inAppEnabled`, and `emailEnabled`.
+- `PUT /tenant-notification-preferences/update` accepts
+  `{ preferences: [{ notificationKey, inAppEnabled, emailEnabled }] }` and
+  returns the server-authoritative preference collection.
+- `POST /file-upload/single` accepts multipart `file` and optional `folder`; the
+  General Settings flow uploads a selected logo first and sends its returned
+  file string in the subsequent profile update.
+- `GET /tenant-categories/show` with `page`, `limit`, optional `keywords`,
+  optional `status` (`active`/`inactive`), and optional `use`
+  (`in use`/`not in use`).
 - `GET /tenant-categories/summary` returning `totalCategories`,
   `activeCategories`, `inactiveCategories`, and `categoriesInUse`.
 - `POST /tenant-categories/create`.
@@ -348,8 +391,11 @@ Business login accepts `accessToken`, `access_token`, or `token`, then stores:
 All three authentication values use `sessionStorage`, so they are scoped to the
 current browser tab/session and are cleared when that tab closes. Legacy auth
 keys are removed from `localStorage`; `clearTenantSession` removes the session
-values as well. Theme preference is separately stored as `theme-mode` in
-`localStorage`. Never print or expose stored values.
+values as well. Updating the stored tenant user emits the shared
+`tenant-session-user-updated` browser event; the dashboard Header subscribes so
+saved business names, initials, email, and avatar update without a reload. Theme
+preference is separately stored as `theme-mode` in `localStorage`. Never print
+or expose stored values.
 
 There is currently no automatic refresh-token flow. Authenticated `401`
 responses use the global portal-aware login redirect described above.
@@ -359,7 +405,7 @@ responses use the global portal-aware login redirect described above.
 Reuse `src/Components/UI` before creating feature-local replacements:
 
 - Overlays/actions: `ActionDropdown`, `Dropdown`, `Modal`, `SlideOver`, `Tooltip`.
-- Inputs/navigation: `Input`, `Tabs`, `Pagination`, `BusinessSelector`.
+- Inputs/navigation: `Input`, `Tabs`, `Toggle`, `Pagination`, `BusinessSelector`.
 - Data display: `Table`, `TableSkeleton`, `CardSkeleton`, `Badge`, `Card`,
   `Alert`, `ProgressBar`.
 - Identity/icons: `Avatar`, `InitialsAvatar`, `IconWrapper`.
@@ -373,6 +419,9 @@ Important contracts:
   supports search/multiple selection, and portals its menu.
 - `Button` defaults to `type="button"` and supports variants, custom sizes,
   icons, loading, disabled state, and polymorphic rendering.
+- `Toggle` is the shared accessible switch control. It accepts `checked`, emits
+  the next boolean through `onChange`, supports labels, disabled state, and
+  `sm`/`md`/`lg` sizes, and keeps off/on states visible in both themes.
 - `Modal` portals to `document.body`, closes on Escape, locks body scroll, and can
   close on backdrop. Inspect and improve focus behavior when a task requires it.
 - `Pagination` is zero-based: `forcePage` is zero-based and it emits

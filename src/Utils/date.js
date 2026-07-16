@@ -1,127 +1,156 @@
 import { getTenantSessionUser } from "../axios/auth/tenantSession";
 
-const DEFAULT_DATE_FORMAT = {
+const DEFAULT_TIMEZONE = "UTC";
+const DEFAULT_DATE_FORMAT = "MM/DD/YYYY";
+const DEFAULT_INTL_DATE_OPTIONS = {
   day: "numeric",
   month: "short",
   year: "numeric",
 };
 
-// Map custom dateFormat strings to Intl.DateTimeFormat options
-const DATE_FORMAT_MAP = {
-  "MM/DD/YYYY": { month: "2-digit", day: "2-digit", year: "numeric" },
-  "DD/MM/YYYY": { day: "2-digit", month: "2-digit", year: "numeric" },
-  "YYYY-MM-DD": { year: "numeric", month: "2-digit", day: "2-digit" },
-  "DD MMM YYYY": { day: "numeric", month: "short", year: "numeric" },
-  "MMM DD, YYYY": { month: "short", day: "numeric", year: "numeric" },
-  "MMMM DD, YYYY": { month: "long", day: "numeric", year: "numeric" },
-  "DD MMMM YYYY": { day: "numeric", month: "long", year: "numeric" },
-};
+const SUPPORTED_DATE_FORMATS = new Set([
+  "MM/DD/YYYY",
+  "DD/MM/YYYY",
+  "YYYY-MM-DD",
+  "DD MMM YYYY",
+  "MMM DD, YYYY",
+  "MMMM DD, YYYY",
+  "DD MMMM YYYY",
+]);
 
-/**
- * Get user's date format preferences from session storage
- * @returns {{ timezone: string, dateFormat: string }}
- */
-const getUserDatePreferences = () => {
+export const getUserDatePreferences = () => {
   const user = getTenantSessionUser();
+
   return {
-    timezone: user?.timezone || "UTC",
-    dateFormat: user?.dateFormat || "MM/DD/YYYY",
+    timezone: user?.timezone || DEFAULT_TIMEZONE,
+    dateFormat: user?.dateFormat || DEFAULT_DATE_FORMAT,
   };
 };
 
-/**
- * Convert UTC date to user's timezone and format according to user's preference
- * @param {string|Date} value - UTC date string or Date object
- * @param {string} timezone - Optional timezone override. Defaults to user's timezone
- * @param {string} dateFormat - Optional dateFormat override. Defaults to user's dateFormat
- * @param {string} fallback - Fallback value if date is invalid
- * @returns {string} Formatted date in user's timezone
- */
+const getValidDate = (value) => {
+  if (!value) return null;
+
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const getSafeTimezone = (timezone) => {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format();
+    return timezone;
+  } catch {
+    return DEFAULT_TIMEZONE;
+  }
+};
+
+const getZonedDateParts = (date, timezone) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: timezone,
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+
+  return {
+    day: values.day,
+    month: values.month,
+    year: values.year,
+  };
+};
+
+const getMonthName = (date, timezone, length) =>
+  new Intl.DateTimeFormat("en-US", {
+    month: length,
+    timeZone: timezone,
+  }).format(date);
+
+const formatConfiguredDate = (date, timezone, dateFormat) => {
+  if (!SUPPORTED_DATE_FORMATS.has(dateFormat)) {
+    return new Intl.DateTimeFormat("en-US", {
+      ...DEFAULT_INTL_DATE_OPTIONS,
+      timeZone: timezone,
+    }).format(date);
+  }
+
+  const { day, month, year } = getZonedDateParts(date, timezone);
+  const shortMonth = () => getMonthName(date, timezone, "short");
+  const longMonth = () => getMonthName(date, timezone, "long");
+
+  switch (dateFormat) {
+    case "DD/MM/YYYY":
+      return `${day}/${month}/${year}`;
+    case "YYYY-MM-DD":
+      return `${year}-${month}-${day}`;
+    case "DD MMM YYYY":
+      return `${day} ${shortMonth()} ${year}`;
+    case "MMM DD, YYYY":
+      return `${shortMonth()} ${day}, ${year}`;
+    case "MMMM DD, YYYY":
+      return `${longMonth()} ${day}, ${year}`;
+    case "DD MMMM YYYY":
+      return `${day} ${longMonth()} ${year}`;
+    case "MM/DD/YYYY":
+    default:
+      return `${month}/${day}/${year}`;
+  }
+};
+
 export const formatDateWithUserPreferences = (
   value,
   timezone = null,
   dateFormat = null,
   fallback = "-",
 ) => {
-  if (!value) return fallback;
+  const date = getValidDate(value);
+  if (!date) return value ? String(value) : fallback;
 
-  const { timezone: userTimezone, dateFormat: userDateFormat } = getUserDatePreferences();
-  const finalTimezone = timezone || userTimezone;
-  const finalDateFormat = dateFormat || userDateFormat;
+  const preferences = getUserDatePreferences();
+  const finalTimezone = getSafeTimezone(timezone || preferences.timezone);
+  const finalDateFormat = dateFormat || preferences.dateFormat;
 
-  const date = value instanceof Date ? value : new Date(value);
-
-  if (Number.isNaN(date.getTime())) return String(value);
-
-  // Get format options from map, default to a sensible format
-  const formatOptions = DATE_FORMAT_MAP[finalDateFormat] || DEFAULT_DATE_FORMAT;
-
-  // Add timezone to options
-  const optionsWithTimezone = {
-    ...formatOptions,
-    timeZone: finalTimezone,
-  };
-
-  return new Intl.DateTimeFormat("en-US", optionsWithTimezone).format(date);
+  return formatConfiguredDate(date, finalTimezone, finalDateFormat);
 };
 
 /**
- * Format date with optional timezone conversion (original function, preserved for backwards compatibility)
- * Use formatDateWithUserPreferences for user-aware formatting
- * @param {string|Date} value - Date string or Date object
- * @param {Object} options - Intl.DateTimeFormat options
- * @param {string} locale - Locale string
- * @param {string} fallback - Fallback value if date is invalid
- * @returns {string} Formatted date
+ * Generic formatter retained for places that intentionally provide their own
+ * locale/options. Tenant portal dates should use the preference-aware helpers.
  */
 export const formatDate = (
   value,
-  options = DEFAULT_DATE_FORMAT,
+  options = DEFAULT_INTL_DATE_OPTIONS,
   locale = "en-US",
   fallback = "-",
 ) => {
-  if (!value) return fallback;
-
-  const date = value instanceof Date ? value : new Date(value);
-
-  if (Number.isNaN(date.getTime())) return String(value);
+  const date = getValidDate(value);
+  if (!date) return value ? String(value) : fallback;
 
   return new Intl.DateTimeFormat(locale, options).format(date);
 };
 
-/**
- * Format date and time with user's timezone and preferences
- * @param {string|Date} value - UTC date/time string or Date object
- * @param {boolean} includeTime - Whether to include time in output
- * @param {boolean} includeSeconds - Whether to include seconds in time
- * @returns {string} Formatted date and optional time
- */
 export const formatDateTime = (
   value,
   includeTime = true,
   includeSeconds = false,
   fallback = "-",
 ) => {
-  if (!value) return fallback;
+  const date = getValidDate(value);
+  if (!date) return value ? String(value) : fallback;
 
   const { timezone, dateFormat } = getUserDatePreferences();
-  const date = value instanceof Date ? value : new Date(value);
+  const safeTimezone = getSafeTimezone(timezone);
+  const formattedDate = formatConfiguredDate(date, safeTimezone, dateFormat);
 
-  if (Number.isNaN(date.getTime())) return String(value);
+  if (!includeTime) return formattedDate;
 
-  const dateFormatOptions = DATE_FORMAT_MAP[dateFormat] || DEFAULT_DATE_FORMAT;
+  const formattedTime = new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    ...(includeSeconds ? { second: "2-digit" } : {}),
+    timeZone: safeTimezone,
+  }).format(date);
 
-  const options = {
-    ...dateFormatOptions,
-    timeZone: timezone,
-    ...(includeTime && {
-      hour: "2-digit",
-      minute: "2-digit",
-      ...(includeSeconds && { second: "2-digit" }),
-    }),
-  };
-
-  return new Intl.DateTimeFormat("en-US", options).format(date);
+  return `${formattedDate}, ${formattedTime}`;
 };
 
 export default formatDate;

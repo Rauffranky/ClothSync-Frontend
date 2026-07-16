@@ -4,6 +4,17 @@ const TENANT_SESSION_KEYS = Object.freeze({
   USER: "authUser",
 });
 
+export const TENANT_SESSION_USER_UPDATED_EVENT =
+  "tenant-session-user-updated";
+
+const notifyTenantSessionUserUpdated = (user) => {
+  if (typeof window === "undefined") return;
+
+  window.dispatchEvent(
+    new CustomEvent(TENANT_SESSION_USER_UPDATED_EVENT, { detail: user }),
+  );
+};
+
 const clearLegacyTenantLocalStorage = () => {
   Object.values(TENANT_SESSION_KEYS).forEach((key) => localStorage.removeItem(key));
 };
@@ -29,6 +40,8 @@ export const setTenantSessionUser = (user) => {
   } else {
     sessionStorage.removeItem(TENANT_SESSION_KEYS.USER);
   }
+
+  notifyTenantSessionUserUpdated(user || null);
 };
 
 export const storeTenantSessionFromResponse = (response) => {
@@ -56,4 +69,5 @@ export const storeTenantSessionFromResponse = (response) => {
 export const clearTenantSession = () => {
   Object.values(TENANT_SESSION_KEYS).forEach((key) => sessionStorage.removeItem(key));
   clearLegacyTenantLocalStorage();
+  notifyTenantSessionUserUpdated(null);
 };

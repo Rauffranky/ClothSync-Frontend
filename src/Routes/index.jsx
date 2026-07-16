@@ -32,6 +32,7 @@ const StaffPage = lazy(() => import("../Page/Dashboard/Tenant/StaffPage"));
 const StaffRolesPage = lazy(() => import("../Page/Dashboard/Tenant/StaffRolesPage"));
 const TagsPage = lazy(() => import("../Page/Dashboard/Tenant/TagsPage"));
 const TagDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/TagDetailsPage"));
+const SettingsPage = lazy(() => import("../Page/Dashboard/Tenant/SettingsPage"));
 
 // ============================================================================
 // ROUTE CONFIGURATION
@@ -84,6 +85,7 @@ const AppRoutes = () => {
           <Route path="/business/staff-roles" element={<StaffRolesPage />} />
           <Route path="/business/tags" element={<TagsPage />} />
           <Route path="/business/tags/:id" element={<TagDetailsPage />} />
+          <Route path="/business/settings" element={<SettingsPage />} />
 
           {/* Laundry Portal */}
           <Route path="/laundry" element={<Navigate to="/laundry/dashboard" replace />} />

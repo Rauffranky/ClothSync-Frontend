@@ -70,3 +70,18 @@ export const TENANT_LAUNDRY_ENDPOINTS = Object.freeze({
   SET_DEFAULT: (id) => `/tenant-laundries/set-default/${id}`,
   UNLINK: (id) => `/tenant-laundries/unlink/${id}`,
 });
+
+export const TENANT_SETTINGS_ENDPOINTS = Object.freeze({
+  TIMEZONES: "/tenant-settings/timezones",
+  DATE_FORMATS: "/tenant-settings/date-formats",
+  PROFILE: "/tenant-settings/profile",
+});
+
+export const TENANT_NOTIFICATION_PREFERENCE_ENDPOINTS = Object.freeze({
+  SHOW: "/tenant-notification-preferences/show",
+  UPDATE: "/tenant-notification-preferences/update",
+});
+
+export const FILE_UPLOAD_ENDPOINTS = Object.freeze({
+  SINGLE: "/file-upload/single",
+});

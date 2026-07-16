@@ -6,6 +6,7 @@ export {
   getTenantSessionUser,
   setTenantSessionUser,
   storeTenantSessionFromResponse,
+  TENANT_SESSION_USER_UPDATED_EVENT,
 } from "./tenantSession";
 
 export const loginTenant = ({ email, password }) =>
@@ -84,7 +85,11 @@ export const resetTenantPassword = ({ email, otp, password, confirmPassword }) =
     confirmPassword,
   });
 
-export const changeTenantPassword = ({ currentPassword, newPassword, confirmNewPassword }) =>
+export const changeTenantPassword = ({
+  currentPassword,
+  newPassword,
+  confirmNewPassword,
+}) =>
   api.post(AUTH_ENDPOINTS.TENANT_CHANGE_PASSWORD, {
     currentPassword,
     newPassword,
