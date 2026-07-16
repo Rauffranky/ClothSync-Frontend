@@ -18,6 +18,7 @@ import {
   clearTenantSession,
   logoutTenant,
 } from "../../../axios/auth/tenantAuth";
+import { logoutLaundry } from "../../../axios/auth/laundryAuth";
 import { getApiErrorMessage } from "../../../axios/api";
 import { toast } from "../../../Utils/toast";
 
@@ -57,20 +58,24 @@ const SideBar = ({
   };
 
   const handleLogout = async () => {
-    if (portal !== "business") {
+    if (portal !== "business" && portal !== "laundry") {
       navigate(`/${portal}/login`, { replace: true });
       if (isOpen) onClose();
       return;
     }
 
     try {
-      await logoutTenant();
+      if (portal === "business") {
+        await logoutTenant();
+      } else {
+        await logoutLaundry();
+      }
       toast.success("Logout successful");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Unable to logout from the server"));
     } finally {
       clearTenantSession();
-      navigate("/business/login", { replace: true });
+      navigate(`/${portal}/login`, { replace: true });
       if (isOpen) onClose();
     }
   };

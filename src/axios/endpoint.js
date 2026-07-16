@@ -12,6 +12,11 @@ export const AUTH_ENDPOINTS = Object.freeze({
   TENANT_CHANGE_PASSWORD: "/tenant-auth/change-password",
 });
 
+export const LAUNDRY_AUTH_ENDPOINTS = Object.freeze({
+  LOGIN: "/laundry-auth/login",
+  LOGOUT: "/laundry-auth/logout",
+});
+
 // Kept as a named export for simple imports and backwards compatibility.
 export const TENANT_LOGIN = AUTH_ENDPOINTS.TENANT_LOGIN;
 

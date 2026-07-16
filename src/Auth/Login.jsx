@@ -17,6 +17,7 @@ import {
   verifyTenantForgotPasswordOtp,
   resetTenantPassword,
 } from "../axios/auth/tenantAuth";
+import { loginLaundry } from "../axios/auth/laundryAuth";
 import { getApiErrorMessage } from "../axios/api";
 import { toast } from "../Utils/toast";
 
@@ -91,13 +92,14 @@ const Login = ({ portal }) => {
     validationSchema: isForgotFlow ? validationSchema : loginSchema,
     onSubmit: async (values, { setSubmitting }) => {
       if (!isForgotFlow) {
-        if (portal.value !== "business") {
+        if (portal.value !== "business" && portal.value !== "laundry") {
           navigate(portal.dashboardPath);
           return;
         }
 
         try {
-          const response = await loginTenant({
+          const loginFn = portal.value === "business" ? loginTenant : loginLaundry;
+          const response = await loginFn({
             email: values.email,
             password: values.password,
           });
