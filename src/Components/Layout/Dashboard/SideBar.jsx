@@ -93,19 +93,25 @@ const SideBar = ({
     }));
   };
 
-  const isAnySubmenuActive = (submenus = []) =>
-    submenus.some(
-      (s) =>
-        location.pathname === s.href ||
-        location.pathname.startsWith(`${s.href}/`),
-    );
+  const getActiveSubmenuHref = (submenus = []) =>
+    submenus
+      .filter(
+        (submenu) =>
+          location.pathname === submenu.href ||
+          (!submenu.exact &&
+            location.pathname.startsWith(`${submenu.href}/`)),
+      )
+      .sort((first, second) => second.href.length - first.href.length)[0]?.href;
 
   const renderLink = (
     { id, label, href, Icon, submenus, badge },
     isMobile = false,
   ) => {
     const hasSubmenus = submenus && submenus.length > 0;
-    const isSubmenuActive = hasSubmenus && isAnySubmenuActive(submenus);
+    const activeSubmenuHref = hasSubmenus
+      ? getActiveSubmenuHref(submenus)
+      : undefined;
+    const isSubmenuActive = Boolean(activeSubmenuHref);
     const isActive =
       location.pathname === href ||
       location.pathname.startsWith(`${href}/`) ||
@@ -193,7 +199,9 @@ const SideBar = ({
               <div
                 className={[
                   "absolute right-4 w-1.5 h-1.5 rounded-full bg-(--color-aurora-teal) shadow-[0_0_8px_var(--color-aurora-teal)] transition-opacity duration-150",
-                  isActive && showLabel ? "opacity-100" : "opacity-0",
+                  isActive && showLabel && !hasSubmenus
+                    ? "opacity-100"
+                    : "opacity-0",
                 ].join(" ")}
               />
             </div>
@@ -222,9 +230,7 @@ const SideBar = ({
         {hasSubmenus && isExpanded && showLabel && (
           <div className="mt-1 space-y-1.5 px-3 pb-2 pt-1 border-l-2 border-(--theme-border) ml-6">
             {submenus.map((submenu) => {
-              const isSubActive =
-                location.pathname === submenu.href ||
-                location.pathname.startsWith(`${submenu.href}/`);
+              const isSubActive = activeSubmenuHref === submenu.href;
               return (
                 <NavLink
                   key={submenu.id}
@@ -238,6 +244,13 @@ const SideBar = ({
                   ].join(" ")}
                 >
                   <span>{submenu.label}</span>
+                  <span
+                    aria-hidden="true"
+                    className={[
+                      "h-1.5 w-1.5 shrink-0 rounded-full bg-(--color-aurora-teal) shadow-[0_0_8px_var(--color-aurora-teal)] transition-opacity duration-150",
+                      isSubActive ? "opacity-100" : "opacity-0",
+                    ].join(" ")}
+                  />
                 </NavLink>
               );
             })}

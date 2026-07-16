@@ -117,8 +117,8 @@ Dashboard routes:
 - Business: `/business/dashboard`, `/business/linked-laundries`,
   `/business/categories`, `/business/categories/:id`, `/business/assets`,
   `/business/assets/:id`, `/business/scanners`, `/business/scanners/:id`,
-  `/business/staff`, `/business/staff-roles`, `/business/tags`, and
-  `/business/tags/:id`.
+  `/business/scanners/warnings`, `/business/staff`, `/business/staff-roles`,
+  `/business/tags`, and `/business/tags/:id`.
 - Laundry: `/laundry/dashboard`.
 - Each portal root redirects to its dashboard.
 
@@ -141,7 +141,9 @@ renders `SideBar`, `Header`, and `<Outlet>`.
 `getFlatPortalItems`. `src/Auth/authConfig.jsx` separately owns Business/Laundry
 auth tabs and dashboard destinations. Inspect both when portal names or paths
 change. Shared behavior must derive links from portal context rather than
-hardcoding one portal prefix.
+hardcoding one portal prefix. In the Business sidebar, Staff is an expandable
+group containing All Staff and Staff Roles; its active submenu uses the same
+single-dot behavior as the Scanners group.
 
 ## 7. Current feature/data status
 
@@ -167,10 +169,30 @@ Confirmed API-backed areas:
   `sessionStorage` so Account, Verify, Profile, and Done survive a same-tab page
   refresh; passwords and OTP values are never persisted.
 - Tenant categories list, create, details, update, and status actions use tenant
-  category services.
-- Tenant scanner creation calls `POST /tenant-scanners/create` from the Add
-  Scanner modal with device configuration and English/Arabic translation data;
-  the scanner list, stats, edit, status, and details flows still use local data.
+  category services. The list sends backend `page`, `limit`, `keywords`, and
+  `status` filters, plus the selected `en`/`ar` value through the `x-language`
+  header; unsupported client-only usage filtering is not applied to paginated
+  results. Category summary cards use `GET /tenant-categories/summary` and
+  refresh after category create, update, or status mutations.
+- Tenant scanners list through `GET /tenant-scanners/show` with backend
+  pagination and optional `keywords`, `scannerType`, `scannerMode`, `status`,
+  and `assignedOperatorId` filters. The operator filter loads only active staff
+  from `GET /tenant-staff/show?status=active`. Scanner creation uses
+  `POST /tenant-scanners/create`, and edit uses
+  `PUT /tenant-scanners/update/:id` with the backend scanner UUID preserved as
+  `apiId`. Create and edit send device configuration plus English/Arabic
+  translation data. Their optional assigned-operator dropdown loads active staff
+  from `GET /tenant-staff/show`; the selected staff UUID is sent as
+  `assignedOperatorId`. The dedicated `/business/scanners/warnings` screen uses
+  `GET /tenant-scanners/warnings` with separate pagination and is available
+  beneath Scanners in the business sidebar. Scanner summary cards use
+  `GET /tenant-scanners/summary`. Scanner details use
+  `GET /tenant-scanners/show/:id` and render device, battery, nested operator,
+  ownership/audit, and English/Arabic translation data. Scanner detail routes
+  keep All Scanners selected in the sidebar, while the warning route selects
+  Scanner Warnings and uses the `Scanners / Warnings` header. Activate/deactivate actions use
+  `PUT /tenant-scanners/update-status/:id`. Mock scan logs are no longer shown
+  on the live detail screen because no scanner-log API contract is integrated.
 - Tenant linked laundries, pending invitations, and closed invitations use
   separate paginated GET services. Pending records remain in Pending Requests,
   accepted invitations are represented by the linked-laundries service, and
@@ -236,13 +258,30 @@ Current endpoints:
 - `GET /tenant-auth/logout`.
 - `GET /tenant-auth/me`.
 - `GET /tenant-categories/show`.
+- `GET /tenant-categories/summary` returning `totalCategories`,
+  `activeCategories`, `inactiveCategories`, and `categoriesInUse`.
 - `POST /tenant-categories/create`.
 - `GET /tenant-categories/show/:id`.
 - `PUT /tenant-categories/update/:id`.
 - `PUT /tenant-categories/update-status/:id` with `{ status }`.
 - `POST /tenant-scanners/create` with `{ scannerId, scannerType, scannerMode,
-  assignedOperatorId?, status, signalStatus, firmwareVersion, batteryLevel,
-  translations: { en, ar } }`.
+  assignedOperatorId?, status, translations: { en, ar } }`.
+- `GET /tenant-scanners/show` with `page`, `limit`, and optional `keywords`,
+  `scannerType` (`fixed`/`portable`), `scannerMode`
+  (`entry`/`exit`/`manual`/`auto`), `status`
+  (`active`/`inactive`/`warning`), `signalStatus`
+  (`online`/`offline`/`low_signal`/`warning`), and `assignedOperatorId`.
+- `PUT /tenant-scanners/update/:id` uses the scanner UUID and the scanner create
+  request shape.
+- `GET /tenant-scanners/warnings` with `page` and `limit` returns scanners that
+  require attention for the Scanner warnings panel.
+- `GET /tenant-scanners/summary` returns `totalScanners`, `activeScanners`,
+  `inactiveScanners`, `fixedScanners`, `portableScanners`, and
+  `scannerWarnings` for the scanner summary cards.
+- `GET /tenant-scanners/show/:id` loads one scanner by its backend UUID for the
+  scanner details screen.
+- `PUT /tenant-scanners/update-status/:id` updates one scanner by UUID with
+  `{ status }`, where the integrated UI sends `active` or `inactive`.
 - `GET /tenant-laundries/show` with optional `page`, `limit`, `keywords`,
   `status`, `dispatchMode`, and `isDefault` query parameters.
 - `GET /tenant-laundries/show/:id` returns the linked-laundry relationship,

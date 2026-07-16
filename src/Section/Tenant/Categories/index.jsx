@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { CircleCheck, Plus, Search, Tag } from "lucide-react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -33,10 +33,9 @@ const statusOptions = [
   { label: "Inactive", value: "inactive" },
 ];
 
-const usageOptions = [
-  { label: "All Usage", value: "all" },
-  { label: "In Use", value: "used" },
-  { label: "Not in Use", value: "unused" },
+const languageOptions = [
+  { label: "English", value: "en" },
+  { label: "Arabic", value: "ar" },
 ];
 
 const addCategoryInitialValues = {
@@ -56,8 +55,10 @@ const addCategoryValidationSchema = Yup.object({
   // arabicDescription: Yup.string().trim(),
 });
 
-const normalizeCategory = (category) => {
+const normalizeCategory = (category, language = "en") => {
   const status = String(category.status || "inactive").toLowerCase();
+  const translation =
+    category.translations?.[language] || category.translations?.en || {};
   const assetCount = Number(
     category.assetCount ?? category.assetsCount ?? category.assets?.length ?? 0,
   );
@@ -73,10 +74,10 @@ const normalizeCategory = (category) => {
       category.title ||
       category.name ||
       category.categoryName ||
-      category.translations?.en?.title ||
+      translation.title ||
       "Unnamed Category",
     description:
-      category.description || category.translations?.en?.description || "",
+      category.description || translation.description || "",
     status: status === "active" ? "Active" : "Inactive",
     statusVariant: status === "active" ? "success" : "danger",
     usage: isUsed ? "In Use" : "Not in Use",
@@ -93,7 +94,7 @@ const Categories = () => {
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebouncedSearch(searchValue);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [usageFilter, setUsageFilter] = useState("all");
+  const [languageFilter, setLanguageFilter] = useState("en");
   const [currentPage, setCurrentPage] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -104,12 +105,15 @@ const Categories = () => {
   useEffect(() => {
     let isActive = true;
 
-    getTenantCategories({
-      page: currentPage + 1,
-      limit: ITEMS_PER_PAGE,
-      ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
-      ...(statusFilter !== "all" ? { status: statusFilter } : {}),
-    })
+    getTenantCategories(
+      {
+        page: currentPage + 1,
+        limit: ITEMS_PER_PAGE,
+        ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
+        ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+      },
+      languageFilter,
+    )
       .then((response) => {
         if (!isActive) return;
         const payload = response?.data ?? response;
@@ -120,7 +124,9 @@ const Categories = () => {
             payload?.docs ||
             payload?.results ||
             [];
-        setCategoryRows(rows.map(normalizeCategory));
+        setCategoryRows(
+          rows.map((category) => normalizeCategory(category, languageFilter)),
+        );
         const pagination = payload?.pagination || payload?.meta || payload;
         setTotalItems(
           Number(
@@ -160,19 +166,10 @@ const Categories = () => {
     return () => {
       isActive = false;
     };
-  }, [currentPage, debouncedSearch, statusFilter, refreshKey]);
-
-  const filteredCategories = useMemo(() => {
-    return categoryRows.filter((category) => {
-      const matchesUsage =
-        usageFilter === "all" || category.usageState === usageFilter;
-
-      return matchesUsage;
-    });
-  }, [categoryRows, usageFilter]);
+  }, [currentPage, debouncedSearch, languageFilter, statusFilter, refreshKey]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
-    useSortableTableData(filteredCategories);
+    useSortableTableData(categoryRows);
   const activePage = totalPages > 0 ? Math.min(currentPage, totalPages - 1) : 0;
 
   const resetCurrentPage = () => {
@@ -193,8 +190,9 @@ const Categories = () => {
     resetCurrentPage();
   };
 
-  const handleUsageFilterChange = (value) => {
-    setUsageFilter(value);
+  const handleLanguageFilterChange = (value) => {
+    setIsLoading(true);
+    setLanguageFilter(value);
     resetCurrentPage();
   };
 
@@ -250,17 +248,18 @@ const Categories = () => {
         nextStatus.toLowerCase(),
       );
 
-    setCategoryRows((current) =>
-      current.map((category) =>
-        category.id === categoryId
-          ? {
-              ...category,
-              status: nextStatus,
-              statusVariant: nextStatus === "Active" ? "success" : "danger",
-            }
-          : category,
-      ),
-    );
+      setCategoryRows((current) =>
+        current.map((category) =>
+          category.id === categoryId
+            ? {
+                ...category,
+                status: nextStatus,
+                statusVariant: nextStatus === "Active" ? "success" : "danger",
+              }
+            : category,
+        ),
+      );
+      setRefreshKey((current) => current + 1);
       toast.success(`Category set to ${nextStatus.toLowerCase()}`);
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Unable to update category status"));
@@ -316,7 +315,7 @@ const Categories = () => {
   return (
     <>
       <div className="space-y-5">
-        <Stats categories={categoryRows} />
+        <Stats refreshKey={refreshKey} />
 
         <Card padding="0" rounded="18px">
           <div className="grid gap-3 border-b border-(--theme-border) px-4 py-4 lg:grid-cols-[minmax(240px,1fr)_170px_170px_auto]">
@@ -332,9 +331,9 @@ const Categories = () => {
               value={statusFilter}
             />
             <Dropdown
-              onChange={handleUsageFilterChange}
-              options={usageOptions}
-              value={usageFilter}
+              onChange={handleLanguageFilterChange}
+              options={languageOptions}
+              value={languageFilter}
             />
             <Button
               leftIcon={<Plus size={16} />}

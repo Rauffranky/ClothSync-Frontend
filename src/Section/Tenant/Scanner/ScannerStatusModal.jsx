@@ -2,11 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, CircleCheck, Info, Radio } from "lucide-react";
 import Modal from "../../../Components/UI/Modal";
 import Button from "../../../Components/UI/Button";
-import Input from "../../../Components/UI/Input";
+// import Input from "../../../Components/UI/Input";
 import Alert from "../../../Components/UI/Alert";
 import Badge from "../../../Components/UI/Badge";
 
-const ScannerStatusModal = ({ isOpen, onClose, actionData, onConfirm }) => {
+const ScannerStatusModal = ({
+  isOpen,
+  isSubmitting = false,
+  onClose,
+  actionData,
+  onConfirm,
+}) => {
   const [reason, setReason] = useState("");
   const wasOpenRef = useRef(false);
   const isDeactivate = actionData?.action === "deactivate";
@@ -19,13 +25,19 @@ const ScannerStatusModal = ({ isOpen, onClose, actionData, onConfirm }) => {
   }, [isOpen]);
 
   const handleClose = () => {
+    if (isSubmitting) return;
     setReason("");
     onClose?.();
   };
 
-  const handleConfirm = () => {
-    onConfirm?.({ ...actionData, reason: reason.trim() });
-    handleClose();
+  const handleConfirm = async () => {
+    try {
+      await onConfirm?.({ ...actionData, reason: reason.trim() });
+      setReason("");
+      onClose?.();
+    } catch {
+      // The submit owner displays the API error and keeps this modal open.
+    }
   };
 
   if (!actionData) return null;
@@ -34,11 +46,18 @@ const ScannerStatusModal = ({ isOpen, onClose, actionData, onConfirm }) => {
     <Modal
       footer={
         <>
-          <Button onClick={handleClose} rounded="12px" size="sm" variant="secondary">
+          <Button
+            disabled={isSubmitting}
+            onClick={handleClose}
+            rounded="12px"
+            size="sm"
+            variant="secondary"
+          >
             Cancel
           </Button>
           <Button
             leftIcon={isDeactivate ? <AlertTriangle size={16} /> : <CircleCheck size={16} />}
+            loading={isSubmitting}
             onClick={handleConfirm}
             rounded="12px"
             size="sm"
@@ -50,6 +69,7 @@ const ScannerStatusModal = ({ isOpen, onClose, actionData, onConfirm }) => {
       }
       onClose={handleClose}
       open={isOpen}
+      closeOnBackdrop={!isSubmitting}
       title={isDeactivate ? "Deactivate Scanner" : "Activate Scanner"}
       width={640}
     >
@@ -106,7 +126,7 @@ const ScannerStatusModal = ({ isOpen, onClose, actionData, onConfirm }) => {
           </div>
         </div>
 
-        <Input
+        {/* <Input
           label="Reason / Note"
           multiline
           onChange={setReason}
@@ -117,7 +137,7 @@ const ScannerStatusModal = ({ isOpen, onClose, actionData, onConfirm }) => {
           }
           rows={4}
           value={reason}
-        />
+        /> */}
       </div>
     </Modal>
   );

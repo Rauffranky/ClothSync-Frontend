@@ -1,9 +1,94 @@
 import { Radio, Wifi, WifiOff, MapPin, Smartphone, AlertTriangle } from "lucide-react";
+import { formatDateTime } from "../../../Utils/date";
+
+const titleCase = (value) =>
+    String(value || "")
+        .replace(/[_-]+/g, " ")
+        .replace(/\b\w/g, (character) => character.toUpperCase());
+
+const getScannerRows = (payload) => {
+    const rows = Array.isArray(payload)
+        ? payload
+        : payload?.items ||
+          payload?.scanners ||
+          payload?.docs ||
+          payload?.results ||
+          [];
+
+    return Array.isArray(rows) ? rows : [];
+};
+
+export const normalizeScanner = (scanner, index = 0) => {
+    const translations = scanner?.translations || {};
+    const translation = translations?.en || scanner?.translation || {};
+    const assignedOperator =
+        scanner?.assignedOperator || scanner?.operator || scanner?.staff || {};
+    const assignedOperatorUser = assignedOperator?.user || {};
+    const apiId = scanner?.id || scanner?._id || null;
+
+    return {
+        ...scanner,
+        apiId,
+        id: scanner?.scannerId || scanner?.code || `scanner-${index}`,
+        name: translation?.name || scanner?.name || "Unnamed Scanner",
+        type: titleCase(scanner?.scannerType || scanner?.type),
+        mode: titleCase(scanner?.scannerMode || scanner?.mode),
+        location:
+            translation?.zoneName || scanner?.zoneName || scanner?.locationName || "-",
+        operator:
+            assignedOperatorUser?.fullName ||
+            assignedOperatorUser?.name ||
+            assignedOperator?.fullName ||
+            assignedOperator?.name ||
+            scanner?.operatorName ||
+            null,
+        assignedOperatorId:
+            scanner?.assignedOperatorId ||
+            assignedOperator?.id ||
+            assignedOperator?._id ||
+            "",
+        status: titleCase(scanner?.status),
+        signalStatus: scanner?.signalStatus || "online",
+        firmwareVersion: scanner?.firmwareVersion || "",
+        batteryLevel: scanner?.batteryLevel ?? 100,
+        customNotes: translation?.notes || scanner?.notes || "",
+        lastActivity:
+            formatDateTime(
+                scanner?.lastActivityAt || scanner?.lastSeenAt,
+                true,
+            ) || "-",
+        reads:
+            scanner?.reads ??
+            scanner?.readsCount ??
+            scanner?.readCount ??
+            scanner?.totalReads ??
+            null,
+    };
+};
+
+export const getScannerPaginatedCollection = (response, limit) => {
+    const payload = response?.data ?? response ?? {};
+    const rows = getScannerRows(payload);
+    const pagination = payload?.pagination || response?.pagination || {};
+    const totalItems = Number(
+        pagination?.totalItems ?? pagination?.totalDocs ?? pagination?.total ?? rows.length,
+    );
+    const totalPages = Number(
+        pagination?.totalPages ??
+            pagination?.pages ??
+            Math.ceil(totalItems / limit),
+    );
+
+    return {
+        rows,
+        totalItems: Number.isFinite(totalItems) ? totalItems : 0,
+        totalPages: Number.isFinite(totalPages) ? totalPages : 0,
+    };
+};
 
 export const scannerStats = [
     {
         id: "total",
-        value: 6,
         label: "Total Scanners",
         subtext: "registered devices",
         icon: Radio,
@@ -11,7 +96,6 @@ export const scannerStats = [
     },
     {
         id: "active",
-        value: 3,
         label: "Active Scanners",
         subtext: "currently online",
         icon: Wifi,
@@ -19,7 +103,6 @@ export const scannerStats = [
     },
     {
         id: "inactive",
-        value: 2,
         label: "Inactive Scanners",
         subtext: "offline / disabled",
         icon: WifiOff,
@@ -27,7 +110,6 @@ export const scannerStats = [
     },
     {
         id: "fixed",
-        value: 4,
         label: "Fixed Scanners",
         subtext: "wall-mounted units",
         icon: MapPin,
@@ -35,7 +117,6 @@ export const scannerStats = [
     },
     {
         id: "portable",
-        value: 2,
         label: "Portable Scanners",
         subtext: "handheld units",
         icon: Smartphone,
@@ -43,7 +124,6 @@ export const scannerStats = [
     },
     {
         id: "warnings",
-        value: 1,
         label: "Scanner Warnings",
         subtext: "require attention",
         icon: AlertTriangle,
@@ -122,22 +202,23 @@ export const scannersData = [
 
 export const scannerTypeOptions = [
     { label: "All Types", value: "all" },
-    { label: "Fixed", value: "Fixed" },
-    { label: "Portable", value: "Portable" },
+    { label: "Fixed", value: "fixed" },
+    { label: "Portable", value: "portable" },
 ];
 
 export const scannerModeOptions = [
     { label: "All Modes", value: "all" },
-    { label: "Entry", value: "Entry" },
-    { label: "Exit", value: "Exit" },
-    { label: "Automatic", value: "Automatic" },
+    { label: "Entry", value: "entry" },
+    { label: "Exit", value: "exit" },
+    { label: "Manual", value: "manual" },
+    { label: "Auto", value: "auto" },
 ];
 
 export const scannerStatusOptions = [
     { label: "All Statuses", value: "all" },
-    { label: "Active", value: "Active" },
-    { label: "Warning", value: "Warning" },
-    { label: "Inactive", value: "Inactive" },
+    { label: "Active", value: "active" },
+    { label: "Warning", value: "warning" },
+    { label: "Inactive", value: "inactive" },
 ];
 
 export const scannerStatusVariantMap = {

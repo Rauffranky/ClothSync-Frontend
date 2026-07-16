@@ -78,7 +78,7 @@ const CategoriesTable = ({
           </span>
           <div className="min-w-0">
             <p className="m-0 truncate font-bold text-(--theme-text-primary)">
-              {row.title}
+              {row.name}
             </p>
             <p className="m-0 mt-0.5 text-xs text-(--theme-text-muted)">
               {row.categoryCode}

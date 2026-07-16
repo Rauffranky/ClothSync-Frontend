@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CircleCheck,
   CircleX,
@@ -6,7 +6,6 @@ import {
   MapPin,
   Radio,
   Smartphone,
-  User,
 } from "lucide-react";
 import { useFormik } from "formik";
 import * as yup from "yup";
@@ -14,13 +13,12 @@ import Modal from "../../../Components/UI/Modal";
 import Button from "../../../Components/UI/Button";
 import Input from "../../../Components/UI/Input";
 import Dropdown from "../../../Components/UI/Dropdown";
-
-const operatorOptions = [
-  { label: "Alex Torres", value: "Alex Torres" },
-  { label: "Maria Santos", value: "Maria Santos" },
-  { label: "James Dawson", value: "James Dawson" },
-  { label: "Sarah Kim", value: "Sarah Kim" },
-];
+import { getApiErrorMessage } from "../../../axios/api";
+import { getTenantStaff } from "../../../axios/staff/tenantStaff";
+import {
+  getStaffPaginatedCollection,
+  normalizeStaffMember,
+} from "../Staff/data";
 
 const scannerModeOptions = [
   { label: "Entry", value: "Entry" },
@@ -29,23 +27,14 @@ const scannerModeOptions = [
   { label: "Auto", value: "Auto" },
 ];
 
-const signalStatusOptions = [
-  { label: "Online", value: "online" },
-  { label: "Offline", value: "offline" },
-];
-
 const initialFormState = {
   scannerName: "",
   scannerId: "",
   scannerType: "Fixed",
   scannerMode: "Entry",
   zoneName: "",
-  assignedOperator: null,
   assignedOperatorId: "",
   status: "Active",
-  signalStatus: "online",
-  firmwareVersion: "",
-  batteryLevel: 100,
   customNotes: "",
 };
 
@@ -68,24 +57,14 @@ const scannerValidationSchema = yup.object({
   }),
 });
 
-const createScannerValidationSchema = scannerValidationSchema.shape({
+const scannerApiValidationSchema = scannerValidationSchema.shape({
   scannerMode: yup.string().required("Scanner mode is required"),
   assignedOperatorId: yup
     .string()
     .trim()
-    .uuid("Assigned operator ID must be a valid UUID"),
-  signalStatus: yup
-    .string()
-    .oneOf(["online", "offline"])
-    .required("Signal status is required"),
-  firmwareVersion: yup.string().trim().required("Firmware version is required"),
-  batteryLevel: yup
-    .number()
-    .typeError("Battery level must be a number")
-    .integer("Battery level must be a whole number")
-    .min(0, "Battery level cannot be below 0")
-    .max(100, "Battery level cannot exceed 100")
-    .required("Battery level is required"),
+    .transform((value) => (value === "" ? undefined : value))
+    .uuid("Assigned operator ID must be a valid UUID")
+    .notRequired(),
 });
 
 const scannerTypeCards = [
@@ -123,44 +102,24 @@ const AddScannerModal = ({
   const resolvedInitialValues = {
     ...initialFormState,
     ...initialValues,
-    assignedOperator: initialValues?.assignedOperator ?? null,
     assignedOperatorId: initialValues?.assignedOperatorId ?? "",
   };
 
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: resolvedInitialValues,
-    validationSchema:
-      mode === "add" ? createScannerValidationSchema : scannerValidationSchema,
+    validationSchema: scannerApiValidationSchema,
     onSubmit: async (values, { resetForm, setSubmitting }) => {
-      const sharedPayload = {
+      const payload = {
         scannerName: values.scannerName.trim(),
         scannerId: values.scannerId.trim(),
         scannerType: values.scannerType,
+        scannerMode: values.scannerMode,
+        assignedOperatorId: values.assignedOperatorId.trim(),
         status: values.status,
+        zoneName: values.zoneName.trim(),
         customNotes: values.customNotes.trim(),
       };
-      const payload =
-        mode === "add"
-          ? {
-              ...sharedPayload,
-              scannerMode: values.scannerMode,
-              assignedOperatorId: values.assignedOperatorId.trim(),
-              signalStatus: values.signalStatus,
-              firmwareVersion: values.firmwareVersion.trim(),
-              batteryLevel: Number(values.batteryLevel),
-              zoneName: values.zoneName.trim(),
-            }
-          : {
-              ...sharedPayload,
-              assignedOperator: values.assignedOperator,
-              ...(values.scannerType === "Fixed"
-                ? {
-                    scannerMode: values.scannerMode,
-                    zoneName: values.zoneName.trim(),
-                  }
-                : {}),
-            };
 
       try {
         await onSubmit?.(payload);
@@ -174,6 +133,47 @@ const AddScannerModal = ({
     },
   });
   const wasOpenRef = useRef(false);
+  const [staffOptions, setStaffOptions] = useState([]);
+  const [isStaffLoading, setIsStaffLoading] = useState(true);
+  const [staffLoadError, setStaffLoadError] = useState("");
+  const [staffLoadKey, setStaffLoadKey] = useState(0);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    let isActive = true;
+
+    getTenantStaff({ page: 1, limit: 100, status: "active" })
+      .then((response) => {
+        if (!isActive) return;
+
+        const options = getStaffPaginatedCollection(response, 1, 100)
+          .rows.map(normalizeStaffMember)
+          .filter((staff) => staff.apiId && staff.status === "Active")
+          .map((staff) => ({
+            label: staff.name,
+            searchLabel: `${staff.name} ${staff.email}`,
+            value: staff.apiId,
+          }));
+
+        setStaffOptions(options);
+        setStaffLoadError("");
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setStaffOptions([]);
+        setStaffLoadError(
+          getApiErrorMessage(error, "Unable to load staff members"),
+        );
+      })
+      .finally(() => {
+        if (isActive) setIsStaffLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [isOpen, staffLoadKey]);
 
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) {
@@ -195,11 +195,7 @@ const AddScannerModal = ({
 
   const handleScannerTypeChange = (nextType) => {
     formik.setFieldValue("scannerType", nextType);
-    if (nextType === "Fixed" || mode === "add") {
-      formik.setFieldValue("scannerMode", formik.values.scannerMode || "Entry");
-    } else {
-      formik.setFieldValue("scannerMode", "", false);
-    }
+    formik.setFieldValue("scannerMode", formik.values.scannerMode || "Entry");
     if (nextType !== "Fixed") formik.setFieldValue("zoneName", "", false);
   };
 
@@ -398,136 +394,120 @@ const AddScannerModal = ({
           </div>
         </div>
 
-        {(mode === "add" || formik.values.scannerType === "Fixed") && (
-          <>
-            <div>
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <label className="block text-sm font-semibold text-(--theme-text-secondary)">
-                  Scanner Mode <span className="text-(--color-overdue)">*</span>
-                </label>
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {scannerModeOptions.map((item) => {
-                  const selected = formik.values.scannerMode === item.value;
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <label className="block text-sm font-semibold text-(--theme-text-secondary)">
+              Scanner Mode <span className="text-(--color-overdue)">*</span>
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {scannerModeOptions.map((item) => {
+              const selected = formik.values.scannerMode === item.value;
 
-                  return (
-                    <Button
-                      key={item.value}
-                      disableHoverTransform
-                      onClick={() => setField("scannerMode", item.value)}
-                      rounded="14px"
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                      style={{
-                        // minHeight: 46,
-                        background: selected
-                          ? "rgba(37, 99, 235, 0.12)"
-                          : "linear-gradient(145deg, var(--theme-surface-strong), var(--theme-surface))",
-                        borderColor: selected
-                          ? "rgba(37, 99, 235, 0.28)"
-                          : "var(--theme-border-soft)",
-                        color: selected
-                          ? "var(--button-info-text)"
-                          : "var(--theme-text-secondary)",
-                        boxShadow: selected
-                          ? "0 0 0 3px rgba(37, 99, 235, 0.08)"
-                          : "inset 0 1px 0 rgba(255, 255, 255, 0.18)",
-                        outline: hasFieldError("scannerMode")
-                          ? "1px solid rgba(239, 68, 68, 0.4)"
-                          : "none",
-                      }}
-                    >
-                      {item.label}
-                    </Button>
-                  );
-                })}
-              </div>
-              {hasFieldError("scannerMode") && (
-                <p className="mt-2 text-xs font-semibold text-(--color-overdue)">
-                  {getFieldError("scannerMode")}
-                </p>
-              )}
-            </div>
+              return (
+                <Button
+                  key={item.value}
+                  disableHoverTransform
+                  onClick={() => setField("scannerMode", item.value)}
+                  rounded="14px"
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                  style={{
+                    minHeight: 46,
+                    background: selected
+                      ? "rgba(37, 99, 235, 0.12)"
+                      : "linear-gradient(145deg, var(--theme-surface-strong), var(--theme-surface))",
+                    borderColor: selected
+                      ? "rgba(37, 99, 235, 0.28)"
+                      : "var(--theme-border-soft)",
+                    color: selected
+                      ? "var(--button-info-text)"
+                      : "var(--theme-text-secondary)",
+                    boxShadow: selected
+                      ? "0 0 0 3px rgba(37, 99, 235, 0.08)"
+                      : "inset 0 1px 0 rgba(255, 255, 255, 0.18)",
+                    outline: hasFieldError("scannerMode")
+                      ? "1px solid rgba(239, 68, 68, 0.4)"
+                      : "none",
+                  }}
+                >
+                  {item.label}
+                </Button>
+              );
+            })}
+          </div>
+          {hasFieldError("scannerMode") && (
+            <p className="mt-2 text-xs font-semibold text-(--color-overdue)">
+              {getFieldError("scannerMode")}
+            </p>
+          )}
+        </div>
 
-            {formik.values.scannerType === "Fixed" && (
-              <Input
-                error={hasFieldError("zoneName")}
-                helperText={getFieldError("zoneName")}
-                label="Zone Name"
-                leftIcon={<MapPin size={18} />}
-                name="zoneName"
-                onBlur={formik.handleBlur}
-                onChange={(value) => setField("zoneName", value)}
-                placeholder="e.g gate number, area etc"
-                value={formik.values.zoneName}
-              />
+        <div className="grid gap-5 md:grid-cols-2">
+          <div>
+            <Dropdown
+              disabled={isStaffLoading || Boolean(staffLoadError)}
+              label="Select Staff"
+              name="assignedOperatorId"
+              onChange={(value) =>
+                setField("assignedOperatorId", value || "")
+              }
+              options={staffOptions}
+              placeholder={
+                isStaffLoading
+                  ? "Loading staff..."
+                  : staffLoadError
+                    ? "Staff unavailable"
+                    : staffOptions.length
+                      ? "Search staff member... (optional)"
+                      : "No active staff available"
+              }
+              search
+              triggerStyle={
+                hasFieldError("assignedOperatorId")
+                  ? { borderColor: "var(--color-overdue)" }
+                  : undefined
+              }
+              value={formik.values.assignedOperatorId || null}
+            />
+            {getFieldError("assignedOperatorId") && (
+              <p className="mt-2 text-xs font-semibold text-(--color-overdue)">
+                {getFieldError("assignedOperatorId")}
+              </p>
             )}
-          </>
-        )}
-
-        {mode === "add" ? (
-          <>
-            <div className="grid gap-5 md:grid-cols-2">
-              <Input
-                error={hasFieldError("assignedOperatorId")}
-                helperText={getFieldError("assignedOperatorId")}
-                label="Assigned Operator ID"
-                leftIcon={<User size={16} />}
-                name="assignedOperatorId"
-                onBlur={formik.handleBlur}
-                onChange={(value) => setField("assignedOperatorId", value)}
-                placeholder="Optional operator UUID"
-                value={formik.values.assignedOperatorId}
-              />
-
-              <Dropdown
-                label="Signal Status"
-                onChange={(value) => setField("signalStatus", value)}
-                options={signalStatusOptions}
-                value={formik.values.signalStatus}
-              />
-            </div>
-
-            <div className="grid gap-5 md:grid-cols-2">
-              <Input
-                error={hasFieldError("firmwareVersion")}
-                helperText={getFieldError("firmwareVersion")}
-                label="Firmware Version"
-                name="firmwareVersion"
-                onBlur={formik.handleBlur}
-                onChange={(value) => setField("firmwareVersion", value)}
-                placeholder="e.g. 1.0.0"
-                required
-                value={formik.values.firmwareVersion}
-              />
-
-              <Input
-                error={hasFieldError("batteryLevel")}
-                helperText={getFieldError("batteryLevel")}
-                label="Battery Level"
-                max={100}
-                min={0}
-                name="batteryLevel"
-                onBlur={formik.handleBlur}
-                onChange={(value) => setField("batteryLevel", value)}
-                required
-                type="number"
-                value={formik.values.batteryLevel}
-              />
-            </div>
-          </>
-        ) : (
-          <Dropdown
-            label="Assigned Operator"
-            leftIcon={<User size={16} className="text-(--theme-text-muted)" />}
-            onChange={(value) => setField("assignedOperator", value)}
-            options={operatorOptions}
-            placeholder="Search staff member... (optional)"
-            search
-            value={formik.values.assignedOperator}
-          />
-        )}
+            {staffLoadError && (
+              <p className="mt-2 text-xs font-semibold text-(--color-overdue)">
+                {staffLoadError}{" "}
+                <button
+                  className="underline underline-offset-2"
+                  onClick={() => {
+                    setIsStaffLoading(true);
+                    setStaffLoadError("");
+                    setStaffLoadKey((current) => current + 1);
+                  }}
+                  type="button"
+                >
+                  Try again
+                </button>
+              </p>
+            )}
+          </div>
+          {formik.values.scannerType === "Fixed" && (
+            <Input
+              error={hasFieldError("zoneName")}
+              helperText={getFieldError("zoneName")}
+              label="Zone Name"
+              leftIcon={<MapPin size={18} />}
+              name="zoneName"
+              onBlur={formik.handleBlur}
+              onChange={(value) => setField("zoneName", value)}
+              placeholder="e.g. gate number or area"
+              required
+              value={formik.values.zoneName}
+            />
+          )}
+        </div>
 
         <Input
           label="Custom Notes"

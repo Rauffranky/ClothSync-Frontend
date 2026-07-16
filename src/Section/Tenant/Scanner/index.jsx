@@ -10,6 +10,7 @@ import { toast } from "../../../Utils/toast";
 
 const ScannerManagementIndex = () => {
   const [isAddScannerOpen, setIsAddScannerOpen] = useState(false);
+  const [scannerRefreshKey, setScannerRefreshKey] = useState(0);
 
   const handleCreateScanner = async (values) => {
     const payload = {
@@ -20,9 +21,6 @@ const ScannerManagementIndex = () => {
         ? { assignedOperatorId: values.assignedOperatorId }
         : {}),
       status: values.status.toLowerCase(),
-      signalStatus: values.signalStatus,
-      firmwareVersion: values.firmwareVersion,
-      batteryLevel: values.batteryLevel,
       translations: {
         en: {
           name: values.scannerName,
@@ -40,6 +38,7 @@ const ScannerManagementIndex = () => {
     try {
       const response = await createTenantScanner(payload);
       toast.success(response?.message || "Scanner created successfully");
+      setScannerRefreshKey((current) => current + 1);
       return response;
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Unable to create scanner"));
@@ -61,10 +60,15 @@ const ScannerManagementIndex = () => {
       </div>
 
       {/* Stats Overview */}
-      <ScannerStats />
+      <ScannerStats refreshKey={scannerRefreshKey} />
 
       {/* Main Table */}
-      <ScannerTable />
+      <ScannerTable
+        onScannerUpdated={() =>
+          setScannerRefreshKey((current) => current + 1)
+        }
+        refreshKey={scannerRefreshKey}
+      />
 
       <AddScannerModal
         isOpen={isAddScannerOpen}

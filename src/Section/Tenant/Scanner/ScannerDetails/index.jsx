@@ -1,152 +1,143 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Cpu, Gauge, Logs, ShieldAlert } from "lucide-react";
 import {
-  scannerDetailsData,
-  scannerLogRows,
-  scannerSummaryCards,
-} from "./data";
+  AlertTriangle,
+  Battery,
+  Cpu,
+  Gauge,
+  Logs,
+  RefreshCw,
+  ShieldAlert,
+  UserRound,
+  Wifi,
+} from "lucide-react";
+import Alert from "../../../../Components/UI/Alert";
 import Badge from "../../../../Components/UI/Badge";
-import HeaderCard from "./HeaderCard";
+import Button from "../../../../Components/UI/Button";
 import Card from "../../../../Components/UI/Card";
-import Table from "../../../../Components/UI/Table";
-import Pagination from "../../../../Components/UI/Pagination";
+import ProgressBar from "../../../../Components/UI/ProgressBar";
+import { getApiErrorMessage } from "../../../../axios/api";
+import { getTenantScannerDetails } from "../../../../axios/scanners/tenantScanners";
+import { formatDateTime } from "../../../../Utils/date";
+import { normalizeScanner } from "../data";
+import HeaderCard from "./HeaderCard";
 
-const ITEMS_PER_PAGE = 2;
+const summaryItems = [
+  { key: "lastActivity", label: "Last Activity", icon: Logs },
+  { key: "reads", label: "Total Reads", icon: Gauge },
+  { key: "location", label: "Location", icon: Cpu },
+  { key: "operator", label: "Operator", icon: ShieldAlert },
+];
 
-const summaryIconMap = {
-  lastScan: Logs,
-  recentReads: Gauge,
-  location: Cpu,
-  operator: ShieldAlert,
+const signalLabels = {
+  low_signal: "Low Signal",
+  offline: "Offline",
+  online: "Online",
+  warning: "Warning",
 };
+
+const DetailField = ({ label, value, mono = false }) => (
+  <div>
+    <dt className="text-xs font-bold uppercase tracking-wide text-(--theme-text-muted)">
+      {label}
+    </dt>
+    <dd
+      className={`m-0 mt-1 wrap-break-word font-bold text-(--theme-text-primary) ${mono ? "font-mono text-xs" : "text-sm"}`}
+    >
+      {value === null || value === undefined || value === ""
+        ? "Not assigned"
+        : value}
+    </dd>
+  </div>
+);
 
 const ScannerDetailsIndex = () => {
   const { id } = useParams();
-  const data = scannerDetailsData[id] || scannerDetailsData["SCN-PRT-003"];
-  const [currentPage, setCurrentPage] = useState(0);
+  const [scanner, setScanner] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [retryKey, setRetryKey] = useState(0);
 
-  const pageCount = Math.ceil(scannerLogRows.length / ITEMS_PER_PAGE);
-  const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
-  const paginatedLogs = useMemo(() => {
-    const startIndex = activePage * ITEMS_PER_PAGE;
-    return scannerLogRows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [activePage]);
+  useEffect(() => {
+    let isActive = true;
 
-  const scanLogColumns = useMemo(
-    () => [
-      {
-        key: "tagId",
-        label: "Tag ID",
-        sortable: true,
-        render: (_, row) => (
-          <div>
-            <p className="m-0 font-mono text-sm font-black text-(--theme-text-primary)">
-              {row.tagId}
-            </p>
-            <p className="m-0 mt-0.5 font-mono text-[11px] font-semibold text-(--theme-text-muted)">
-              {row.assetId}
-            </p>
-          </div>
-        ),
-      },
-      {
-        key: "asset",
-        label: "Assets",
-        sortable: true,
-        render: (_, row) => (
-          <div>
-            <p className="m-0 font-semibold text-(--theme-text-primary)">
-              {row.asset}
-            </p>
-            <p className="m-0 mt-0.5 text-[11px] font-medium text-(--theme-text-muted)">
-              {row.assetId}
-            </p>
-          </div>
-        ),
-      },
-      {
-        key: "zone",
-        label: "Zone",
-        sortable: true,
-        render: (_, row) => (
-          <span className="text-sm font-semibold text-(--theme-text-secondary)">
-            {row.zone}
-          </span>
-        ),
-      },
-      {
-        key: "mode",
-        label: "Mode",
-        sortable: true,
-        render: (_, row) => (
-          <Badge
+    getTenantScannerDetails(id)
+      .then((response) => {
+        if (!isActive) return;
+        const payload = response?.data ?? response ?? {};
+        const details = payload?.item || payload?.scanner || payload;
+        setScanner(normalizeScanner(details));
+        setLoadError("");
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setScanner(null);
+        setLoadError(
+          getApiErrorMessage(error, "Unable to load scanner details"),
+        );
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [id, retryKey]);
+
+  const retryLoad = () => {
+    setIsLoading(true);
+    setLoadError("");
+    setRetryKey((current) => current + 1);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="animate-pulse space-y-4" aria-label="Loading scanner details">
+        <div className="h-28 rounded-2xl bg-(--button-ghost-bg)" />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }, (_, index) => (
+            <div
+              className="h-24 rounded-2xl bg-(--button-ghost-bg)"
+              key={index}
+            />
+          ))}
+        </div>
+        <div className="h-48 rounded-2xl bg-(--button-ghost-bg)" />
+      </div>
+    );
+  }
+
+  if (!scanner) {
+    return (
+      <Alert leftIcon={<AlertTriangle size={18} />} variant="danger">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span>{loadError || "Scanner details not found"}</span>
+          <Button
+            leftIcon={<RefreshCw size={14} />}
+            onClick={retryLoad}
             size="sm"
-            variant={
-              row.mode === "Automatic"
-                ? "info"
-                : row.mode === "Check Out"
-                  ? "danger"
-                  : "neutral"
-            }
+            variant="secondary"
           >
-            {row.mode}
-          </Badge>
-        ),
-      },
-      {
-        key: "batch",
-        label: "Batch",
-        sortable: true,
-        render: (_, row) => (
-          <span className="font-mono text-sm font-bold text-(--color-aurora-teal)">
-            {row.batch}
-          </span>
-        ),
-      },
-      {
-        key: "items",
-        label: "Items",
-        align: "center",
-        sortable: true,
-        render: (_, row) => (
-          <span className="font-mono text-sm font-black text-(--theme-text-primary)">
-            {row.items}
-          </span>
-        ),
-      },
-      {
-        key: "status",
-        label: "Status",
-        sortable: true,
-        render: (_, row) => (
-          <Badge size="sm" variant={row.statusVariant}>
-            {row.status}
-          </Badge>
-        ),
-      },
-      {
-        key: "lastActivity",
-        label: "Last Activity",
-        sortable: true,
-        render: (_, row) => (
-          <span className="font-mono text-xs font-semibold text-(--theme-text-muted)">
-            {row.lastActivity}
-          </span>
-        ),
-      },
-    ],
-    [],
-  );
+            Try Again
+          </Button>
+        </div>
+      </Alert>
+    );
+  }
+
+  const batteryLevel = Number(scanner.batteryLevel) || 0;
+  const assignedOperator = scanner.assignedOperator || {};
+  const assignedOperatorUser = assignedOperator.user || {};
 
   return (
     <div className="space-y-6">
-      <HeaderCard data={data} />
+      <HeaderCard data={scanner} />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {scannerSummaryCards.map((item) => {
-          const Icon = summaryIconMap[item.key];
-          const value = data[item.key];
+        {summaryItems.map((item) => {
+          const Icon = item.icon;
+          const value = scanner[item.key];
 
           return (
             <Card key={item.key} padding="16px 18px" rounded="16px">
@@ -159,7 +150,7 @@ const ScannerDetailsIndex = () => {
                     {item.label}
                   </p>
                   <p className="m-0 mt-1 text-sm font-bold text-(--theme-text-primary)">
-                    {value}
+                    {value ?? "-"}
                   </p>
                 </div>
               </div>
@@ -168,26 +159,104 @@ const ScannerDetailsIndex = () => {
         })}
       </div>
 
-      <div className="mb-4">
-        <h2 className="m-0 text-lg font-bold text-(--theme-text-primary)">
-          Scan Logs
-        </h2>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card padding="20px" rounded="18px">
+          <div className="mb-5 flex items-center gap-3">
+            <Cpu size={19} className="text-(--color-aurora-teal)" />
+            <h2 className="m-0 text-lg font-black text-(--theme-text-primary)">
+              Device Configuration
+            </h2>
+          </div>
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <DetailField label="Scanner ID" mono value={scanner.id} />
+            <DetailField label="Firmware" value={scanner.firmwareVersion} />
+            <DetailField label="Scanner Type" value={scanner.scannerTypeLabel || scanner.type} />
+            <DetailField label="Scanner Mode" value={scanner.scannerModeLabel || scanner.mode} />
+            <DetailField label="Status" value={scanner.statusLabel || scanner.status} />
+            <div>
+              <dt className="text-xs font-bold uppercase tracking-wide text-(--theme-text-muted)">
+                Signal
+              </dt>
+              <dd className="m-0 mt-2">
+                <Badge
+                  leftIcon={<Wifi size={12} />}
+                  size="sm"
+                  variant={scanner.signalStatus === "online" ? "success" : "warning"}
+                >
+                  {signalLabels[scanner.signalStatus] || scanner.signalStatus}
+                </Badge>
+              </dd>
+            </div>
+            <DetailField label="Locale" value={scanner.locale} />
+            <DetailField label="Laundry ID" mono value={scanner.laundryId} />
+          </dl>
+        </Card>
+
+        <Card padding="20px" rounded="18px">
+          <div className="mb-5 flex items-center gap-3">
+            <Battery size={19} className="text-(--color-aurora-teal)" />
+            <h2 className="m-0 text-lg font-black text-(--theme-text-primary)">
+              Battery & Notes
+            </h2>
+          </div>
+          <div className="space-y-5">
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm font-bold text-(--theme-text-secondary)">
+                <span>Battery Level</span>
+                <span>{batteryLevel}%</span>
+              </div>
+              <ProgressBar
+                heightClass="h-2"
+                value={batteryLevel}
+                variant={batteryLevel <= 20 ? "danger" : "success"}
+              />
+            </div>
+            <div>
+              <p className="m-0 text-xs font-bold uppercase tracking-wide text-(--theme-text-muted)">
+                Notes
+              </p>
+              <p className="m-0 mt-2 text-sm font-medium leading-relaxed text-(--theme-text-secondary)">
+                {scanner.customNotes || "No notes provided."}
+              </p>
+            </div>
+          </div>
+        </Card>
       </div>
 
-      <Table
-        columns={scanLogColumns}
-        data={paginatedLogs}
-        emptyText="No scan logs found"
-        rowKey="id"
-      />
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card padding="20px" rounded="18px">
+          <div className="mb-5 flex items-center gap-3">
+            <UserRound size={19} className="text-(--color-aurora-teal)" />
+            <h2 className="m-0 text-lg font-black text-(--theme-text-primary)">
+              Assigned Operator
+            </h2>
+          </div>
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <DetailField label="Full Name" value={assignedOperatorUser.fullName} />
+            <DetailField label="Email" value={assignedOperatorUser.email} />
+            <DetailField label="Phone" value={assignedOperatorUser.phone} />
+            <DetailField label="Staff Status" value={assignedOperator.status} />
+            <DetailField label="Location" value={assignedOperator.locationName} />
+            <DetailField label="Language" value={assignedOperator.language} />
+            <DetailField
+              label="Invited At"
+              value={formatDateTime(assignedOperator.invitedAt)}
+            />
+            <DetailField label="Operator Created By" mono value={assignedOperator.createdBy} />
+            <DetailField
+              label="Operator Created At"
+              value={formatDateTime(assignedOperator.createdAt)}
+            />
+            <DetailField
+              label="Operator Updated At"
+              value={formatDateTime(assignedOperator.updatedAt)}
+            />
+          </dl>
+        </Card>
 
-      <Pagination
-        forcePage={activePage}
-        itemsPerPage={ITEMS_PER_PAGE}
-        onPageChange={({ selected }) => setCurrentPage(selected)}
-        pageCount={pageCount}
-        totalItems={scannerLogRows.length}
-      />
+
+      </div>
+
     </div>
   );
 };
