@@ -18,6 +18,8 @@ import Button from "../Components/UI/Button";
 import Card from "../Components/UI/Card";
 import Dropdown from "../Components/UI/Dropdown";
 import Input from "../Components/UI/Input";
+import Tabs from "../Components/UI/Tabs";
+import { portalTabs } from "./authConfig";
 import { getApiErrorMessage } from "../axios/api";
 import {
   completeTenantProfile,
@@ -368,7 +370,7 @@ const BusinessSignupStepper = ({ currentStep }) => (
   </div>
 );
 
-const BusinessSignup = () => {
+const BusinessSignup = ({ portal }) => {
   const navigate = useNavigate();
   const [savedProgress] = useState(readTenantSignupProgress);
   const [currentStep, setCurrentStep] = useState(savedProgress.currentStep);
@@ -667,12 +669,23 @@ const BusinessSignup = () => {
     if (currentStep === 0) {
       return (
         <form className="grid gap-4" onSubmit={accountFormik.handleSubmit}>
-          <div>
-            <h1 className="m-0 text-2xl text-center font-black text-(--theme-text-primary)">
-              Create Business Account
-            </h1>
-            
+          <div className="mb-2 flex items-start">
+            <div>
+              <p className="m-0 text-sm font-bold text-(--theme-text-secondary)">
+                {portal?.title || "Business Admin"}
+              </p>
+              <h1 className="m-0 mt-1 text-3xl font-black text-(--theme-text-primary)">
+                Create Account
+              </h1>
+            </div>
           </div>
+
+          <Tabs
+            className="mb-3"
+            items={portalTabs}
+            onChange={(nextPortal) => navigate(`/${nextPortal}/signup`)}
+            value={portal?.value || "business"}
+          />
           <Input
             label="Full Name"
             placeholder="Jane Smith"

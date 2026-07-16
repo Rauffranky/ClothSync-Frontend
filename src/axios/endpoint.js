@@ -15,6 +15,14 @@ export const AUTH_ENDPOINTS = Object.freeze({
 export const LAUNDRY_AUTH_ENDPOINTS = Object.freeze({
   LOGIN: "/laundry-auth/login",
   LOGOUT: "/laundry-auth/logout",
+  SIGNUP: "/laundry-auth/signup",
+  VERIFY_OTP: "/laundry-auth/verify-otp",
+  RESEND_OTP: "/laundry-auth/resend-otp",
+  COMPLETE_PROFILE: "/laundry-auth/complete-profile",
+  FORGOT_PASSWORD: "/laundry-auth/forgot-password",
+  VERIFY_FORGOT_PASSWORD_OTP: "/laundry-auth/verify-forgot-password-otp",
+  RESET_PASSWORD: "/laundry-auth/reset-password",
+  CHANGE_PASSWORD: "/laundry-auth/change-password",
 });
 
 // Kept as a named export for simple imports and backwards compatibility.

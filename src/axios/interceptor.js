@@ -19,7 +19,10 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token = getTenantAccessToken();
+    const isLaundryApi = config.url?.includes("/laundry");
+    const token = isLaundryApi 
+      ? localStorage.getItem("laundry_access_token") // Replace with actual laundry token getter when available
+      : getTenantAccessToken();
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
