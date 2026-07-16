@@ -1,105 +1,216 @@
-import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, RefreshCw, Search, TriangleAlert } from "lucide-react";
+import Alert from "../../../Components/UI/Alert";
 import Button from "../../../Components/UI/Button";
 import Card from "../../../Components/UI/Card";
 import Dropdown from "../../../Components/UI/Dropdown";
 import Input from "../../../Components/UI/Input";
 import Pagination from "../../../Components/UI/Pagination";
-import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import {
-  permissionOptions,
-  roleOptions,
-  staffMembers,
+  getSearchQuery,
+  useDebouncedSearch,
+} from "../../../Hooks/useDebouncedSearch";
+import { useSortableTableData } from "../../../Hooks/useSortableTableData";
+import { getApiErrorMessage } from "../../../axios/api";
+import { getTenantStaffRoles } from "../../../axios/staffRoles/tenantStaffRoles";
+import {
+  getTenantStaff,
+  getTenantStaffSummary,
+  updateTenantStaffStatus,
+} from "../../../axios/staff/tenantStaff";
+import { toast } from "../../../Utils/toast";
+import {
+  createStaffRoleOptions,
+  getStaffPaginatedCollection,
+  normalizeStaffMember,
+  normalizeStaffSummary,
   statusOptions,
 } from "./data";
-import StaffStats from "./StaffStats";
+import {
+  getStaffRolePaginatedCollection,
+  normalizeStaffRole,
+} from "../StaffRoles/data";
+import StaffDetailModal from "./StaffDetailModal";
 import StaffFormModal from "./StaffFormModal";
+import StaffStats from "./StaffStats";
 import StaffStatusModal from "./StaffStatusModal";
 import StaffTable from "./StaffTable";
 
-const ITEMS_PER_PAGE = 5;
-const avatarVariants = ["info", "purple", "success", "warning", "danger"];
-
-const getInitials = (name) =>
-  name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-
-const getPermissionForRole = (role, fallback = "Limited Access") => {
-  if (role === "Admin") return "Admin";
-  if (role === "Operations Manager" || role === "Category Manager") {
-    return "Full Access";
-  }
-
-  return fallback;
-};
-
-const getPermissionVariant = (permission) => {
-  if (permission === "Admin") return "purple";
-  if (permission === "Full Access") return "info";
-  return "neutral";
-};
-
-const getStatusVariant = (status) => {
-  if (status === "Active") return "success";
-  if (status === "Inactive") return "danger";
-  if (status === "Pending Invite") return "warning";
-  return "neutral";
-};
+const ITEMS_PER_PAGE = 10;
 
 const Staff = () => {
-  const [staffList, setStaffList] = useState(staffMembers);
+  const [staffList, setStaffList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [summary, setSummary] = useState(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(true);
+  const [summaryError, setSummaryError] = useState("");
+  const [roleOptions, setRoleOptions] = useState([
+    { label: "All Roles", value: "all" },
+  ]);
+  const [activeRoleOptions, setActiveRoleOptions] = useState([
+    { label: "All Roles", value: "all" },
+  ]);
+  const [rolesError, setRolesError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
   const [searchValue, setSearchValue] = useState("");
+  const debouncedSearch = useDebouncedSearch(searchValue);
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [permissionFilter, setPermissionFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [formMode, setFormMode] = useState("add");
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [viewingStaff, setViewingStaff] = useState(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [statusActionData, setStatusActionData] = useState(null);
+  const [isStatusSubmitting, setIsStatusSubmitting] = useState(false);
 
-  const filteredStaff = useMemo(() => {
-    const search = searchValue.trim().toLowerCase();
+  useEffect(() => {
+    let isActive = true;
 
-    return staffList.filter((staff) => {
-      const matchesSearch =
-        !search ||
-        [
-          staff.name,
-          staff.email,
-          staff.phone,
-          staff.role,
-          staff.location,
-          staff.permission,
-          staff.status,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(search);
-      const matchesRole = roleFilter === "all" || staff.role === roleFilter;
-      const matchesStatus =
-        statusFilter === "all" || staff.status === statusFilter;
-      const matchesPermission =
-        permissionFilter === "all" || staff.permission === permissionFilter;
+    getTenantStaff({
+      page: currentPage + 1,
+      limit: ITEMS_PER_PAGE,
+      ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
+      ...(roleFilter !== "all" ? { staffRoleId: roleFilter } : {}),
+      ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    })
+      .then((response) => {
+        if (!isActive) return;
+        const collection = getStaffPaginatedCollection(
+          response,
+          currentPage + 1,
+          ITEMS_PER_PAGE,
+        );
+        setStaffList(collection.rows.map(normalizeStaffMember));
+        setTotalItems(collection.totalItems);
+        setTotalPages(collection.totalPages);
+        setLoadError("");
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        const message = getApiErrorMessage(
+          error,
+          "Unable to load staff members",
+        );
+        setStaffList([]);
+        setTotalItems(0);
+        setTotalPages(0);
+        setLoadError(message);
+        toast.error(message);
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
 
-      return matchesSearch && matchesRole && matchesStatus && matchesPermission;
-    });
-  }, [permissionFilter, roleFilter, searchValue, staffList, statusFilter]);
+    return () => {
+      isActive = false;
+    };
+  }, [currentPage, debouncedSearch, refreshKey, roleFilter, statusFilter]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    getTenantStaffSummary()
+      .then((response) => {
+        if (!isActive) return;
+        setSummary(normalizeStaffSummary(response));
+        setSummaryError("");
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        const message = getApiErrorMessage(error, "Unable to load staff stats");
+        setSummary(null);
+        setSummaryError(message);
+        toast.error(message);
+      })
+      .finally(() => {
+        if (isActive) setIsSummaryLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [refreshKey]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    Promise.all([
+      getTenantStaffRoles({ page: 1, limit: 100 }),
+      getTenantStaffRoles({ page: 1, limit: 100, status: "active" }),
+    ])
+      .then(([rolesResponse, activeRolesResponse]) => {
+        if (!isActive) return;
+        const roles = getStaffRolePaginatedCollection(
+          rolesResponse,
+          100,
+        ).rows.map(normalizeStaffRole);
+        const activeRoles = getStaffRolePaginatedCollection(
+          activeRolesResponse,
+          100,
+        ).rows.map(normalizeStaffRole);
+        setRoleOptions(createStaffRoleOptions(roles));
+        setActiveRoleOptions(createStaffRoleOptions(activeRoles));
+        setRolesError("");
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        const message = getApiErrorMessage(error, "Unable to load staff roles");
+        setRoleOptions([{ label: "All Roles", value: "all" }]);
+        setActiveRoleOptions([{ label: "All Roles", value: "all" }]);
+        setRolesError(message);
+        toast.error(message);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [refreshKey]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
-    useSortableTableData(filteredStaff);
-  const pageCount = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
-  const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
-  const paginatedStaff = useMemo(() => {
-    const startIndex = activePage * ITEMS_PER_PAGE;
-    return sortedData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [activePage, sortedData]);
+    useSortableTableData(staffList);
+  const activePage = totalPages > 0 ? Math.min(currentPage, totalPages - 1) : 0;
 
   const resetCurrentPage = () => setCurrentPage(0);
+
+  const retryLoad = () => {
+    setIsLoading(true);
+    setIsSummaryLoading(true);
+    setLoadError("");
+    setRolesError("");
+    setSummaryError("");
+    setRefreshKey((current) => current + 1);
+  };
+
+  const refreshStaff = () => {
+    setIsFormModalOpen(false);
+    setSelectedStaff(null);
+    setIsLoading(true);
+    setIsSummaryLoading(true);
+    resetCurrentPage();
+    setRefreshKey((current) => current + 1);
+  };
+
+  const handleSearchChange = (value) => {
+    if (getSearchQuery(value) !== debouncedSearch) setIsLoading(true);
+    setSearchValue(value);
+    resetCurrentPage();
+  };
+
+  const handleStatusFilterChange = (value) => {
+    setIsLoading(true);
+    setStatusFilter(value);
+    resetCurrentPage();
+  };
+
+  const handleRoleFilterChange = (value) => {
+    setIsLoading(true);
+    setRoleFilter(value);
+    resetCurrentPage();
+  };
 
   const handleTableSort = (nextSortBy, nextSortDirection) => {
     handleSort(nextSortBy, nextSortDirection);
@@ -123,141 +234,126 @@ const Staff = () => {
     setSelectedStaff(null);
   };
 
-  const handleSaveStaff = (staffData) => {
-    const permission = getPermissionForRole(
-      staffData.role,
-      staffData.permission ?? "Limited Access",
-    );
+  const handleStatusConfirm = async ({ action, staff }) => {
+    const nextStatus = action === "deactivate" ? "inactive" : "active";
 
-    if (formMode === "edit") {
-      setStaffList((current) =>
-        current.map((staff) =>
-          staff.id === staffData.id
-            ? {
-                ...staff,
-                ...staffData,
-                initials: getInitials(staffData.name),
-                permission,
-                permissionVariant: getPermissionVariant(permission),
-              }
-            : staff,
-        ),
+    setIsStatusSubmitting(true);
+    try {
+      const response = await updateTenantStaffStatus(
+        staff.apiId || staff.id,
+        nextStatus,
       );
-      return;
+      toast.success(
+        response?.message ||
+          `Staff member ${nextStatus === "active" ? "activated" : "deactivated"} successfully`,
+      );
+      setStatusActionData(null);
+      refreshStaff();
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(error, "Unable to update staff member status"),
+      );
+    } finally {
+      setIsStatusSubmitting(false);
     }
-
-    setStaffList((current) => {
-      const status = staffData.sendInvite ? "Pending Invite" : "Active";
-      const nextStaff = {
-        ...staffData,
-        id: `STF-${String(current.length + 1).padStart(3, "0")}`,
-        initials: getInitials(staffData.name),
-        permission,
-        permissionVariant: getPermissionVariant(permission),
-        status,
-        statusVariant: getStatusVariant(status),
-        lastActive: staffData.sendInvite ? "Never" : "Just now",
-        avatarVariant: avatarVariants[current.length % avatarVariants.length],
-      };
-
-      return [nextStaff, ...current];
-    });
-    resetCurrentPage();
-  };
-
-  const handleStatusConfirm = ({ action, staff }) => {
-    const nextStatus = action === "deactivate" ? "Inactive" : "Active";
-
-    setStaffList((current) =>
-      current.map((item) =>
-        item.id === staff.id
-          ? {
-              ...item,
-              status: nextStatus,
-              statusVariant: getStatusVariant(nextStatus),
-              lastActive: nextStatus === "Active" ? "Just now" : item.lastActive,
-            }
-          : item,
-      ),
-    );
   };
 
   return (
     <div className="space-y-5">
-      <StaffStats data={staffList} />
+      <StaffStats loading={isSummaryLoading} summary={summary} />
+
+      {(loadError || rolesError || summaryError) && (
+        <Alert leftIcon={<TriangleAlert size={18} />} variant="danger">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{loadError || rolesError || summaryError}</span>
+            <Button
+              leftIcon={<RefreshCw size={15} />}
+              onClick={retryLoad}
+              size="sm"
+              variant="outline"
+            >
+              Try Again
+            </Button>
+          </div>
+        </Alert>
+      )}
 
       <Card padding="0" rounded="18px">
-        <div className="grid gap-2 border-b border-(--theme-border) px-4 py-4 lg:grid-cols-[minmax(220px,1fr)_180px_160px_180px_120px] xl:grid-cols-[minmax(220px,1fr)_200px_180px_200px_140px]">
+        <div className="grid gap-3 border-b border-(--theme-border) px-4 py-4 md:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_220px_180px_auto]">
           <Input
             leftIcon={<Search size={16} />}
-            onChange={(value) => {
-              setSearchValue(value);
-              resetCurrentPage();
-            }}
+            onChange={handleSearchChange}
             placeholder="Search staff..."
             value={searchValue}
           />
           <Dropdown
-            onChange={(value) => {
-              setRoleFilter(value);
-              resetCurrentPage();
-            }}
-            options={roleOptions}
+            search
+            onChange={handleRoleFilterChange}
+            options={activeRoleOptions}
             value={roleFilter}
           />
           <Dropdown
-            onChange={(value) => {
-              setStatusFilter(value);
-              resetCurrentPage();
-            }}
+            onChange={handleStatusFilterChange}
             options={statusOptions}
             value={statusFilter}
           />
-          <Dropdown
-            onChange={(value) => {
-              setPermissionFilter(value);
-              resetCurrentPage();
-            }}
-            options={permissionOptions}
-            value={permissionFilter}
-          />
-          <Button onClick={openAddModal} size="lg">
+          <Button
+            disabled={activeRoleOptions.length <= 1}
+            leftIcon={<Plus size={16} />}
+            onClick={openAddModal}
+          >
             Add Staff
           </Button>
         </div>
 
         <div className="px-4 py-4">
           <StaffTable
-            data={paginatedStaff}
+            data={sortedData}
+            loading={isLoading}
             onEditStaff={openEditModal}
             onSort={handleTableSort}
             onStatusAction={setStatusActionData}
+            onViewStaff={setViewingStaff}
             sortBy={sortBy}
             sortDirection={sortDirection}
           />
           <Pagination
             forcePage={activePage}
             itemsPerPage={ITEMS_PER_PAGE}
-            onPageChange={({ selected }) => setCurrentPage(selected)}
-            pageCount={pageCount}
-            totalItems={sortedData.length}
+            onPageChange={({ selected }) => {
+              setIsLoading(true);
+              setCurrentPage(selected);
+            }}
+            pageCount={totalPages}
+            totalItems={totalItems}
           />
         </div>
       </Card>
 
-      <StaffFormModal
-        mode={formMode}
-        onClose={closeFormModal}
-        onSubmit={handleSaveStaff}
-        open={isFormModalOpen}
-        staff={selectedStaff}
-      />
-      <StaffStatusModal
-        actionData={statusActionData}
-        isOpen={Boolean(statusActionData)}
-        onClose={() => setStatusActionData(null)}
-        onConfirm={handleStatusConfirm}
-      />
+      {isFormModalOpen && (
+        <StaffFormModal
+          mode={formMode}
+          onClose={closeFormModal}
+          onSaved={refreshStaff}
+          open
+          roleOptions={formMode === "add" ? activeRoleOptions : roleOptions}
+          staff={selectedStaff}
+        />
+      )}
+      {viewingStaff && (
+        <StaffDetailModal
+          onClose={() => setViewingStaff(null)}
+          staff={viewingStaff}
+        />
+      )}
+      {statusActionData && (
+        <StaffStatusModal
+          actionData={statusActionData}
+          isSubmitting={isStatusSubmitting}
+          onClose={() => setStatusActionData(null)}
+          onConfirm={handleStatusConfirm}
+        />
+      )}
     </div>
   );
 };

@@ -20,6 +20,7 @@ import Dropdown from "../../../Components/UI/Dropdown";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Table from "../../../Components/UI/Table";
 import Pagination from "../../../Components/UI/Pagination";
+import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import {
   assetsData,
@@ -51,6 +52,7 @@ const categoryIcons = {
 
 const AssetsTable = () => {
   const [searchValue, setSearchValue] = useState("");
+  const debouncedSearch = useDebouncedSearch(searchValue);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [zoneFilter, setZoneFilter] = useState("all");
   const [laundryFilter, setLaundryFilter] = useState("all");
@@ -62,7 +64,7 @@ const AssetsTable = () => {
 
   const filteredAssets = useMemo(() => {
     return assetsData.filter((asset) => {
-      const search = searchValue.trim().toLowerCase();
+      const search = debouncedSearch.toLowerCase();
       const matchesSearch =
         !search ||
         [asset.name, asset.id, asset.tag]
@@ -86,7 +88,7 @@ const AssetsTable = () => {
         matchesStatus
       );
     });
-  }, [searchValue, categoryFilter, zoneFilter, laundryFilter, statusFilter]);
+  }, [debouncedSearch, categoryFilter, zoneFilter, laundryFilter, statusFilter]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
     useSortableTableData(filteredAssets);

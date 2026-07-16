@@ -8,19 +8,19 @@ const TableSkeleton = ({
   const rowItems = Array.from({ length: rows });
 
   return (
-    <div className={`w-full overflow-hidden ${className}`}>
+    <div className={`w-full overflow-hidden bg-(--theme-surface-solid) ${className}`}>
       {showHeader && (
-        <div className="grid grid-cols-[repeat(var(--skeleton-columns),minmax(120px,1fr))] gap-4 border-b border-(--theme-border) bg-(--button-ghost-bg) px-4 py-3">
+        <div className="grid grid-cols-[repeat(var(--skeleton-columns),minmax(120px,1fr))] gap-4 border-b border-(--theme-border-soft) bg-(--theme-bg-soft) px-4 py-3">
           {columnItems.map((_, index) => (
             <div
               key={`header-${index}`}
-              className="h-4 w-24 animate-pulse rounded-full bg-(--theme-border)"
+              className="h-4 w-24 animate-pulse rounded-full bg-(--theme-border-soft)"
             />
           ))}
         </div>
       )}
 
-      <div className="divide-y divide-(--theme-border)">
+      <div className="divide-y divide-(--theme-border-soft)">
         {rowItems.map((_, rowIndex) => (
           <div
             key={`row-${rowIndex}`}
@@ -30,7 +30,7 @@ const TableSkeleton = ({
               <div
                 key={`cell-${rowIndex}-${columnIndex}`}
                 className={[
-                  "h-4 animate-pulse rounded-full bg-(--theme-border)",
+                  "h-4 animate-pulse rounded-full bg-(--theme-border-soft)",
                   columnIndex % 3 === 0
                     ? "w-28"
                     : columnIndex % 3 === 1

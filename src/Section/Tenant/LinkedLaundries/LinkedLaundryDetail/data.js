@@ -1,18 +1,10 @@
 import {
-  Building2,
-  CalendarDays,
-  Phone,
-  Mail,
-  MapPin,
-  Star,
   Activity,
   CheckCircle2,
   AlertCircle,
   Truck,
   RotateCcw,
-  RefreshCw,
   Box,
-  Shirt
 } from "lucide-react";
 
 export const laundryDetails = {

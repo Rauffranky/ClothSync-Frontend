@@ -29,6 +29,7 @@ import Badge from "../../../Components/UI/Badge";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import AddScannerModal from "./AddScannerModal";
 import ScannerStatusModal from "./ScannerStatusModal";
+import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 
 const ITEMS_PER_PAGE = 10;
@@ -37,6 +38,7 @@ const ScannerTable = () => {
   const navigate = useNavigate();
   const [scannerRows, setScannerRows] = useState(scannersData);
   const [searchValue, setSearchValue] = useState("");
+  const debouncedSearch = useDebouncedSearch(searchValue);
   const [typeFilter, setTypeFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
@@ -54,7 +56,7 @@ const ScannerTable = () => {
 
   const filteredScanners = useMemo(() => {
     return scannerRows.filter((scanner) => {
-      const search = searchValue.trim().toLowerCase();
+      const search = debouncedSearch.toLowerCase();
       const matchesSearch =
         !search ||
         [scanner.name, scanner.id, scanner.operator, scanner.location]
@@ -77,7 +79,7 @@ const ScannerTable = () => {
         matchesStatus
       );
     });
-  }, [scannerRows, searchValue, typeFilter, modeFilter, locationFilter, statusFilter]);
+  }, [scannerRows, debouncedSearch, typeFilter, modeFilter, locationFilter, statusFilter]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
     useSortableTableData(filteredScanners);

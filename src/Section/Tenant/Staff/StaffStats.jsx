@@ -1,48 +1,37 @@
-import { LockKeyhole, UserCheck, UserRoundX, UsersRound } from "lucide-react";
+import { UserCheck, UserRoundX, UsersRound } from "lucide-react";
 import Card from "../../../Components/UI/Card";
+import CardSkeleton from "../../../Components/UI/CardSkeleton";
 import IconWrapper from "../../../Components/UI/IconWrapper";
 
-const StaffStats = ({ data = [] }) => {
-  const activeCount = data.filter((item) => item.status === "Active").length;
-  const inactiveCount = data.filter((item) => item.status === "Inactive").length;
-  const limitedCount = data.filter(
-    (item) => item.permission === "Limited Access",
-  ).length;
+const stats = [
+  { key: "totalStaff", label: "Total Staff", icon: UsersRound, variant: "info" },
+  { key: "activeStaff", label: "Active Staff", icon: UserCheck, variant: "success" },
+  { key: "inactiveStaff", label: "Inactive Staff", icon: UserRoundX, variant: "danger" },
+];
 
-  const stats = [
-    {
-      value: data.length,
-      label: "Total Staff",
-      icon: UsersRound,
-      variant: "info",
-    },
-    {
-      value: activeCount,
-      label: "Active Staff",
-      icon: UserCheck,
-      variant: "success",
-    },
-    {
-      value: inactiveCount,
-      label: "Inactive Staff",
-      icon: UserRoundX,
-      variant: "danger",
-    },
-    {
-      value: limitedCount,
-      label: "Limited Access",
-      icon: LockKeyhole,
-      variant: "warning",
-    },
-  ];
+const getDisplayValue = (value) => {
+  if (value === null || value === undefined || value === "") return "-";
+  return Number.isFinite(Number(value)) ? Number(value) : "-";
+};
+
+const StaffStats = ({ loading = false, summary = null }) => {
+  if (loading) {
+    return (
+      <section className="grid gap-3 sm:grid-cols-3">
+        {stats.map((item) => (
+          <CardSkeleton key={item.key} lines={2} padding="20px" rounded="12px" />
+        ))}
+      </section>
+    );
+  }
 
   return (
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="grid gap-3 sm:grid-cols-3 ">
       {stats.map((item) => {
         const Icon = item.icon;
 
         return (
-          <Card key={item.label} padding="20px" rounded="12px">
+          <Card key={item.key} padding="20px" rounded="12px">
             <div className="flex items-center gap-4">
               <IconWrapper
                 icon={Icon}
@@ -53,7 +42,7 @@ const StaffStats = ({ data = [] }) => {
               />
               <div>
                 <p className="m-0 text-3xl font-black leading-none text-(--theme-text-primary)">
-                  {item.value}
+                  {getDisplayValue(summary?.[item.key])}
                 </p>
                 <p className="m-0 mt-1 text-sm font-semibold text-(--theme-text-muted)">
                   {item.label}

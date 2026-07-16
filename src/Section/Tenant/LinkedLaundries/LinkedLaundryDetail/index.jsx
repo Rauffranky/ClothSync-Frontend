@@ -1,325 +1,317 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+  import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import {
-    ArrowLeft,
-    Building2,
-    CalendarDays,
-    Clock,
-    Cuboid,
-    Mail,
-    MapPin,
-    Phone,
-    RefreshCw,
-    Star,
-    Activity,
-    Box,
-    Truck,
-    RotateCcw
+  Box,
+  Building2,
+  Clock,
+  Globe2,
+  Layers3,
+  Mail,
+  MapPin,
+  PackageCheck,
+  Phone,
+  RefreshCw,
+  Star,
+  Truck,
+  UserRound,
 } from "lucide-react";
 import Badge from "../../../../Components/UI/Badge";
 import Button from "../../../../Components/UI/Button";
 import Card from "../../../../Components/UI/Card";
 import IconWrapper from "../../../../Components/UI/IconWrapper";
 import Tabs from "../../../../Components/UI/Tabs";
-
-import OverviewTab from "./Tabs/OverviewTab";
+import { getApiErrorMessage } from "../../../../axios/api";
+import { getTenantLaundryDetails } from "../../../../axios/laundries/tenantLaundries";
+import { toast } from "../../../../Utils/toast";
+import { normalizeLinkedLaundryDetails } from "../utils";
+import ActivityLogTab from "./Tabs/ActivityLogTab";
 import DispatchBatchesTab from "./Tabs/DispatchBatchesTab";
 import InventoryTab from "./Tabs/InventoryTab";
-import ActivityLogTab from "./Tabs/ActivityLogTab";
+import OverviewTab from "./Tabs/OverviewTab";
 
-import { laundryDetails as staticLaundryDetails } from "./data";
-import { getTenantLaundryDetails } from "../../../../axios/laundries/tenantLaundries";
-import { normalizeLinkedLaundry } from "../utils";
-import { formatDateWithUserPreferences } from "../../../../Utils/date";
+
+const getDetailValue = (value) =>
+  value === null || value === undefined || value === ""
+    ? "Not provided"
+    : value;
+
+const DetailItem = ({ icon: Icon, label, value }) => (
+  <div className="min-w-0">
+    <div className="flex items-center gap-2 text-(--theme-text-muted)">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-(--theme-surface-hover)">
+        <Icon size={13} />
+      </span>
+      <p className="m-0 text-[10px] font-black uppercase tracking-wider">
+        {label}
+      </p>
+    </div>
+    <p className="m-0 mt-2 wrap-break-word text-sm font-semibold text-(--theme-text-primary)">
+      {getDetailValue(value)}
+    </p>
+  </div>
+);
+
+const DetailSection = ({ title, items }) => (
+  <section className="border-t border-(--theme-border) px-5 py-5 sm:px-6">
+    <h3 className="m-0 mb-5 text-sm font-black text-(--theme-text-primary)">
+      {title}
+    </h3>
+    <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {items.map((item) => (
+        <DetailItem key={item.label} {...item} />
+      ))}
+    </div>
+  </section>
+);
 
 const LinkedLaundryDetail = () => {
-    const navigate = useNavigate();
-    const { id } = useParams();
-    const [activeTab, setActiveTab] = useState("overview");
-    const [laundryDetails, setLaundryDetails] = useState(staticLaundryDetails);
-    const [isLoading, setIsLoading] = useState(true);
+  const { id } = useParams();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [loadState, setLoadState] = useState({
+    requestKey: null,
+    data: null,
+    error: "",
+  });
+  const requestKey = id ? `${id}:${refreshKey}` : "missing-id";
+  const isLoading = Boolean(id && loadState.requestKey !== requestKey);
+  const laundryDetails =
+    loadState.requestKey === requestKey ? loadState.data : null;
+  const loadError = id
+    ? loadState.requestKey === requestKey
+      ? loadState.error
+      : ""
+    : "Laundry identifier is missing";
 
-    useEffect(() => {
-        if (!id) return;
-        let isActive = true;
-        setIsLoading(true);
+  useEffect(() => {
+    if (!id) return undefined;
 
-        getTenantLaundryDetails(id)
-            .then((res) => {
-                if (!isActive) return;
-                const rawData = res?.data?.laundry || res?.data?.data || res?.data;
-                const normalized = normalizeLinkedLaundry(rawData);
-                
-                setLaundryDetails(prev => ({
-                    ...prev,
-                    id: normalized.id || prev.id,
-                    name: normalized.name || prev.name,
-                    status: normalized.status || prev.status,
-                    statusVariant: normalized.statusVariant || prev.statusVariant,
-                    isDefault: normalized.isDefault,
-                    contact: {
-                        ...prev.contact,
-                        name: normalized.contact !== "-" ? normalized.contact : prev.contact.name,
-                        email: normalized.email !== "-" ? normalized.email : prev.contact.email,
-                        phone: rawData?.businessProfile?.phone || rawData?.phone || prev.contact.phone,
-                        address: normalized.location !== "-" ? normalized.location : prev.contact.address,
-                        linkedSince: rawData?.createdAt ? formatDateWithUserPreferences(rawData.createdAt) : prev.contact.linkedSince
-                    }
-                }));
-            })
-            .catch(console.error)
-            .finally(() => {
-                if (isActive) setIsLoading(false);
-            });
+    let isActive = true;
+    const activeRequestKey = `${id}:${refreshKey}`;
 
-        return () => {
-            isActive = false;
-        };
-    }, [id]);
+    getTenantLaundryDetails(id)
+      .then((response) => {
+        if (!isActive) return;
+        setLoadState({
+          requestKey: activeRequestKey,
+          data: normalizeLinkedLaundryDetails(response),
+          error: "",
+        });
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        const message = getApiErrorMessage(
+          error,
+          "Unable to load laundry details",
+        );
+        setLoadState({
+          requestKey: activeRequestKey,
+          data: null,
+          error: message,
+        });
+        toast.error(message);
+      });
 
-    const tabOptions = [
-        { label: "Overview", value: "overview" },
-        { label: "Dispatch Batches", value: "dispatch", count: 6 },
-        { label: "Inventory", value: "inventory", count: 8 },
-        // { label: "Exceptions", value: "exceptions", count: 2 },
-        { label: "Activity Log", value: "activity", count: 10 },
-    ];
+    return () => {
+      isActive = false;
+    };
+  }, [id, refreshKey]);
 
+  if (isLoading) {
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <div className="flex items-center gap-3">
-
-                        <h1 className="m-0 text-2xl font-black text-(--theme-text-primary)">
-                            {laundryDetails.name}
-                        </h1>
-                        <Badge size="md" variant={laundryDetails.statusVariant} className="ml-2">
-                            <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                            {laundryDetails.status}
-                        </Badge>
-                        {laundryDetails.isDefault && (
-                            <Badge size="md" variant="warning" leftIcon={<Star size={14} className="fill-current" />}>
-                                Default Laundry
-                            </Badge>
-                        )}
-                    </div>
-                    <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-muted)">
-                        View laundry relationship, dispatch activity, inventory, and exceptions.
-                    </p>
-                </div>
-            </div>
-
-            {/* Stats Cards */}
-            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                <Card padding="16px" rounded="16px" className="flex flex-col justify-between">
-                    <div className="flex items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
-                            <Box size={16} />
-                        </span>
-                    </div>
-                    <div className="mt-4">
-                        <p className="m-0 text-3xl font-black text-blue-500">{laundryDetails.stats.activeBatches}</p>
-                        <p className="m-0 mt-1 text-xs font-bold text-(--theme-text-muted)">Active Batches</p>
-                    </div>
-                </Card>
-
-                <Card padding="16px" rounded="16px" className="flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-500/10 text-yellow-500">
-                            <Truck size={16} />
-                        </span>
-                        <span className="text-xs font-bold text-green-500">{laundryDetails.stats.itemsSentTrend}</span>
-                    </div>
-                    <div className="mt-4">
-                        <p className="m-0 text-3xl font-black text-yellow-500">{laundryDetails.stats.itemsSent}</p>
-                        <p className="m-0 mt-1 text-xs font-bold text-(--theme-text-muted)">Items Sent</p>
-                    </div>
-                </Card>
-
-                <Card padding="16px" rounded="16px" className="flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10 text-green-500">
-                            <RotateCcw size={16} />
-                        </span>
-                        <span className="text-xs font-bold text-green-500">{laundryDetails.stats.itemsReturnedTrend}</span>
-                    </div>
-                    <div className="mt-4">
-                        <p className="m-0 text-3xl font-black text-green-500">{laundryDetails.stats.itemsReturned}</p>
-                        <p className="m-0 mt-1 text-xs font-bold text-(--theme-text-muted)">Items Returned</p>
-                    </div>
-                </Card>
-
-                <Card padding="16px" rounded="16px" className="flex flex-col justify-between">
-                    <div className="flex items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500">
-                            <RefreshCw size={16} />
-                        </span>
-                    </div>
-                    <div className="mt-4">
-                        <p className="m-0 text-3xl font-black text-purple-500">{laundryDetails.stats.inLaundry}</p>
-                        <p className="m-0 mt-1 text-xs font-bold text-(--theme-text-muted)">In Laundry</p>
-                    </div>
-                </Card>
-
-                <Card padding="16px" rounded="16px" className="flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10 text-orange-500">
-                            <Clock size={16} />
-                        </span>
-                        <span className="text-xs font-bold text-red-500">{laundryDetails.stats.delayedTrend}</span>
-                    </div>
-                    <div className="mt-4">
-                        <p className="m-0 text-3xl font-black text-orange-500">{laundryDetails.stats.delayedItems}</p>
-                        <p className="m-0 mt-1 text-xs font-bold text-(--theme-text-muted)">Delayed Items</p>
-                    </div>
-                </Card>
-
-                <Card padding="16px" rounded="16px" className="flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-400/10 text-blue-400">
-                            <Activity size={16} />
-                        </span>
-                        <span className="text-xs font-bold text-green-500">{laundryDetails.stats.turnaroundTrend}</span>
-                    </div>
-                    <div className="mt-4">
-                        <p className="m-0 text-3xl font-black text-blue-400">{laundryDetails.stats.avgTurnaround}</p>
-                        <p className="m-0 mt-1 text-xs font-bold text-(--theme-text-muted)">Avg. Turnaround</p>
-                    </div>
-                </Card>
-            </section>
-
-            {/* Main Content Card */}
-            <Card rounded="20px" padding="0">
-                <div className="p-6">
-                    <div className="flex items-center gap-4">
-                        <IconWrapper
-                            icon={Building2}
-                            iconSize={24}
-                            sizeClassName="h-16 w-16"
-                            roundedClassName="rounded-2xl"
-                            variant="info"
-                        />
-                        <div>
-                            <h2 className="m-0 text-xl font-black text-(--theme-text-primary)">
-                                {laundryDetails.name}
-                            </h2>
-                            <p className="m-0 mt-1 text-xs font-bold text-(--theme-text-muted)">
-                                {laundryDetails.id}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 border-t border-(--theme-border) pt-6">
-                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                            <div>
-                                <div className="flex items-center gap-2 text-(--theme-text-muted)">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-(--theme-surface-hover)">
-                                        <Building2 size={12} />
-                                    </span>
-                                    <p className="m-0 text-[10px] font-black uppercase tracking-wider">Contact</p>
-                                </div>
-                                <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-primary)">
-                                    {laundryDetails.contact.name}
-                                </p>
-                            </div>
-
-                            <div>
-                                <div className="flex items-center gap-2 text-(--theme-text-muted)">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-(--theme-surface-hover)">
-                                        <Mail size={12} />
-                                    </span>
-                                    <p className="m-0 text-[10px] font-black uppercase tracking-wider">Email</p>
-                                </div>
-                                <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-primary)">
-                                    {laundryDetails.contact.email}
-                                </p>
-                            </div>
-
-                            <div>
-                                <div className="flex items-center gap-2 text-(--theme-text-muted)">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-(--theme-surface-hover)">
-                                        <Phone size={12} />
-                                    </span>
-                                    <p className="m-0 text-[10px] font-black uppercase tracking-wider">Phone</p>
-                                </div>
-                                <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-primary)">
-                                    {laundryDetails.contact.phone}
-                                </p>
-                            </div>
-
-                            <div className="row-span-2">
-                                <div className="flex items-center gap-2 text-(--theme-text-muted)">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-(--theme-surface-hover)">
-                                        <MapPin size={12} />
-                                    </span>
-                                    <p className="m-0 text-[10px] font-black uppercase tracking-wider">Address</p>
-                                </div>
-                                <p className="m-0 mt-2 max-w-[200px] text-sm font-semibold leading-relaxed text-(--theme-text-primary)">
-                                    {laundryDetails.contact.address}
-                                </p>
-                            </div>
-
-                            <div>
-                                <div className="flex items-center gap-2 text-(--theme-text-muted)">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-(--theme-surface-hover)">
-                                        <Star size={12} />
-                                    </span>
-                                    <p className="m-0 text-[10px] font-black uppercase tracking-wider">Default</p>
-                                </div>
-                                <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-primary)">
-                                    {laundryDetails.isDefault ? "Yes — Primary" : "No"}
-                                </p>
-                            </div>
-
-                            <div>
-                                <div className="flex items-center gap-2 text-(--theme-text-muted)">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-(--theme-surface-hover)">
-                                        <CalendarDays size={12} />
-                                    </span>
-                                    <p className="m-0 text-[10px] font-black uppercase tracking-wider">Linked Since</p>
-                                </div>
-                                <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-primary)">
-                                    {laundryDetails.contact.linkedSince}
-                                </p>
-                            </div>
-
-                            <div>
-                                <div className="flex items-center gap-2 text-(--theme-text-muted)">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-(--theme-surface-hover)">
-                                        <Activity size={12} />
-                                    </span>
-                                    <p className="m-0 text-[10px] font-black uppercase tracking-wider">Status</p>
-                                </div>
-                                <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-primary)">
-                                    {laundryDetails.status}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Tabs Region */}
-                <div className="border-t border-(--theme-border)">
-                    <div className="px-6 pt-4">
-                        <Tabs
-                            items={tabOptions}
-                            onChange={setActiveTab}
-                            value={activeTab}
-                        />
-                    </div>
-                    <div className="bg-(--theme-surface-strong) p-6 rounded-b-[20px]">
-                        {activeTab === "overview" && <OverviewTab />}
-                        {activeTab === "dispatch" && <DispatchBatchesTab />}
-                        {activeTab === "inventory" && <InventoryTab />}
-                        {activeTab === "exceptions" && <div className="text-center text-(--theme-text-muted) py-8">Exceptions coming soon</div>}
-                        {activeTab === "activity" && <ActivityLogTab />}
-                    </div>
-                </div>
-            </Card>
+      <div
+        aria-label="Loading laundry details"
+        className="animate-pulse space-y-4"
+      >
+        <div className="h-16 rounded-2xl bg-(--button-ghost-bg)" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {Array.from({ length: 5 }, (_, index) => (
+            <div
+              className="h-28 rounded-2xl bg-(--button-ghost-bg)"
+              key={index}
+            />
+          ))}
         </div>
+        <div className="h-96 rounded-2xl bg-(--button-ghost-bg)" />
+      </div>
     );
+  }
+
+  if (loadError || !laundryDetails) {
+    return (
+      <Card padding="32px" rounded="18px">
+        <div className="flex flex-col items-center text-center">
+          <IconWrapper icon={Building2} variant="danger" />
+          <h1 className="m-0 mt-4 text-xl font-black text-(--theme-text-primary)">
+            Unable to load laundry details
+          </h1>
+          <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-muted)">
+            {loadError || "Laundry details are unavailable"}
+          </p>
+          <Button
+            className="mt-5"
+            leftIcon={<RefreshCw size={16} />}
+            onClick={() => setRefreshKey((current) => current + 1)}
+            variant="secondary"
+          >
+            Try Again
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  const statCards = [
+    {
+      label: "Active Batches",
+      value: laundryDetails.stats.activeBatches,
+      icon: Box,
+      variant: "info",
+    },
+    {
+      label: "Items Currently Sent",
+      value: laundryDetails.stats.itemsCurrentlySent,
+      icon: Truck,
+      variant: "warning",
+    },
+    {
+      label: "Delayed Items",
+      value: laundryDetails.stats.delayedItems,
+      icon: Clock,
+      variant: "danger",
+    },
+    {
+      label: "Total Batches",
+      value: laundryDetails.stats.totalBatches,
+      icon: Layers3,
+      variant: "purple",
+    },
+    {
+      label: "Total Items",
+      value: laundryDetails.stats.totalItems,
+      icon: PackageCheck,
+      variant: "success",
+    },
+  ];
+
+
+
+  const contactItems = [
+    { label: "Contact Name", value: laundryDetails.contact.name, icon: UserRound },
+    { label: "Contact Email", value: laundryDetails.contact.email, icon: Mail },
+    { label: "Contact Phone", value: laundryDetails.contact.phone, icon: Phone },
+    { label: "Location", value: laundryDetails.contact.address, icon: MapPin },
+    { label: "Country", value: laundryDetails.contact.country, icon: Globe2 },
+  ];
+
+ 
+
+  const tabOptions = [
+    { label: "Overview", value: "overview" },
+    {
+      label: "Dispatch Batches",
+      value: "dispatch",
+      count: laundryDetails.stats.totalBatches,
+    },
+    {
+      label: "Inventory",
+      value: "inventory",
+      count: laundryDetails.stats.totalItems,
+    },
+    { label: "Activity Log", value: "activity" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="m-0 text-2xl font-black text-(--theme-text-primary)">
+            {laundryDetails.name}
+          </h1>
+          <Badge size="md" variant={laundryDetails.statusVariant}>
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {laundryDetails.status}
+          </Badge>
+          {laundryDetails.isDefault && (
+            <Badge
+              leftIcon={<Star className="fill-current" size={14} />}
+              size="md"
+              variant="warning"
+            >
+              Default Laundry
+            </Badge>
+          )}
+        </div>
+        <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-muted)">
+          View the complete laundry relationship, profile, account, and activity summary.
+        </p>
+      </div>
+
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {statCards.map(({ icon, label, value, variant }) => (
+          <Card className="flex flex-col justify-between" key={label} padding="16px" rounded="16px">
+            <IconWrapper
+              icon={icon}
+              iconSize={16}
+              roundedClassName="rounded-lg"
+              sizeClassName="h-8 w-8"
+              variant={variant}
+            />
+            <div className="mt-4">
+              <p className="m-0 text-3xl font-black text-(--theme-text-primary)">
+                {value}
+              </p>
+              <p className="m-0 mt-1 text-xs font-bold text-(--theme-text-muted)">
+                {label}
+              </p>
+            </div>
+          </Card>
+        ))}
+      </section>
+
+      <Card padding="0" rounded="20px">
+        <div className="flex items-center gap-4 px-5 py-5 sm:px-6">
+          {laundryDetails.profile.avatar ? (
+            <img
+              alt={`${laundryDetails.name} avatar`}
+              className="h-16 w-16 shrink-0 rounded-2xl object-cover"
+              src={laundryDetails.profile.avatar}
+            />
+          ) : (
+            <IconWrapper
+              icon={Building2}
+              iconSize={24}
+              roundedClassName="rounded-2xl"
+              sizeClassName="h-16 w-16 shrink-0"
+              variant="info"
+            />
+          )}
+          <div className="min-w-0">
+            <h2 className="m-0 truncate text-xl font-black text-(--theme-text-primary)">
+              {laundryDetails.name}
+            </h2>
+            <p className="m-0 mt-1 break-all text-xs font-bold text-(--theme-text-muted)">
+              {laundryDetails.relationshipId}
+            </p>
+          </div>
+        </div>
+
+        <DetailSection items={contactItems} title="Primary Contact" />
+
+        <div className="border-t border-(--theme-border)">
+          <div className="overflow-x-auto px-5 pt-4 sm:px-6">
+            <Tabs items={tabOptions} onChange={setActiveTab} value={activeTab} />
+          </div>
+          <div className="rounded-b-[20px] bg-(--theme-surface-strong) p-4 sm:p-6">
+            {activeTab === "overview" && <OverviewTab />}
+            {activeTab === "dispatch" && <DispatchBatchesTab />}
+            {activeTab === "inventory" && <InventoryTab />}
+            {activeTab === "activity" && <ActivityLogTab />}
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
 };
 
 export default LinkedLaundryDetail;

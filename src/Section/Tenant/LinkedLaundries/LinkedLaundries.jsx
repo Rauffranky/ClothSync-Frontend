@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useFormik } from "formik";
-import * as Yup from "yup";
 import {
   Building2,
   Eye,
-  Plus,
   Search,
   Star,
   Unlink,
@@ -18,22 +15,25 @@ import Input from "../../../Components/UI/Input";
 import Pagination from "../../../Components/UI/Pagination";
 import Table from "../../../Components/UI/Table";
 import IconWrapper from "../../../Components/UI/IconWrapper";
+import {
+  getSearchQuery,
+  useDebouncedSearch,
+} from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
-import { getTenantLaundries, sendTenantLaundryInvite } from "../../../axios/laundries/tenantLaundries";
+import {
+  getTenantLaundries,
+  unlinkTenantLaundry,
+} from "../../../axios/laundries/tenantLaundries";
 import { getApiErrorMessage } from "../../../axios/api";
 import { toast } from "../../../Utils/toast";
 import { getPaginatedCollection, normalizeLinkedLaundry } from "./utils";
-import InviteLaundryModal from "./InviteLaundryModal";
 import UnlinkLaundryModal from "./UnlinkLaundryModal";
 import DefaultConfirmModal from "./DefaultConfirmModal";
+import DefaultBlockedModal from "./DefaultBlockedModal";
 
 const ITEMS_PER_PAGE = 3;
 
-const filterOptions = [
-  { label: "All Statuses", value: "all" },
-  { label: "Connected", value: "active" },
-  { label: "Suspend", value: "suspend" },
-];
+
 
 const laundryOptions = [
   { label: "All Laundries", value: "all" },
@@ -41,69 +41,24 @@ const laundryOptions = [
   { label: "Non Default", value: "non-default" },
 ];
 
-const inviteLaundryInitialValues = {
-  email: "",
-};
-
-const inviteLaundryValidationSchema = Yup.object({
-  email: Yup.string()
-    .trim()
-    .email("Please enter a valid email address")
-    .required("Email address is required"),
-});
-
 const LinkedLaundries = ({ onTotalChange }) => {
   const navigate = useNavigate();
   const [linkedLaundries, setLinkedLaundries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchValue, setSearchValue] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const debouncedSearch = useDebouncedSearch(searchValue);
   const [laundryFilter, setLaundryFilter] = useState("all");
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [unlinkLaundry, setUnlinkLaundry] = useState(null);
+  const [blockedDefaultLaundry, setBlockedDefaultLaundry] = useState(null);
+  const [isUnlinking, setIsUnlinking] = useState(false);
   const [defaultAction, setDefaultAction] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const currentDefaultLaundry = linkedLaundries.find(
     (laundry) => laundry.isDefault,
   );
-
-  const inviteLaundryFormik = useFormik({
-    initialValues: inviteLaundryInitialValues,
-    validationSchema: inviteLaundryValidationSchema,
-    onSubmit: async (values, { setSubmitting }) => {
-      try {
-        const response = await sendTenantLaundryInvite({ email: values.email });
-        toast.success(response?.message || "Invitation sent successfully");
-        closeInviteModal();
-      } catch (error) {
-        toast.error(getApiErrorMessage(error, "Failed to send invitation"));
-      } finally {
-        setSubmitting(false);
-      }
-    },
-  });
-
-  const closeInviteModal = () => {
-    setIsInviteModalOpen(false);
-    inviteLaundryFormik.resetForm();
-  };
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      const nextSearch = searchValue.trim();
-
-      if (nextSearch !== debouncedSearch) {
-        setCurrentPage(0);
-        setIsLoading(true);
-        setDebouncedSearch(nextSearch);
-      }
-    }, 400);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [debouncedSearch, searchValue]);
 
   useEffect(() => {
     let isActive = true;
@@ -112,7 +67,6 @@ const LinkedLaundries = ({ onTotalChange }) => {
       page: currentPage + 1,
       limit: ITEMS_PER_PAGE,
       ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
-      ...(statusFilter !== "all" ? { status: statusFilter } : {}),
       ...(laundryFilter !== "all"
         ? { isDefault: laundryFilter === "default" }
         : {}),
@@ -135,7 +89,11 @@ const LinkedLaundries = ({ onTotalChange }) => {
         setTotalItems(0);
         setTotalPages(0);
         onTotalChange?.(0);
-        toast.error(getApiErrorMessage(error, "Unable to load linked laundries"));
+        toast.error(
+          error?.code === "ECONNABORTED"
+            ? "Linked laundries request timed out. Please try again."
+            : getApiErrorMessage(error, "Unable to load linked laundries"),
+        );
       })
       .finally(() => {
         if (isActive) setIsLoading(false);
@@ -144,7 +102,7 @@ const LinkedLaundries = ({ onTotalChange }) => {
     return () => {
       isActive = false;
     };
-  }, [currentPage, debouncedSearch, laundryFilter, onTotalChange, statusFilter]);
+  }, [currentPage, debouncedSearch, laundryFilter, onTotalChange, refreshKey]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
     useSortableTableData(linkedLaundries);
@@ -155,14 +113,14 @@ const LinkedLaundries = ({ onTotalChange }) => {
   };
 
   const handleSearchChange = (value) => {
+    if (getSearchQuery(value) !== debouncedSearch) {
+      setIsLoading(true);
+    }
     setSearchValue(value);
     resetCurrentPage();
   };
 
-  const handleStatusFilterChange = (value) => {
-    setStatusFilter(value);
-    resetCurrentPage();
-  };
+ 
 
   const handleLaundryFilterChange = (value) => {
     setLaundryFilter(value);
@@ -175,7 +133,17 @@ const LinkedLaundries = ({ onTotalChange }) => {
   };
 
   const closeUnlinkModal = () => {
+    if (isUnlinking) return;
     setUnlinkLaundry(null);
+  };
+
+  const requestUnlink = (laundry) => {
+    if (laundry.isDefault) {
+      setBlockedDefaultLaundry(laundry);
+      return;
+    }
+
+    setUnlinkLaundry(laundry);
   };
 
   const closeDefaultConfirmModal = () => {
@@ -204,24 +172,26 @@ const LinkedLaundries = ({ onTotalChange }) => {
     setCurrentPage(0);
   };
 
-  const handleConfirmUnlink = () => {
-    if (!unlinkLaundry) return;
-    const isConnecting = unlinkLaundry.status === "Suspend";
+  const handleConfirmUnlink = async () => {
+    if (isUnlinking) return;
+    if (!unlinkLaundry?.apiId) {
+      toast.error("Invalid laundry data");
+      return;
+    }
 
-    setLinkedLaundries((current) =>
-      current.map((laundry) =>
-        laundry.id === unlinkLaundry.id
-          ? {
-              ...laundry,
-              status: isConnecting ? "Connected" : "Suspend",
-              statusVariant: isConnecting ? "success" : "neutral",
-              isDefault: false,
-            }
-          : laundry,
-      ),
-    );
-    setUnlinkLaundry(null);
-    resetCurrentPage();
+    setIsUnlinking(true);
+    try {
+      const response = await unlinkTenantLaundry(unlinkLaundry.apiId);
+      toast.success(response?.message || "Laundry unlinked successfully");
+      setUnlinkLaundry(null);
+      setIsLoading(true);
+      setCurrentPage(0);
+      setRefreshKey((current) => current + 1);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Failed to unlink laundry"));
+    } finally {
+      setIsUnlinking(false);
+    }
   };
 
   const columns = [
@@ -337,15 +307,16 @@ const LinkedLaundries = ({ onTotalChange }) => {
                       requestDefaultAction(row, "set"),
                   },
                 ]),
-            {
-              label:
-                row.status === "Suspend"
-                  ? "Connect Laundry"
-                  : "Unlink Laundry",
-              icon: row.status === "Suspend" ? Building2 : Unlink,
-              danger: row.status !== "Suspend",
-              onClick: () => setUnlinkLaundry(row),
-            },
+            ...(row.status === "Suspend"
+              ? []
+              : [
+                  {
+                    label: "Unlink Laundry",
+                    icon: Unlink,
+                    danger: true,
+                    onClick: () => requestUnlink(row),
+                  },
+                ]),
           ]}
           width={200}
         />
@@ -355,31 +326,23 @@ const LinkedLaundries = ({ onTotalChange }) => {
 
   return (
     <>
-      <div className="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(240px,1fr)_170px_190px_auto]">
-        <Input
-          leftIcon={<Search size={16} />}
-          onChange={handleSearchChange}
-          placeholder="Search laundries..."
-          value={searchValue}
-        />
-        <Dropdown
-          onChange={handleStatusFilterChange}
-          options={filterOptions}
-          value={statusFilter}
-        />
-        <Dropdown
-          onChange={handleLaundryFilterChange}
-          options={laundryOptions}
-          value={laundryFilter}
-        />
-        <Button
-          onClick={() => setIsInviteModalOpen(true)}
-          variant="secondary"
-          size="sm"
-          leftIcon={<Plus size={16} />}
-        >
-          Invite New Laundry
-        </Button>
+      <div className="flex flex-wrap gap-3 px-4 py-4">
+        <div className="w-full min-w-0 sm:min-w-60 sm:flex-[1_1_280px]">
+          <Input
+            leftIcon={<Search size={16} />}
+            onChange={handleSearchChange}
+            placeholder="Search laundries..."
+            value={searchValue}
+          />
+        </div>
+       
+        <div className="w-full sm:w-60 sm:shrink-0">
+          <Dropdown
+            onChange={handleLaundryFilterChange}
+            options={laundryOptions}
+            value={laundryFilter}
+          />
+        </div>
       </div>
 
       <div className="px-4 pb-4">
@@ -405,17 +368,18 @@ const LinkedLaundries = ({ onTotalChange }) => {
         />
       </div>
 
-      <InviteLaundryModal
-        isOpen={isInviteModalOpen}
-        onClose={closeInviteModal}
-        formik={inviteLaundryFormik}
-      />
-
       <UnlinkLaundryModal
         isOpen={Boolean(unlinkLaundry)}
         onClose={closeUnlinkModal}
         laundry={unlinkLaundry}
         onConfirm={handleConfirmUnlink}
+        isSubmitting={isUnlinking}
+      />
+
+      <DefaultBlockedModal
+        isOpen={Boolean(blockedDefaultLaundry)}
+        laundry={blockedDefaultLaundry}
+        onClose={() => setBlockedDefaultLaundry(null)}
       />
 
       <DefaultConfirmModal

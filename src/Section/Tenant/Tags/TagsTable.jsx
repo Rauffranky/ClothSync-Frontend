@@ -24,6 +24,7 @@ import Dropdown from "../../../Components/UI/Dropdown";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Table from "../../../Components/UI/Table";
 import Pagination from "../../../Components/UI/Pagination";
+import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import InactiveTagModal from "./InactiveTagModal";
 
@@ -31,6 +32,7 @@ const ITEMS_PER_PAGE = 10;
 
 const TagsTable = () => {
   const [searchValue, setSearchValue] = useState("");
+  const debouncedSearch = useDebouncedSearch(searchValue);
   const [mappingFilter, setMappingFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [assetStatusFilter, setAssetStatusFilter] = useState("all");
@@ -42,7 +44,7 @@ const TagsTable = () => {
 
   const filteredTags = useMemo(() => {
     return tagsData.filter((tag) => {
-      const search = searchValue.trim().toLowerCase();
+      const search = debouncedSearch.toLowerCase();
       const matchesSearch =
         !search ||
         [tag.id, tag.epc, tag.assignedAsset]
@@ -67,7 +69,7 @@ const TagsTable = () => {
       );
     });
   }, [
-    searchValue,
+    debouncedSearch,
     mappingFilter,
     categoryFilter,
     assetStatusFilter,

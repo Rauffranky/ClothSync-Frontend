@@ -8,6 +8,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search, X } from "lucide-react";
+import { useDebouncedSearch } from "../../Hooks/useDebouncedSearch";
 
 const getOptionLabel = (option, fallback) =>
   option?.selectedLabel ?? option?.label ?? fallback;
@@ -39,6 +40,7 @@ const Dropdown = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedSearch(query);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [menuPosition, setMenuPosition] = useState(null);
   const wrapRef = useRef(null);
@@ -58,7 +60,7 @@ const Dropdown = ({
   );
 
   const filteredOptions = useMemo(() => {
-    const cleanQuery = query.trim().toLowerCase();
+    const cleanQuery = debouncedQuery.toLowerCase();
     if (!cleanQuery) return options;
 
     return options.filter((option) =>
@@ -66,7 +68,7 @@ const Dropdown = ({
         .toLowerCase()
         .includes(cleanQuery),
     );
-  }, [options, query]);
+  }, [debouncedQuery, options]);
 
   const displayValue = useMemo(() => {
     if (multiple || value === null || value === undefined) return "";

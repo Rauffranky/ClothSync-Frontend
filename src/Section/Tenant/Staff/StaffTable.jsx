@@ -6,7 +6,9 @@ import Table from "../../../Components/UI/Table";
 
 const StaffTable = ({
   data = [],
+  loading = false,
   onEditStaff,
+  onViewStaff,
   onSort,
   onStatusAction,
   sortBy,
@@ -68,23 +70,12 @@ const StaffTable = ({
       ),
     },
     {
-      key: "permission",
-      label: "Permission",
-      sortable: true,
-      align: "center",
-      render: (_, row) => (
-        <Badge size="sm" variant={row.permissionVariant}>
-          {row.permission}
-        </Badge>
-      ),
-    },
-    {
       key: "status",
       label: "Status",
       sortable: true,
       align: "center",
       render: (_, row) => (
-        <Badge  size="sm" variant={row.statusVariant}>
+        <Badge size="sm" variant={row.statusVariant}>
           {row.status}
         </Badge>
       ),
@@ -109,7 +100,11 @@ const StaffTable = ({
           align="right"
           triggerIcon={<MoreHorizontal size={16} />}
           items={[
-            { icon: UserRound, label: "View Profile" },
+            {
+              icon: UserRound,
+              label: "View Profile",
+              onClick: () => onViewStaff?.(row),
+            },
             {
               icon: Edit3,
               label: "Edit Staff",
@@ -136,6 +131,7 @@ const StaffTable = ({
       columns={columns}
       data={data}
       emptyText="No staff members found"
+      loading={loading}
       onSort={onSort}
       rowKey="id"
       sortBy={sortBy}

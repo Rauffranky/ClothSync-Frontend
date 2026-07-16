@@ -9,26 +9,26 @@ export const getPaginatedCollection = (response, collectionKeys, limit) => {
   const rows = Array.isArray(payload)
     ? payload
     : collectionKeys.reduce(
-        (collection, key) => collection || payload?.[key],
-        null,
-      ) ||
-      payload?.items ||
-      payload?.docs ||
-      payload?.results ||
-      [];
+      (collection, key) => collection || payload?.[key],
+      null,
+    ) ||
+    payload?.items ||
+    payload?.docs ||
+    payload?.results ||
+    [];
   const pagination =
     payload?.pagination || payload?.meta || root?.pagination || root?.meta || payload;
   const totalItems = Number(
     pagination?.totalItems ??
-      pagination?.totalDocs ??
-      pagination?.total ??
-      pagination?.count ??
-      rows.length,
+    pagination?.totalDocs ??
+    pagination?.total ??
+    pagination?.count ??
+    rows.length,
   );
   const totalPages = Number(
     pagination?.totalPages ??
-      pagination?.pages ??
-      Math.ceil(totalItems / limit),
+    pagination?.pages ??
+    Math.ceil(totalItems / limit),
   );
 
   return {
@@ -115,6 +115,91 @@ export const normalizeLinkedLaundry = (record) => {
   };
 };
 
+export const normalizeLinkedLaundryDetails = (response) => {
+  const record = response?.data ?? response ?? {};
+  const laundry =
+    record?.laundry && typeof record.laundry === "object"
+      ? record.laundry
+      : record?.laundryId && typeof record.laundryId === "object"
+        ? record.laundryId
+        : {};
+  const user = laundry?.user && typeof laundry.user === "object" ? laundry.user : {};
+  const rawStatus = String(record?.status || laundry?.status || "unknown").toLowerCase();
+  const laundryId =
+    typeof record?.laundryId === "object"
+      ? record.laundryId?.id || record.laundryId?._id
+      : record?.laundryId;
+
+  return {
+    relationshipId: record?.id || record?._id || "-",
+    tenantId: record?.tenantId || "-",
+    laundryId: laundryId || laundry?.id || laundry?._id || "-",
+    name:
+      record?.laundryName ||
+      laundry?.companyName ||
+      laundry?.fullName ||
+      user?.fullName ||
+      "Unnamed Laundry",
+    status: titleCase(rawStatus) || "Unknown",
+    statusVariant: ["active", "connected", "linked"].includes(rawStatus)
+      ? "success"
+      : ["suspend", "inactive", "suspended", "unlinked"].includes(rawStatus)
+        ? "neutral"
+        : "warning",
+    isDefault: Boolean(record?.isDefault),
+    linkedAt: record?.linkedAt || record?.createdAt || null,
+    unlinkedAt: record?.unlinkedAt || null,
+    stats: {
+      activeBatches: Number(record?.activeBatchesCount ?? 0),
+      itemsCurrentlySent: Number(record?.itemsCurrentlySentCount ?? 0),
+      delayedItems: Number(record?.delayedItemsCount ?? 0),
+      totalBatches: Number(record?.totalBatchesCount ?? 0),
+      totalItems: Number(record?.totalItemsCount ?? 0),
+    },
+    contact: {
+      name:
+        laundry?.contactPersonName ||
+        laundry?.fullName ||
+        user?.fullName ||
+        record?.laundryName ||
+        "-",
+      email:
+        record?.contactEmail || laundry?.email || user?.email || "-",
+      phone:
+        record?.contactPhone || laundry?.phone || user?.phone || "-",
+      address: record?.location || laundry?.address || "-",
+      country: record?.country || laundry?.country || "-",
+    },
+    profile: {
+      id: laundry?.id || laundry?._id || laundryId || "-",
+      userId: laundry?.userId || user?.id || user?._id || "-",
+      fullName: laundry?.fullName || "-",
+      companyName: laundry?.companyName || "-",
+      contactPersonName: laundry?.contactPersonName || "-",
+      email: laundry?.email || "-",
+      phone: laundry?.phone || "-",
+      address: laundry?.address || "-",
+      country: laundry?.country || "-",
+      city: laundry?.city || "-",
+      state: laundry?.state || "-",
+      postalCode: laundry?.postalCode || "-",
+      avatar: laundry?.avatar || null,
+      status: titleCase(laundry?.status) || "-",
+      creationSource: titleCase(laundry?.creationSource) || "-",
+      createdAt: laundry?.createdAt || null,
+      updatedAt: laundry?.updatedAt || null,
+    },
+    user: {
+      id: user?.id || user?._id || "-",
+      fullName: user?.fullName || "-",
+      email: user?.email || "-",
+      phone: user?.phone || "-",
+      status: titleCase(user?.status) || "-",
+      creationSource: titleCase(user?.creationSource) || "-",
+    },
+  };
+};
+
 export const normalizePendingInvite = (invite) => {
   const laundry =
     invite?.laundry && typeof invite.laundry === "object"
@@ -123,10 +208,6 @@ export const normalizePendingInvite = (invite) => {
         ? invite.laundryId
         : {};
   const rawStatus = String(invite?.status || "pending").toLowerCase();
-  
-  const status = ["pending", "accepted", "cancelled", "expired", "rejected"].includes(rawStatus)
-    ? titleCase(rawStatus)
-    : titleCase(rawStatus) || "Pending";
 
   return {
     ...invite,
@@ -137,18 +218,44 @@ export const normalizePendingInvite = (invite) => {
       invite?.laundryEmail ||
       laundry?.email ||
       "-",
-    status,
+    statusValue: rawStatus,
+    status: rawStatus,
     statusVariant:
       rawStatus === "accepted"
         ? "success"
-        : rawStatus === "expired" || rawStatus === "rejected" || rawStatus === "cancelled"
-          ? "danger"
-          : rawStatus === "pending"
-            ? "warning"
-            : "neutral",
+        : rawStatus === "pending"
+          ? "warning"
+          : rawStatus === "expired" || rawStatus === "rejected"
+            ? "danger"
+            : rawStatus === "pending"
+              ? "warning"
+              : "neutral",
     sentAt: invite?.sentAt || invite?.createdAt || invite?.invitedAt || null,
     resentAt: invite?.resentAt || null,
     expiresAt: invite?.expiresAt || null,
     rejectReason: rawStatus === "rejected" ? (invite?.rejectReason || invite?.reason || "-") : "-",
+  };
+};
+
+export const normalizeClosedInvite = (invite) => {
+  const normalizedInvite = normalizePendingInvite(invite);
+  const statusValue = normalizedInvite.statusValue;
+
+  return {
+    ...normalizedInvite,
+    status: titleCase(statusValue),
+    statusVariant:
+      statusValue === "rejected"
+        ? "danger"
+        : statusValue === "expired"
+          ? "warning"
+          : "neutral",
+    closedAt:
+      invite?.rejectedAt ||
+      invite?.cancelledAt ||
+      invite?.expiresAt ||
+      invite?.updatedAt ||
+      null,
+    reason: invite?.rejectionReason || "-",
   };
 };

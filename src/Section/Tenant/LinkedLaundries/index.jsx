@@ -1,59 +1,122 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { Plus } from "lucide-react";
+import Button from "../../../Components/UI/Button";
 import Card from "../../../Components/UI/Card";
 import Tabs from "../../../Components/UI/Tabs";
+import { getApiErrorMessage } from "../../../axios/api";
+import { sendTenantLaundryInvite } from "../../../axios/laundries/tenantLaundries";
+import { toast } from "../../../Utils/toast";
+import InviteLaundryModal from "./InviteLaundryModal";
 import LinkedLaundries from "./LinkedLaundries";
 import PendingRequest from "./PendingRequest";
+import RejectedLaundries from "./RejectedLaundries";
 import Stats from "./Stats";
+
+const TAB_VALUES = ["linked", "pending", "rejected"];
+const inviteLaundryInitialValues = { email: "" };
+const inviteLaundryValidationSchema = Yup.object({
+  email: Yup.string()
+    .trim()
+    .email("Please enter a valid email address")
+    .required("Email address is required"),
+});
 
 const Laundries = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") === "pending" ? "pending" : "linked";
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const requestedTab = searchParams.get("tab");
+  const activeTab = TAB_VALUES.includes(requestedTab) ? requestedTab : "linked";
 
-  const handleTabChange = (val) => {
-    setSearchParams({ tab: val }, { replace: true });
+  const inviteLaundryFormik = useFormik({
+    initialValues: inviteLaundryInitialValues,
+    validationSchema: inviteLaundryValidationSchema,
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        const response = await sendTenantLaundryInvite({ email: values.email });
+        toast.success(response?.message || "Invitation sent successfully");
+        closeInviteModal();
+      } catch (error) {
+        toast.error(getApiErrorMessage(error, "Failed to send invitation"));
+      } finally {
+        setSubmitting(false);
+      }
+    },
+  });
+
+  const closeInviteModal = () => {
+    setIsInviteModalOpen(false);
+    inviteLaundryFormik.resetForm();
   };
 
-  const [totals, setTotals] = useState({});
-  const handleLinkedTotalChange = useCallback((total) => {
-    setTotals((current) => ({ ...current, linked: total }));
-  }, []);
-  const handlePendingTotalChange = useCallback((total) => {
-    setTotals((current) => ({ ...current, pending: total }));
-  }, []);
+  const handleTabChange = (nextTab) => {
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+
+      if (nextTab === "linked") {
+        nextParams.delete("tab");
+      } else {
+        nextParams.set("tab", nextTab);
+      }
+
+      return nextParams;
+    }, { replace: true });
+  };
 
   return (
     <div className="space-y-5">
-      <Stats linkedTotal={totals.linked} pendingTotal={totals.pending} />
+      <Stats />
 
       <Card padding="0" rounded="18px">
-        <div className="border-b border-(--theme-border) px-4 py-4">
-          <Tabs
-            className="inline-grid border-0 bg-transparent p-0 shadow-none"
-            itemClassName="min-w-38"
-            items={[
-              {
-                label: "Linked Laundries",
-                value: "linked",
-                count: totals.linked,
-              },
-              {
-                label: "Pending Requests",
-                value: "pending",
-                count: totals.pending,
-              },
-            ]}
-            onChange={handleTabChange}
-            value={activeTab}
-          />
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-(--theme-border) px-4 py-4">
+          <div className="min-w-0 flex-[1_1_520px] overflow-x-auto overscroll-x-contain">
+            <Tabs
+              className="w-max border-0 bg-transparent p-0 shadow-none"
+              itemClassName="min-w-[160px] overflow-hidden"
+              items={[
+                {
+                  label: "Linked Laundries",
+                  value: "linked",
+                },
+                {
+                  label: "Pending Requests",
+                  value: "pending",
+                },
+                {
+                  label: "Rejected Laundries",
+                  value: "rejected",
+                },
+              ]}
+              onChange={handleTabChange}
+              value={activeTab}
+            />
+          </div>
+
+          {activeTab === "linked" && (
+            <Button
+              className="w-full shrink-0 sm:ml-auto sm:w-auto"
+              leftIcon={<Plus size={17} />}
+              onClick={() => setIsInviteModalOpen(true)}
+              size="md"
+              variant="secondary"
+            >
+              Invite New Laundry
+            </Button>
+          )}
         </div>
 
-        {activeTab === "linked" ? (
-          <LinkedLaundries onTotalChange={handleLinkedTotalChange} />
-        ) : (
-          <PendingRequest onTotalChange={handlePendingTotalChange} />
-        )}
+        {activeTab === "linked" && <LinkedLaundries />}
+        {activeTab === "pending" && <PendingRequest />}
+        {activeTab === "rejected" && <RejectedLaundries />}
       </Card>
+
+      <InviteLaundryModal
+        formik={inviteLaundryFormik}
+        isOpen={isInviteModalOpen}
+        onClose={closeInviteModal}
+      />
     </div>
   );
 };

@@ -1,61 +1,48 @@
-import { useState } from "react";
 import { AlertTriangle, CircleCheck, Info, UserRound } from "lucide-react";
 import Alert from "../../../Components/UI/Alert";
 import Badge from "../../../Components/UI/Badge";
 import Button from "../../../Components/UI/Button";
-import Input from "../../../Components/UI/Input";
 import Modal from "../../../Components/UI/Modal";
 
-const StaffStatusModal = ({ actionData, isOpen, onClose, onConfirm }) => {
-  const staff = actionData?.staff;
-
-  if (!staff) return null;
-
-  return (
-    <StaffStatusModalContent
-      actionData={actionData}
-      isOpen={isOpen}
-      key={`${isOpen ? "open" : "closed"}-${actionData?.action ?? "none"}-${
-        staff.id
-      }`}
-      onClose={onClose}
-      onConfirm={onConfirm}
-      staff={staff}
-    />
-  );
-};
-
-const StaffStatusModalContent = ({
+const StaffStatusModal = ({
   actionData,
-  isOpen,
-  staff,
+  isSubmitting = false,
   onClose,
   onConfirm,
 }) => {
-  const [reason, setReason] = useState("");
+  const staff = actionData?.staff;
   const isDeactivate = actionData?.action === "deactivate";
 
+  if (!staff) return null;
+
   const handleClose = () => {
-    setReason("");
-    onClose?.();
+    if (!isSubmitting) onClose?.();
   };
 
-  const handleConfirm = () => {
-    onConfirm?.({ ...actionData, reason: reason.trim() });
-    handleClose();
-  };
   return (
     <Modal
+      closeOnBackdrop={!isSubmitting}
       footer={
         <>
-          <Button onClick={handleClose} rounded="12px" size="sm" variant="secondary">
+          <Button
+            disabled={isSubmitting}
+            onClick={handleClose}
+            rounded="12px"
+            size="sm"
+            variant="secondary"
+          >
             Cancel
           </Button>
           <Button
             leftIcon={
-              isDeactivate ? <AlertTriangle size={16} /> : <CircleCheck size={16} />
+              isDeactivate ? (
+                <AlertTriangle size={16} />
+              ) : (
+                <CircleCheck size={16} />
+              )
             }
-            onClick={handleConfirm}
+            loading={isSubmitting}
+            onClick={() => onConfirm?.(actionData)}
             rounded="12px"
             size="sm"
             variant={isDeactivate ? "danger" : "success"}
@@ -65,7 +52,7 @@ const StaffStatusModalContent = ({
         </>
       }
       onClose={handleClose}
-      open={isOpen}
+      open
       title={isDeactivate ? "Deactivate Staff" : "Activate Staff"}
       width={620}
     >
@@ -78,12 +65,11 @@ const StaffStatusModalContent = ({
           <p className="m-0 font-bold">
             {isDeactivate
               ? "This staff member will lose access to assigned modules and locations."
-              : "This staff member will regain access based on their assigned role and location."}
+              : "This staff member will regain access based on their assigned role."}
           </p>
           <p className="m-0 mt-1 text-sm font-medium">
-            {isDeactivate
-              ? "Confirm the deactivation before continuing."
-              : "Confirm this staff member should be activated."}
+            Confirm that you want to {isDeactivate ? "deactivate" : "activate"}{" "}
+            <span className="font-black">{staff.name}</span>.
           </p>
         </Alert>
 
@@ -98,12 +84,7 @@ const StaffStatusModalContent = ({
                 <h3 className="m-0 text-lg font-bold text-(--theme-text-primary)">
                   {staff.name}
                 </h3>
-                <Badge
-                  size="sm"
-                  variant={
-                    staff.status === "Inactive" ? "danger" : staff.statusVariant
-                  }
-                >
+                <Badge size="sm" variant={staff.statusVariant}>
                   {staff.status}
                 </Badge>
                 <Badge size="sm" variant={staff.permissionVariant}>
@@ -119,19 +100,6 @@ const StaffStatusModalContent = ({
             </div>
           </div>
         </div>
-
-        <Input
-          label="Reason / Note"
-          multiline
-          onChange={setReason}
-          placeholder={
-            isDeactivate
-              ? "Optional note for deactivation..."
-              : "Optional note for activation..."
-          }
-          rows={4}
-          value={reason}
-        />
       </div>
     </Modal>
   );

@@ -1,9 +1,9 @@
 import { AlertTriangle } from "lucide-react";
-import Modal from "../../../Components/UI/Modal";
-import Button from "../../../Components/UI/Button";
 import Alert from "../../../Components/UI/Alert";
+import Button from "../../../Components/UI/Button";
+import Modal from "../../../Components/UI/Modal";
 
-const DefaultBlockedModal = ({ isOpen, onClose, blockedLaundry, currentDefaultLaundry }) => {
+const DefaultBlockedModal = ({ isOpen, onClose, laundry }) => {
   return (
     <Modal
       footer={
@@ -13,7 +13,7 @@ const DefaultBlockedModal = ({ isOpen, onClose, blockedLaundry, currentDefaultLa
       }
       onClose={onClose}
       open={isOpen}
-      title="Unset Default Laundry First"
+      title="Default Laundry Cannot Be Unlinked"
       width={500}
     >
       <Alert
@@ -21,11 +21,11 @@ const DefaultBlockedModal = ({ isOpen, onClose, blockedLaundry, currentDefaultLa
         rounded="rounded-xl"
         variant="danger"
       >
-        <p className="m-0 font-bold">Only one laundry can be default.</p>
+        <p className="m-0 font-bold">Set another laundry as default first.</p>
         <p className="m-0 mt-1 text-sm">
-          {currentDefaultLaundry?.name || "Another laundry"} is already set as
-          default. Unset it first, then set{" "}
-          {blockedLaundry?.name || "this laundry"} as default.
+          <span className="font-black">{laundry?.name || "This laundry"}</span> is
+          currently the default laundry. Select another linked laundry as default,
+          then try unlinking again.
         </p>
       </Alert>
     </Modal>

@@ -105,6 +105,8 @@ Authentication and landing:
 - `/login` -> `/business/login`; `/signup` -> `/business/signup`.
 - `/superadmin/login`.
 - `/business/login`, `/business/signup`.
+- `/business/staff/verify-email?token=...` verifies a staff invitation email
+  outside the dashboard shell.
 - `/laundry/login`, `/laundry/signup`.
 - `/` -> landing home through `LandingLayout`.
 - `/404`; unmatched routes redirect there.
@@ -115,7 +117,8 @@ Dashboard routes:
 - Business: `/business/dashboard`, `/business/linked-laundries`,
   `/business/categories`, `/business/categories/:id`, `/business/assets`,
   `/business/assets/:id`, `/business/scanners`, `/business/scanners/:id`,
-  `/business/staff`, `/business/tags`, and `/business/tags/:id`.
+  `/business/staff`, `/business/staff-roles`, `/business/tags`, and
+  `/business/tags/:id`.
 - Laundry: `/laundry/dashboard`.
 - Each portal root redirects to its dashboard.
 
@@ -168,10 +171,16 @@ Confirmed API-backed areas:
 - Tenant scanner creation calls `POST /tenant-scanners/create` from the Add
   Scanner modal with device configuration and English/Arabic translation data;
   the scanner list, stats, edit, status, and details flows still use local data.
-- Tenant linked laundries and pending laundry invitations use separate paginated
-  GET services. Linked-list search, status, and default filters and pending-list
-  search are sent as backend query parameters. Linked laundry status filters send
-  backend values `active`/`suspend`, displayed as Connected/Suspend in the UI.
+- Tenant linked laundries, pending invitations, and closed invitations use
+  separate paginated GET services. Pending records remain in Pending Requests,
+  accepted invitations are represented by the linked-laundries service, and
+  rejected/expired/cancelled records appear in Rejected Laundries. Linked-list
+  search, status, and default filters and invitation searches are sent as backend
+  query parameters. Linked laundry status filters send backend values
+  `active`/`suspend`, displayed as Connected/Suspend in the UI.
+  Non-default linked laundries can be unlinked through the live unlink service;
+  the UI blocks unlinking the current default until another laundry is set as
+  default.
 
 Partial or placeholder areas:
 
@@ -182,7 +191,7 @@ Partial or placeholder areas:
   hidden entirely, and profile completion opens Done directly. Laundry signup
   remains UI-only.
 - Many Tenant features import local `data.js`, including assets, scanners,
-  staff, tags, and asset-detail subviews. Treat them as
+  tags, and asset-detail subviews. Treat them as
   sample data unless the same feature also calls a domain service.
 
 When integrating a placeholder feature, do not retain hidden mock fallback data
@@ -204,7 +213,10 @@ Shared client facts:
 - Default content type is `application/json`.
 - The request interceptor reads `accessToken` from `sessionStorage` and attaches a
   Bearer authorization header.
-- The response interceptor currently passes responses/errors through.
+- The response interceptor clears the stored authentication session when an
+  authenticated request returns `401`, then replaces the current URL with the
+  active portal's login route (`/business/login`, `/laundry/login`, or
+  `/superadmin/login`). It does not attempt token refresh.
 - `src/axios/api.js` returns `response.data`, not the full Axios response.
 - `getApiErrorMessage` checks server `message`, server `error`, JavaScript error
   message, and then a supplied fallback.
@@ -234,8 +246,54 @@ Current endpoints:
   translations: { en, ar } }`.
 - `GET /tenant-laundries/show` with optional `page`, `limit`, `keywords`,
   `status`, `dispatchMode`, and `isDefault` query parameters.
+- `GET /tenant-laundries/show/:id` returns the linked-laundry relationship,
+  relationship counters and dates, plus nested laundry profile and user account
+  records. The linked laundry detail page renders this response without a mock
+  detail fallback.
+- `GET /tenant-staff-roles/show` lists tenant staff roles for the Staff Roles
+  screen with backend `page`/`limit` pagination plus optional `keywords`,
+  `status`, and `accessLevel` filters. `GET /tenant-staff-roles/show/:id` powers
+  the role details and edit flows. `PUT /tenant-staff-roles/update/:id` updates role details and module
+  permissions using the same `StaffRoleRequest` shape as create, while
+  `PUT /tenant-staff-roles/update-status/:id` activates or deactivates a role
+  with `{ status }`. Delete remains disabled because no delete contract is
+  integrated.
+- `GET /tenant-staff-roles/summary` provides `totalRoles`, `fullAccessRoles`,
+  `viewOnlyRoles`, `limitedAccessRoles`, `activeRoles`, and `inactiveRoles`; the
+  six summary cards load independently from the roles list.
+- Tenant Staff uses `POST /tenant-staff/create`, `GET /tenant-staff/show`,
+  `GET /tenant-staff/summary`,
+  `GET /tenant-staff/show/:id`, `PUT /tenant-staff/update/:id`, and
+  `PUT /tenant-staff/update-status/:id`. Create/update follow `StaffRequest`:
+  required `fullName`, `email`, `phone`, and `staffRoleId`, with optional
+  `locationId`, `locationName`, `language`, `status`, and `sendInvite`.
+  `GET /tenant-staff/verify-email?token=...` powers the public staff verification
+  route. The list sends `page`, `limit`, and optional `status` (`active`,
+  `inactive`, `suspend`), `staffRoleId`, and `keywords`, then consumes the
+  returned pagination. Staff summary cards load independently from
+  `GET /tenant-staff/summary`. The role filter and Add Staff form load only
+  active roles from `GET /tenant-staff-roles/show?status=active`; inactive roles
+  remain available when editing an existing staff member.
+- `GET /tenant-access-sections/show` supplies the module permission sections for
+  the Staff Roles create modal. `POST /tenant-staff-roles/create` creates an
+  active role with `name`, optional `description`, and permission rows containing
+  `sectionKey` and all permission booleans for modules where at least one action
+  is selected. Completely unselected modules are omitted. Successful creation
+  refreshes both the role list and summary.
 - `GET /tenant-laundries/pending-invites` with optional `page`, `limit`, and
   `keywords` query parameters.
+- `GET /tenant-laundries/closed-invites` with optional `page`, `limit`,
+  `keywords`, and `status`; status values are `rejected`, `expired`, and
+  `cancelled`.
+- `GET /tenant-laundries/invite-details?token=...` returning `data.invite`,
+  `data.tenant`, `existingUser`, `existingLaundry`, `requiresProfile`, and
+  `laundry`. The invitation token is used only to request details and is never
+  rendered in the UI.
+- `GET /tenant-laundries/summary` returning `data` with `totalLinked`,
+  `defaultLaundry`, `pendingRequests`, `activeDispatches`,
+  `itemsCurrentlySent`, `delayedItems`, and `activeBatches`.
+- `PUT /tenant-laundries/unlink/:id`, where `id` is the linked-laundry
+  relationship UUID preserved as `apiId` by the list normalizer.
 - Category services send `x-language`, defaulting to `en`.
 
 These facts are not permission to guess future contracts. Use the exact method,
@@ -254,8 +312,8 @@ keys are removed from `localStorage`; `clearTenantSession` removes the session
 values as well. Theme preference is separately stored as `theme-mode` in
 `localStorage`. Never print or expose stored values.
 
-There is currently no automatic refresh-token flow or global 401 redirect. Do
-not claim these behaviors exist; design them explicitly when requested.
+There is currently no automatic refresh-token flow. Authenticated `401`
+responses use the global portal-aware login redirect described above.
 
 ## 9. Shared UI system
 
@@ -263,7 +321,8 @@ Reuse `src/Components/UI` before creating feature-local replacements:
 
 - Overlays/actions: `ActionDropdown`, `Dropdown`, `Modal`, `SlideOver`, `Tooltip`.
 - Inputs/navigation: `Input`, `Tabs`, `Pagination`, `BusinessSelector`.
-- Data display: `Table`, `TableSkeleton`, `Badge`, `Card`, `Alert`, `ProgressBar`.
+- Data display: `Table`, `TableSkeleton`, `CardSkeleton`, `Badge`, `Card`,
+  `Alert`, `ProgressBar`.
 - Identity/icons: `Avatar`, `InitialsAvatar`, `IconWrapper`.
 - Primary action primitive: `Button`.
 
@@ -279,9 +338,13 @@ Important contracts:
   close on backdrop. Inspect and improve focus behavior when a task requires it.
 - `Pagination` is zero-based: `forcePage` is zero-based and it emits
   `onPageChange({ selected })`. Convert to one-based API pages at the boundary.
-- `Table` supports declarative columns, sorting, actions, row clicks, skeletons,
-  empty state, nested accessors, and horizontal overflow. Trace every consumer
-  before changing this shared component.
+- `Table` supports declarative columns, actions, row clicks, skeletons, empty
+  state, nested accessors, and horizontal overflow. Data columns automatically
+  receive client-side sorting; use `sortable: false` to opt out. `action` and
+  `actions` keys opt out by default unless explicitly set to `sortable: true`.
+  Consumers can still provide `onSort`, `sortBy`, and `sortDirection` for
+  controlled/server sorting. Trace every consumer before changing this shared
+  component.
 - `ActionDropdown` portals its menu and expects labeled item callbacks. Keep item
   labels unique within the menu.
 - Use `toast` from `src/Utils/toast`; `ToastProvider` is already mounted.
@@ -313,6 +376,10 @@ editing it. Do not infer props from component names.
 - Preserve separate server/display identifiers when normalization needs both.
 - Search/filter changes reset pagination. UI pages are zero-based; verify backend
   indexing and parameter names separately.
+- `useDebouncedSearch` in `src/Hooks` is the shared search behavior: it trims
+  input, waits 400ms, searches from two characters, and resets immediately when
+  the query is cleared. Use it for server, client-side, and searchable-dropdown
+  filtering instead of feature-local debounce timers.
 - `useSortableTableData` is client-side sorting and supports nested accessors plus
   month-name date parsing. It is not server sorting.
 - Async effects require unmount and stale-result protection. Clean up debounce
@@ -407,4 +474,3 @@ For every prompt, the AI must:
 
 Never invent missing backend contracts, permissions, files, or completed
 behavior. Prefer direct source evidence over assumptions or generic patterns.
-

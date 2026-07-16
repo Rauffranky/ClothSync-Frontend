@@ -1,5 +1,14 @@
 import axios from "axios";
-import { getTenantAccessToken } from "./auth/tenantSession";
+import {
+  clearTenantSession,
+  getTenantAccessToken,
+} from "./auth/tenantSession";
+
+const getPortalLoginPath = (pathname) => {
+  if (pathname.startsWith("/laundry")) return "/laundry/login";
+  if (pathname.startsWith("/superadmin")) return "/superadmin/login";
+  return "/business/login";
+};
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "",
@@ -23,7 +32,24 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => Promise.reject(error),
+  (error) => {
+    const isUnauthorized = error?.response?.status === 401;
+    const hasActiveSession = Boolean(getTenantAccessToken());
+
+    if (isUnauthorized && hasActiveSession) {
+      clearTenantSession();
+
+      if (typeof window !== "undefined") {
+        const loginPath = getPortalLoginPath(window.location.pathname);
+
+        if (window.location.pathname !== loginPath) {
+          window.location.replace(loginPath);
+        }
+      }
+    }
+
+    return Promise.reject(error);
+  },
 );
 
 export default apiClient;

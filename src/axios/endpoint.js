@@ -27,14 +27,39 @@ export const TENANT_SCANNER_ENDPOINTS = Object.freeze({
   CREATE: "/tenant-scanners/create",
 });
 
+export const TENANT_STAFF_ROLE_ENDPOINTS = Object.freeze({
+  CREATE: "/tenant-staff-roles/create",
+  LIST: "/tenant-staff-roles/show",
+  DETAILS: (id) => `/tenant-staff-roles/show/${id}`,
+  UPDATE: (id) => `/tenant-staff-roles/update/${id}`,
+  UPDATE_STATUS: (id) => `/tenant-staff-roles/update-status/${id}`,
+  SUMMARY: "/tenant-staff-roles/summary",
+});
+
+export const TENANT_ACCESS_SECTION_ENDPOINTS = Object.freeze({
+  LIST: "/tenant-access-sections/show",
+});
+
+export const TENANT_STAFF_ENDPOINTS = Object.freeze({
+  CREATE: "/tenant-staff/create",
+  LIST: "/tenant-staff/show",
+  SUMMARY: "/tenant-staff/summary",
+  DETAILS: (id) => `/tenant-staff/show/${id}`,
+  UPDATE: (id) => `/tenant-staff/update/${id}`,
+  UPDATE_STATUS: (id) => `/tenant-staff/update-status/${id}`,
+  VERIFY_EMAIL: "/tenant-staff/verify-email",
+});
+
 export const TENANT_LAUNDRY_ENDPOINTS = Object.freeze({
   LIST: "/tenant-laundries/show",
   DETAILS: (id) => `/tenant-laundries/show/${id}`,
   PENDING_INVITES: "/tenant-laundries/pending-invites",
+  CLOSED_INVITES: "/tenant-laundries/closed-invites",
   SUMMARY: "/tenant-laundries/summary",
   SEND_INVITE: "/tenant-laundries/send-invite",
   RESEND_INVITE: (id) => `/tenant-laundries/resend-invite/${id}`,
   CANCEL_INVITE: (id) => `/tenant-laundries/cancel-invite/${id}`,
   INVITE_DETAILS: "/tenant-laundries/invite-details",
   SET_DEFAULT: (id) => `/tenant-laundries/set-default/${id}`,
+  UNLINK: (id) => `/tenant-laundries/unlink/${id}`,
 });
