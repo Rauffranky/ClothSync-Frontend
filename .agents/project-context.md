@@ -213,7 +213,10 @@ Shared client facts:
 - Default content type is `application/json`.
 - The request interceptor reads `accessToken` from `sessionStorage` and attaches a
   Bearer authorization header.
-- The response interceptor currently passes responses/errors through.
+- The response interceptor clears the stored authentication session when an
+  authenticated request returns `401`, then replaces the current URL with the
+  active portal's login route (`/business/login`, `/laundry/login`, or
+  `/superadmin/login`). It does not attempt token refresh.
 - `src/axios/api.js` returns `response.data`, not the full Axios response.
 - `getApiErrorMessage` checks server `message`, server `error`, JavaScript error
   message, and then a supplied fallback.
@@ -309,8 +312,8 @@ keys are removed from `localStorage`; `clearTenantSession` removes the session
 values as well. Theme preference is separately stored as `theme-mode` in
 `localStorage`. Never print or expose stored values.
 
-There is currently no automatic refresh-token flow or global 401 redirect. Do
-not claim these behaviors exist; design them explicitly when requested.
+There is currently no automatic refresh-token flow. Authenticated `401`
+responses use the global portal-aware login redirect described above.
 
 ## 9. Shared UI system
 
