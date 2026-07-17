@@ -14,7 +14,10 @@ import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import { getApiErrorMessage } from "../../../axios/api";
 import { getTenantStaffRoles } from "../../../axios/staffRoles/tenantStaffRoles";
 import {
+  createTenantStaff,
   getTenantStaff,
+  getTenantStaffDetails,
+  updateTenantStaff,
   updateTenantStaffStatus,
 } from "../../../axios/staff/tenantStaff";
 import { toast } from "../../../Utils/toast";
@@ -37,7 +40,15 @@ import StaffTable from "./StaffTable";
 
 const ITEMS_PER_PAGE = 10;
 
-const Staff = () => {
+const Staff = ({
+  createStaff = createTenantStaff,
+  getStaffDetails = getTenantStaffDetails,
+  getStaffMembers = getTenantStaff,
+  getStaffRoles = getTenantStaffRoles,
+  includeSendInvite = true,
+  updateStaff = updateTenantStaff,
+  updateStaffStatus = updateTenantStaffStatus,
+}) => {
   const [staffList, setStaffList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -67,7 +78,7 @@ const Staff = () => {
   useEffect(() => {
     let isActive = true;
 
-    getTenantStaff({
+    getStaffMembers({
       page: currentPage + 1,
       limit: ITEMS_PER_PAGE,
       ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
@@ -107,12 +118,19 @@ const Staff = () => {
     return () => {
       isActive = false;
     };
-  }, [currentPage, debouncedSearch, refreshKey, roleFilter, statusFilter]);
+  }, [
+    currentPage,
+    debouncedSearch,
+    getStaffMembers,
+    refreshKey,
+    roleFilter,
+    statusFilter,
+  ]);
 
   useEffect(() => {
     let isActive = true;
 
-    getTenantStaffRoles({ page: 1, limit: 100 })
+    getStaffRoles({ page: 1, limit: 100 })
       .then((rolesResponse) => {
         if (!isActive) return;
         const roles = getStaffRolePaginatedCollection(
@@ -137,7 +155,7 @@ const Staff = () => {
     return () => {
       isActive = false;
     };
-  }, [refreshKey]);
+  }, [getStaffRoles, refreshKey]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
     useSortableTableData(staffList);
@@ -205,7 +223,7 @@ const Staff = () => {
 
     setIsStatusSubmitting(true);
     try {
-      const response = await updateTenantStaffStatus(
+      const response = await updateStaffStatus(
         staff.apiId || staff.id,
         nextStatus,
       );
@@ -298,16 +316,21 @@ const Staff = () => {
 
       {isFormModalOpen && (
         <StaffFormModal
+          createStaff={createStaff}
+          getStaffDetails={getStaffDetails}
+          includeSendInvite={includeSendInvite}
           mode={formMode}
           onClose={closeFormModal}
           onSaved={refreshStaff}
           open
           roleOptions={formMode === "add" ? activeRoleOptions : roleOptions}
           staff={selectedStaff}
+          updateStaff={updateStaff}
         />
       )}
       {viewingStaff && (
         <StaffDetailModal
+          getStaffDetails={getStaffDetails}
           onClose={() => setViewingStaff(null)}
           staff={viewingStaff}
         />

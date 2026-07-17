@@ -25,6 +25,18 @@ export const cancelTenantLaundryInvite = (id) =>
 export const getTenantLaundryInviteDetails = (token) =>
   api.get(TENANT_LAUNDRY_ENDPOINTS.INVITE_DETAILS, { params: { token } });
 
+export const handleTenantLaundryInvite = (token) =>
+  api.get(TENANT_LAUNDRY_ENDPOINTS.HANDLE_INVITE, {
+    params: { token },
+    timeout: 15000,
+  });
+
+export const acceptTenantLaundryInvite = (token, payload) =>
+  api.post(TENANT_LAUNDRY_ENDPOINTS.ACCEPT_INVITE, payload, {
+    params: { token },
+    timeout: 15000,
+  });
+
 export const getTenantLaundryDetails = (id) =>
   api.get(TENANT_LAUNDRY_ENDPOINTS.DETAILS(id));
 

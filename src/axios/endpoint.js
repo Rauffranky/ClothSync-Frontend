@@ -75,8 +75,39 @@ export const TENANT_LAUNDRY_ENDPOINTS = Object.freeze({
   RESEND_INVITE: (id) => `/tenant-laundries/resend-invite/${id}`,
   CANCEL_INVITE: (id) => `/tenant-laundries/cancel-invite/${id}`,
   INVITE_DETAILS: "/tenant-laundries/invite-details",
+  HANDLE_INVITE: "/tenant-laundries/handle-invite",
+  ACCEPT_INVITE: "/tenant-laundries/accept-invite",
   SET_DEFAULT: (id) => `/tenant-laundries/set-default/${id}`,
   UNLINK: (id) => `/tenant-laundries/unlink/${id}`,
+});
+
+export const LAUNDRY_TENANT_ENDPOINTS = Object.freeze({
+  LIST: "/laundry-tenants/show",
+  DETAILS: (id) => `/laundry-tenants/show/${id}`,
+  PENDING_REQUESTS: "/laundry-tenants/pending-requests",
+  ACCEPT_REQUEST: (id) => `/laundry-tenants/pending-requests/${id}/accept`,
+  REJECT_REQUEST: (id) => `/laundry-tenants/pending-requests/${id}/reject`,
+});
+
+export const LAUNDRY_STAFF_ENDPOINTS = Object.freeze({
+  CREATE: "/laundry-staff/create",
+  LIST: "/laundry-staff/show",
+  DETAILS: (id) => `/laundry-staff/show/${id}`,
+  UPDATE: (id) => `/laundry-staff/update/${id}`,
+  UPDATE_STATUS: (id) => `/laundry-staff/update-status/${id}`,
+  VERIFY_EMAIL: "/laundry-staff/verify-email",
+});
+
+export const LAUNDRY_STAFF_ROLE_ENDPOINTS = Object.freeze({
+  CREATE: "/laundry-staff-roles/create",
+  LIST: "/laundry-staff-roles/show",
+  DETAILS: (id) => `/laundry-staff-roles/show/${id}`,
+  UPDATE: (id) => `/laundry-staff-roles/update/${id}`,
+  UPDATE_STATUS: (id) => `/laundry-staff-roles/update-status/${id}`,
+});
+
+export const LAUNDRY_ACCESS_SECTION_ENDPOINTS = Object.freeze({
+  LIST: "/laundry-access-sections/show",
 });
 
 export const TENANT_SETTINGS_ENDPOINTS = Object.freeze({

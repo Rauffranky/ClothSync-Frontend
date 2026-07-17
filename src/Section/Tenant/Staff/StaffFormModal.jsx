@@ -16,6 +16,12 @@ import {
 import { toast } from "../../../Utils/toast";
 import { normalizeStaffDetails } from "./data";
 
+const editableStatusOptions = [
+  { label: "Active", value: "active" },
+  { label: "Inactive", value: "inactive" },
+  { label: "Suspend", value: "suspend" },
+];
+
 const validationSchema = Yup.object({
   fullName: Yup.string().trim().required("Full name is required"),
   email: Yup.string()
@@ -31,12 +37,16 @@ const validationSchema = Yup.object({
 });
 
 const StaffFormModal = ({
+  createStaff = createTenantStaff,
+  getStaffDetails = getTenantStaffDetails,
+  includeSendInvite = true,
   mode = "add",
   onClose,
   onSaved,
   open,
   roleOptions = [],
   staff = null,
+  updateStaff = updateTenantStaff,
 }) => {
   const isEdit = mode === "edit";
   const [isLoadingDetails, setIsLoadingDetails] = useState(isEdit);
@@ -66,13 +76,15 @@ const StaffFormModal = ({
           : {}),
         language: values.language,
         status: values.status,
-        ...(!isEdit ? { sendInvite: values.sendInvite } : {}),
+        ...(!isEdit && includeSendInvite
+          ? { sendInvite: values.sendInvite }
+          : {}),
       };
 
       try {
         const response = isEdit
-          ? await updateTenantStaff(staff?.apiId || staff?.id, payload)
-          : await createTenantStaff(payload);
+          ? await updateStaff(staff?.apiId || staff?.id, payload)
+          : await createStaff(payload);
         toast.success(
           response?.message ||
             (isEdit
@@ -102,7 +114,7 @@ const StaffFormModal = ({
 
     let isActive = true;
 
-    getTenantStaffDetails(staff?.apiId || staff?.id)
+    getStaffDetails(staff?.apiId || staff?.id)
       .then((response) => {
         if (!isActive) return;
         const details = normalizeStaffDetails(response);
@@ -134,7 +146,14 @@ const StaffFormModal = ({
     return () => {
       isActive = false;
     };
-  }, [detailsRefreshKey, isEdit, setValues, staff?.apiId, staff?.id]);
+  }, [
+    detailsRefreshKey,
+    getStaffDetails,
+    isEdit,
+    setValues,
+    staff?.apiId,
+    staff?.id,
+  ]);
 
   const handleClose = () => {
     if (!formik.isSubmitting) onClose?.();
@@ -145,7 +164,7 @@ const StaffFormModal = ({
   const title = isEdit ? "Edit Staff" : "Add Staff";
   const primaryLabel = isEdit
     ? "Save Changes"
-    : formik.values.sendInvite
+    : includeSendInvite && formik.values.sendInvite
       ? "Save & Send Invite"
       : "Save Staff";
 
@@ -237,9 +256,15 @@ const StaffFormModal = ({
           />
 
           <Input
-            disabled={formik.isSubmitting}
+            disabled={isEdit || formik.isSubmitting}
             error={formik.touched.email && Boolean(formik.errors.email)}
-            helperText={formik.touched.email ? formik.errors.email : ""}
+            helperText={
+              formik.touched.email && formik.errors.email
+                ? formik.errors.email
+                : isEdit
+                  ? "Email address cannot be changed after staff creation."
+                  : ""
+            }
             label="Email Address"
             name="email"
             onBlur={formik.handleBlur}
@@ -277,6 +302,24 @@ const StaffFormModal = ({
             </p>
           )}
 
+          {isEdit && (
+            <>
+              <Dropdown
+                disabled={formik.isSubmitting}
+                label="Status"
+                onChange={(value) => formik.setFieldValue("status", value)}
+                options={editableStatusOptions}
+                placeholder="Select staff status"
+                value={formik.values.status}
+              />
+              {formik.touched.status && formik.errors.status && (
+                <p className="m-0 -mt-2 text-sm font-semibold text-red-500">
+                  {formik.errors.status}
+                </p>
+              )}
+            </>
+          )}
+
           <Input
             disabled={formik.isSubmitting}
             label="Assigned Location / Site"
@@ -287,7 +330,7 @@ const StaffFormModal = ({
             value={formik.values.locationName}
           />
 
-          {!isEdit && (
+          {!isEdit && includeSendInvite && (
             <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold text-(--theme-text-secondary)">
               <input
                 checked={formik.values.sendInvite}

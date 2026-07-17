@@ -192,7 +192,7 @@ const getLocationsLabel = (role) => {
   return role?.location || role?.locationName || "-";
 };
 
-export const getStaffRolePaginatedCollection = (response, limit) => {
+export const getStaffRolePaginatedCollection = (response, limit, page = 1) => {
   const payload = response?.data ?? response ?? {};
   const rows = Array.isArray(payload)
     ? payload
@@ -203,6 +203,9 @@ export const getStaffRolePaginatedCollection = (response, limit) => {
       payload?.results ||
       [];
   const pagination = payload?.pagination || response?.pagination || {};
+  const hasServerPagination = Boolean(
+    payload?.pagination || response?.pagination,
+  );
   const totalItems = Number(
     pagination?.totalItems ?? pagination?.total ?? rows.length,
   );
@@ -211,7 +214,12 @@ export const getStaffRolePaginatedCollection = (response, limit) => {
   );
 
   return {
-    rows: Array.isArray(rows) ? rows : [],
+    allRows: Array.isArray(rows) ? rows : [],
+    rows: Array.isArray(rows)
+      ? hasServerPagination
+        ? rows
+        : rows.slice((page - 1) * limit, page * limit)
+      : [],
     summary:
       payload?.counts ??
       payload?.summary ??
@@ -238,6 +246,7 @@ export const normalizeStaffRole = (role) => {
     description: role?.description || "-",
     staffCount: Number(
       role?.numberOfStaff ??
+        role?.staffMembersCount ??
         role?.staffCount ??
         role?.assignedStaffCount ??
         role?.usersCount ??
@@ -295,6 +304,19 @@ export const normalizeStaffRoleSummary = (response) => {
     inactiveRoles: getSummaryCount(summary?.inactiveRoles),
   };
 };
+
+export const deriveStaffRoleSummary = (roles = []) => ({
+  totalRoles: roles.length,
+  fullAccessRoles: roles.filter(
+    (role) => role.accessLevel === "Full Access",
+  ).length,
+  viewOnlyRoles: roles.filter((role) => role.accessLevel === "View Only").length,
+  limitedAccessRoles: roles.filter(
+    (role) => role.accessLevel === "Limited Access",
+  ).length,
+  activeRoles: roles.filter((role) => role.status === "Active").length,
+  inactiveRoles: roles.filter((role) => role.status === "Inactive").length,
+});
 
 export const roleStatusOptions = [
   { label: "All Statuses", value: "all" },

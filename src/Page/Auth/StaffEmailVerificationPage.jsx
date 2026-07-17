@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { CircleCheck, LoaderCircle, ShieldAlert } from "lucide-react";
 import Alert from "../../Components/UI/Alert";
 import Button from "../../Components/UI/Button";
@@ -8,7 +8,13 @@ import { usePageMeta } from "../../Hooks/usePageMeta";
 import { getApiErrorMessage } from "../../axios/api";
 import { verifyTenantStaffEmail } from "../../axios/staff/tenantStaff";
 
-const StaffEmailVerificationPage = () => {
+const LOGIN_REDIRECT_DELAY = 1800;
+
+const StaffEmailVerificationPage = ({
+  loginPath = "/business/login",
+  verifyEmail = verifyTenantStaffEmail,
+}) => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token")?.trim() || "";
   const [verification, setVerification] = useState(() => ({
@@ -31,7 +37,7 @@ const StaffEmailVerificationPage = () => {
 
     let isActive = true;
 
-    verifyTenantStaffEmail(token)
+    verifyEmail(token)
       .then((response) => {
         if (!isActive) return;
         setVerification({
@@ -50,10 +56,20 @@ const StaffEmailVerificationPage = () => {
     return () => {
       isActive = false;
     };
-  }, [token]);
+  }, [token, verifyEmail]);
 
   const isLoading = verification.status === "loading";
   const isSuccess = verification.status === "success";
+
+  useEffect(() => {
+    if (!isSuccess) return undefined;
+
+    const redirectTimer = window.setTimeout(() => {
+      navigate(loginPath, { replace: true });
+    }, LOGIN_REDIRECT_DELAY);
+
+    return () => window.clearTimeout(redirectTimer);
+  }, [isSuccess, loginPath, navigate]);
 
   return (
     <main className="grid min-h-screen place-items-center bg-(--theme-bg) px-4 py-10 text-(--theme-text-primary)">
@@ -85,7 +101,9 @@ const StaffEmailVerificationPage = () => {
                 : "Verification Failed"}
           </h1>
           <p className="m-0 mt-2 text-sm font-medium text-(--theme-text-muted)">
-            Staff Email Verification
+            {isSuccess
+              ? "Redirecting you to the portal login..."
+              : "Staff Email Verification"}
           </p>
         </div>
 
@@ -101,10 +119,10 @@ const StaffEmailVerificationPage = () => {
             as={Link}
             className="mt-6"
             fullWidth
-            to="/business/login"
+            to={loginPath}
             variant={isSuccess ? "success" : "secondary"}
           >
-            Continue to Login
+            {isSuccess ? "Continue to Login Now" : "Continue to Login"}
           </Button>
         )}
       </Card>

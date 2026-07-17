@@ -18,7 +18,11 @@ import { getTenantStaffRoleDetails } from "../../../axios/staffRoles/tenantStaff
 import { formatDateWithUserPreferences } from "../../../Utils/date";
 import { normalizeStaffRoleDetails, permissionActions } from "./data";
 
-const RoleViewModal = ({ role, onClose }) => {
+const RoleViewModal = ({
+  getStaffRoleDetails = getTenantStaffRoleDetails,
+  onClose,
+  role,
+}) => {
   const [roleDetails, setRoleDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -27,7 +31,7 @@ const RoleViewModal = ({ role, onClose }) => {
   useEffect(() => {
     let isActive = true;
 
-    getTenantStaffRoleDetails(role?.apiId || role?.id)
+    getStaffRoleDetails(role?.apiId || role?.id)
       .then((response) => {
         if (!isActive) return;
         setRoleDetails(normalizeStaffRoleDetails(response));
@@ -47,7 +51,7 @@ const RoleViewModal = ({ role, onClose }) => {
     return () => {
       isActive = false;
     };
-  }, [refreshKey, role?.apiId, role?.id]);
+  }, [getStaffRoleDetails, refreshKey, role?.apiId, role?.id]);
 
   const displayedRole = roleDetails || role;
   const details = displayedRole

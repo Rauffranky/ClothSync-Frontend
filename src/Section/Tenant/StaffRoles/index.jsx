@@ -12,13 +12,18 @@ import {
 } from "../../../Hooks/useDebouncedSearch";
 import { getApiErrorMessage } from "../../../axios/api";
 import {
+  createTenantStaffRole,
+  getTenantAccessSections,
+  getTenantStaffRoleDetails,
   getTenantStaffRoles,
+  updateTenantStaffRole,
   updateTenantStaffRoleStatus,
 } from "../../../axios/staffRoles/tenantStaffRoles";
 import { toast } from "../../../Utils/toast";
 import {
   accessLevelOptions,
   accessLevelApiValues,
+  deriveStaffRoleSummary,
   getStaffRolePaginatedCollection,
   normalizeStaffRole,
   normalizeStaffRoleSummary,
@@ -32,7 +37,14 @@ import StaffRolesTable from "./StaffRolesTable";
 
 const ITEMS_PER_PAGE = 10;
 
-const StaffRoles = () => {
+const StaffRoles = ({
+  createStaffRole = createTenantStaffRole,
+  getAccessSections = getTenantAccessSections,
+  getStaffRoleDetails = getTenantStaffRoleDetails,
+  getStaffRoles = getTenantStaffRoles,
+  updateStaffRole = updateTenantStaffRole,
+  updateStaffRoleStatus = updateTenantStaffRoleStatus,
+}) => {
   const [roles, setRoles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -54,7 +66,7 @@ const StaffRoles = () => {
   useEffect(() => {
     let isActive = true;
 
-    getTenantStaffRoles({
+    getStaffRoles({
       page: currentPage + 1,
       limit: ITEMS_PER_PAGE,
       ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
@@ -70,9 +82,20 @@ const StaffRoles = () => {
         const collection = getStaffRolePaginatedCollection(
           response,
           ITEMS_PER_PAGE,
+          currentPage + 1,
         );
-        setRoles(collection.rows.map(normalizeStaffRole));
-        setSummary(normalizeStaffRoleSummary(collection.summary));
+        const normalizedRoles = collection.rows.map(normalizeStaffRole);
+        const allNormalizedRoles = collection.allRows.map(normalizeStaffRole);
+        const serverSummary = normalizeStaffRoleSummary(collection.summary);
+        const hasServerSummary = Object.values(serverSummary).some(
+          (value) => value !== null,
+        );
+        setRoles(normalizedRoles);
+        setSummary(
+          hasServerSummary
+            ? serverSummary
+            : deriveStaffRoleSummary(allNormalizedRoles),
+        );
         setTotalItems(collection.totalItems);
         setTotalPages(collection.totalPages);
         setLoadError("");
@@ -93,7 +116,14 @@ const StaffRoles = () => {
     return () => {
       isActive = false;
     };
-  }, [accessFilter, currentPage, debouncedSearch, refreshKey, statusFilter]);
+  }, [
+    accessFilter,
+    currentPage,
+    debouncedSearch,
+    getStaffRoles,
+    refreshKey,
+    statusFilter,
+  ]);
 
   const activePage = totalPages > 0 ? Math.min(currentPage, totalPages - 1) : 0;
 
@@ -145,7 +175,7 @@ const StaffRoles = () => {
 
     setIsStatusSubmitting(true);
     try {
-      const response = await updateTenantStaffRoleStatus(roleId, nextStatus);
+      const response = await updateStaffRoleStatus(roleId, nextStatus);
       toast.success(
         response?.message ||
           `Staff role ${nextStatus === "active" ? "activated" : "deactivated"} successfully`,
@@ -231,23 +261,32 @@ const StaffRoles = () => {
 
       {selectedRole && (
         <RoleViewModal
+          getStaffRoleDetails={getStaffRoleDetails}
           onClose={() => setSelectedRole(null)}
           role={selectedRole}
         />
       )}
       {isCreateRoleOpen && (
         <CreateRoleModal
+          createStaffRole={createStaffRole}
+          getAccessSections={getAccessSections}
+          getStaffRoleDetails={getStaffRoleDetails}
           onClose={() => setIsCreateRoleOpen(false)}
           onSaved={refreshRoleData}
           open
+          updateStaffRole={updateStaffRole}
         />
       )}
       {editingRole && (
         <CreateRoleModal
+          createStaffRole={createStaffRole}
+          getAccessSections={getAccessSections}
+          getStaffRoleDetails={getStaffRoleDetails}
           onClose={() => setEditingRole(null)}
           onSaved={refreshRoleData}
           open
           role={editingRole}
+          updateStaffRole={updateStaffRole}
         />
       )}
       {statusAction && (

@@ -106,8 +106,14 @@ Authentication and landing:
 - `/superadmin/login`.
 - `/business/login`, `/business/signup`.
 - `/business/staff/verify-email?token=...` verifies a staff invitation email
-  outside the dashboard shell.
+  outside the dashboard shell and redirects successful verification to the
+  Business login.
 - `/laundry/login`, `/laundry/signup`.
+- `/laundry/staff/verify-email?token=...` verifies a Laundry staff invitation
+  email outside the dashboard shell and redirects successful verification to
+  the Laundry login.
+- `/laundry/invite?token=...` handles a public laundry invitation outside the
+  dashboard shell; `/laundry/handle-invite` is a compatible alias.
 - `/` -> landing home through `LandingLayout`.
 - `/404`; unmatched routes redirect there.
 
@@ -119,7 +125,9 @@ Dashboard routes:
   `/business/assets/:id`, `/business/scanners`, `/business/scanners/:id`,
   `/business/scanners/warnings`, `/business/staff`, `/business/staff-roles`,
   `/business/tags`, `/business/tags/:id`, and `/business/settings`.
-- Laundry: `/laundry/dashboard`.
+- Laundry: `/laundry/dashboard`, `/laundry/linked-businesses`, connected
+  business details at `/laundry/linked-businesses/:id`, `/laundry/staff`, and
+  `/laundry/staff-roles`.
 - Each portal root redirects to its dashboard.
 
 `src/Components/Layout/Dashboard/nav.js` contains additional future links with no
@@ -164,6 +172,37 @@ Confirmed API-backed areas:
   `POST /laundry-auth/complete-profile`. Authentication data returned by its
   verify or profile-completion response is stored in the shared current-tab
   session before entering the Laundry dashboard.
+- Public Laundry invitations read `token` from the frontend route query and call
+  `GET /tenant-laundries/handle-invite`. An existing Laundry profile is linked
+  immediately when the response action is `linked`; the backend message is shown
+  without requesting profile data. An action of `signup_required` with
+  `requiresProfile: true` opens the public profile form, which submits the token
+  plus the exact new-laundry profile fields to
+  `POST /tenant-laundries/accept-invite`.
+- The Laundry portal Linked Businesses screen uses
+  `GET /laundry-tenants/show` for paginated connected businesses, backend
+  dashboard counts, `keywords`, `status` (`active`/`suspend`), and
+  `businessType` (`hotel`/`hospital`) filters. Connected business details use
+  `GET /laundry-tenants/show/:id` on a dedicated detail route. The detail
+  response is normalized from `data.business`, including nested `contact` data
+  and nested `operations` counts for incoming batches, in-laundry items, sent
+  items, delayed items, open exceptions, and last activity. Its Pending Requests
+  tab uses
+  `GET /laundry-tenants/pending-requests` with server pagination/search; the
+  row action dropdown accepts through
+  `PUT /laundry-tenants/pending-requests/:id/accept` or rejects through
+  `PUT /laundry-tenants/pending-requests/:id/reject` with optional
+  `rejectionReason`.
+- Laundry Staff reuses the established Staff and Staff Roles interface with
+  Laundry-scoped request functions. Staff create/list/detail/update/status use
+  `/laundry-staff`; role create/list/detail/update/status use
+  `/laundry-staff-roles`; permission sections use
+  `GET /laundry-access-sections/show`. Laundry role cards consume counts from
+  the role-list response when supplied, otherwise they derive counts from the
+  returned roles; no separate Laundry role-summary request is made. Public staff
+  email verification is available at `/laundry/staff/verify-email?token=...`;
+  after a successful API response, the shared verification screen redirects to
+  the Laundry login. The Tenant equivalent redirects to the Business login.
 - After verification, Business signup saves the business profile with
   `POST /tenant-auth/complete-profile`, using the verified response's `userId`,
   business details, an internationalized phone number, and the browser timezone.
@@ -375,7 +414,9 @@ Current endpoints:
   `data.counts`; the list and Staff summary cards share this request. The role
   filter and Staff form share one `GET /tenant-staff-roles/show` request; active
   Add Staff options are derived from that collection, while inactive roles
-  remain available when editing an existing staff member. Staff details include
+  remain available when editing an existing staff member. In the shared Tenant
+  and Laundry edit form, the existing email address is read-only and status is
+  editable as `active`, `inactive`, or `suspend`. Staff details include
   identity, role/access information, email verification, status, creation date,
   and a module-keyed permissions object; the profile modal displays enabled
   actions for every returned module.
@@ -394,6 +435,34 @@ Current endpoints:
   `data.tenant`, `existingUser`, `existingLaundry`, `requiresProfile`, and
   `laundry`. The invitation token is used only to request details and is never
   rendered in the UI.
+- `GET /tenant-laundries/handle-invite?token=...` handles a public invitation
+  click and returns either `action: linked` or `action: signup_required` with
+  `existingUser` and `requiresProfile`.
+- `POST /tenant-laundries/accept-invite?token=...` accepts a public invitation.
+  New Laundry profiles send `{ companyName, contactPersonName, password,
+  confirmPassword, phone, address, city, state, country, postalCode }`.
+- `GET /laundry-tenants/show` lists businesses connected to the authenticated
+  Laundry and returns compact rows plus dashboard `counts`; it accepts `page`,
+  `limit`, `keywords`, `status` (`active`/`suspend`), and `businessType`
+  (`hotel`/`hospital`).
+- `GET /laundry-tenants/show/:id` returns one connected tenant relationship.
+- `GET /laundry-tenants/pending-requests` lists valid pending tenant connection
+  requests with `page`, `limit`, and `keywords`.
+- `PUT /laundry-tenants/pending-requests/:id/accept` accepts a request without a
+  body.
+- `PUT /laundry-tenants/pending-requests/:id/reject` rejects a request with an
+  optional `{ rejectionReason }` body.
+- `POST /laundry-staff/create`, `GET /laundry-staff/show`,
+  `GET /laundry-staff/show/:id`, `PUT /laundry-staff/update/:id`, and
+  `PUT /laundry-staff/update-status/:id` manage authenticated Laundry staff.
+- `GET /laundry-staff/verify-email?token=...` verifies a Laundry staff email
+  outside the dashboard shell.
+- `POST /laundry-staff-roles/create`, `GET /laundry-staff-roles/show`,
+  `GET /laundry-staff-roles/show/:id`,
+  `PUT /laundry-staff-roles/update/:id`, and
+  `PUT /laundry-staff-roles/update-status/:id` manage Laundry roles.
+- `GET /laundry-access-sections/show` returns the Laundry permission matrix used
+  by role create/edit.
 - `GET /tenant-laundries/show` returns `data.items`, `data.pagination`, and the
   `{ key, label, count }[]` summary under `data.counts` for `totalLinked`,
   `pendingRequests`, `activeDispatches`, `itemsCurrentlySent`, and

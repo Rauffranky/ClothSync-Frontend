@@ -10,6 +10,8 @@ import LandingLayout from "../Components/Layout/Landing";
 const HomePage = lazy(() => import("../Page/Landing/HomePage"));
 const AuthPage = lazy(() => import("../Page/Auth/AuthPage"));
 const StaffEmailVerificationPage = lazy(() => import("../Page/Auth/StaffEmailVerificationPage"));
+const LaundryStaffEmailVerificationPage = lazy(() => import("../Page/Auth/LaundryStaffEmailVerificationPage"));
+const LaundryInvitationPage = lazy(() => import("../Page/Auth/LaundryInvitationPage"));
 const SuperAdminLoginPage = lazy(() => import("../Page/Auth/SuperAdminLoginPage"));
 const NotFoundPage = lazy(() => import("../Page/Common/NotFoundPage"));
 
@@ -21,6 +23,10 @@ const LinkedLaundryDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/Lin
 const CategoriesPage = lazy(() => import("../Page/Dashboard/Tenant/CategoriesPage"));
 const CategoryDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/CategoryDetailsPage"));
 const LaundryDashboard = lazy(() => import("../Page/Dashboard/Laundry/DashboardPage"));
+const LaundryLinkedBusinessesPage = lazy(() => import("../Page/Dashboard/Laundry/LinkedBusinessesPage"));
+const LaundryLinkedBusinessDetailsPage = lazy(() => import("../Page/Dashboard/Laundry/LinkedBusinessDetailsPage"));
+const LaundryStaffPage = lazy(() => import("../Page/Dashboard/Laundry/StaffPage"));
+const LaundryStaffRolesPage = lazy(() => import("../Page/Dashboard/Laundry/StaffRolesPage"));
 
 //Tenant 
 const AssetsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetsPage"));
@@ -51,6 +57,9 @@ const AppRoutes = () => {
         <Route path="/business/staff/verify-email" element={<StaffEmailVerificationPage />} />
         <Route path="/laundry/login" element={<AuthPage defaultMode="login" defaultRole="laundry" />} />
         <Route path="/laundry/signup" element={<AuthPage defaultMode="signup" defaultRole="laundry" />} />
+        <Route path="/laundry/staff/verify-email" element={<LaundryStaffEmailVerificationPage />} />
+        <Route path="/laundry/invite" element={<LaundryInvitationPage />} />
+        <Route path="/laundry/handle-invite" element={<LaundryInvitationPage />} />
 
         {/* Landing Routes */}
         <Route element={<LandingLayout />} path="/">
@@ -90,6 +99,10 @@ const AppRoutes = () => {
           {/* Laundry Portal */}
           <Route path="/laundry" element={<Navigate to="/laundry/dashboard" replace />} />
           <Route path="/laundry/dashboard" element={<LaundryDashboard />} />
+          <Route path="/laundry/linked-businesses" element={<LaundryLinkedBusinessesPage />} />
+          <Route path="/laundry/linked-businesses/:id" element={<LaundryLinkedBusinessDetailsPage />} />
+          <Route path="/laundry/staff" element={<LaundryStaffPage />} />
+          <Route path="/laundry/staff-roles" element={<LaundryStaffRolesPage />} />
         </Route>
 
         {/* Error Routes */}

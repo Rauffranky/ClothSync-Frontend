@@ -23,7 +23,11 @@ import {
   staffPermissionActions,
 } from "./data";
 
-const StaffDetailModal = ({ onClose, staff }) => {
+const StaffDetailModal = ({
+  getStaffDetails = getTenantStaffDetails,
+  onClose,
+  staff,
+}) => {
   const [details, setDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -32,7 +36,7 @@ const StaffDetailModal = ({ onClose, staff }) => {
   useEffect(() => {
     let isActive = true;
 
-    getTenantStaffDetails(staff?.apiId || staff?.id)
+    getStaffDetails(staff?.apiId || staff?.id)
       .then((response) => {
         if (!isActive) return;
         setDetails(normalizeStaffDetails(response));
@@ -52,7 +56,7 @@ const StaffDetailModal = ({ onClose, staff }) => {
     return () => {
       isActive = false;
     };
-  }, [refreshKey, staff?.apiId, staff?.id]);
+  }, [getStaffDetails, refreshKey, staff?.apiId, staff?.id]);
 
   const displayedStaff = details || staff;
   const detailItems = displayedStaff

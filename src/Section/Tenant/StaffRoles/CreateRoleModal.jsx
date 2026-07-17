@@ -97,7 +97,16 @@ const PermissionTableSkeleton = () => (
   </div>
 );
 
-const CreateRoleModal = ({ open, onClose, onSaved, role = null }) => {
+const CreateRoleModal = ({
+  createStaffRole = createTenantStaffRole,
+  getAccessSections = getTenantAccessSections,
+  getStaffRoleDetails = getTenantStaffRoleDetails,
+  onClose,
+  onSaved,
+  open,
+  role = null,
+  updateStaffRole = updateTenantStaffRole,
+}) => {
   const [sections, setSections] = useState([]);
   const [isLoadingSections, setIsLoadingSections] = useState(true);
   const [sectionsError, setSectionsError] = useState("");
@@ -122,8 +131,8 @@ const CreateRoleModal = ({ open, onClose, onSaved, role = null }) => {
         };
         const roleId = role?.apiId || role?.id;
         const response = isEditing
-          ? await updateTenantStaffRole(roleId, payload)
-          : await createTenantStaffRole(payload);
+          ? await updateStaffRole(roleId, payload)
+          : await createStaffRole(payload);
         toast.success(
           response?.message ||
             (isEditing
@@ -152,10 +161,10 @@ const CreateRoleModal = ({ open, onClose, onSaved, role = null }) => {
     let isActive = true;
 
     const detailRequest = isEditing
-      ? getTenantStaffRoleDetails(role?.apiId || role?.id)
+      ? getStaffRoleDetails(role?.apiId || role?.id)
       : Promise.resolve(null);
 
-    Promise.all([getTenantAccessSections(), detailRequest])
+    Promise.all([getAccessSections(), detailRequest])
       .then(([sectionsResponse, detailResponse]) => {
         if (!isActive) return;
         const normalizedSections = normalizePermissionSections(sectionsResponse);
@@ -203,7 +212,15 @@ const CreateRoleModal = ({ open, onClose, onSaved, role = null }) => {
     return () => {
       isActive = false;
     };
-  }, [isEditing, role?.apiId, role?.id, sectionsRefreshKey, setFieldValue]);
+  }, [
+    getAccessSections,
+    getStaffRoleDetails,
+    isEditing,
+    role?.apiId,
+    role?.id,
+    sectionsRefreshKey,
+    setFieldValue,
+  ]);
 
   const selectedPermissionCount = useMemo(
     () =>
