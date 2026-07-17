@@ -8,19 +8,19 @@ import {
   toggleThemeMode,
 } from "../../../Utils/themeMode";
 import { getFlatPortalItems, portalGroups } from "./nav";
+import { getAuthenticatedTenant } from "../../../axios/auth/tenantAuth";
 import {
-  getAuthenticatedTenant,
-  getTenantAccessToken,
-  getTenantSessionUser,
-  setTenantSessionUser,
-  TENANT_SESSION_USER_UPDATED_EVENT,
-} from "../../../axios/auth/tenantAuth";
+  AUTH_SESSION_USER_UPDATED_EVENT,
+  getAuthAccessToken,
+  getAuthSessionUser,
+  setAuthSessionUser,
+} from "../../../axios/auth/authSession";
 
 const Header = ({ portalKey, onOpenSidebar }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [themeMode, setThemeMode] = useState(getThemeMode);
-  const [tenantProfile, setTenantProfile] = useState(getTenantSessionUser);
+  const [tenantProfile, setTenantProfile] = useState(getAuthSessionUser);
 
   useEffect(() => {
     applyThemeMode(themeMode);
@@ -28,24 +28,24 @@ const Header = ({ portalKey, onOpenSidebar }) => {
 
   useEffect(() => {
     const handleTenantProfileUpdate = (event) => {
-      setTenantProfile(event.detail ?? getTenantSessionUser());
+      setTenantProfile(event.detail ?? getAuthSessionUser());
     };
 
     window.addEventListener(
-      TENANT_SESSION_USER_UPDATED_EVENT,
+      AUTH_SESSION_USER_UPDATED_EVENT,
       handleTenantProfileUpdate,
     );
 
     return () => {
       window.removeEventListener(
-        TENANT_SESSION_USER_UPDATED_EVENT,
+        AUTH_SESSION_USER_UPDATED_EVENT,
         handleTenantProfileUpdate,
       );
     };
   }, []);
 
   useEffect(() => {
-    if (portalKey !== "business" || !getTenantAccessToken()) return;
+    if (portalKey !== "business" || !getAuthAccessToken()) return;
 
     let isActive = true;
 
@@ -54,11 +54,11 @@ const Header = ({ portalKey, onOpenSidebar }) => {
         if (!isActive) return;
         const profile = response?.data ?? response;
         const mergedProfile = {
-          ...getTenantSessionUser(),
+          ...getAuthSessionUser(),
           ...profile,
         };
         setTenantProfile(mergedProfile);
-        setTenantSessionUser(mergedProfile);
+        setAuthSessionUser(mergedProfile);
       })
       .catch(() => {
         // Keep the last stored profile when a background refresh fails.

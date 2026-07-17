@@ -15,7 +15,6 @@ import { getApiErrorMessage } from "../../../axios/api";
 import { getTenantStaffRoles } from "../../../axios/staffRoles/tenantStaffRoles";
 import {
   getTenantStaff,
-  getTenantStaffSummary,
   updateTenantStaffStatus,
 } from "../../../axios/staff/tenantStaff";
 import { toast } from "../../../Utils/toast";
@@ -43,8 +42,6 @@ const Staff = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [summary, setSummary] = useState(null);
-  const [isSummaryLoading, setIsSummaryLoading] = useState(true);
-  const [summaryError, setSummaryError] = useState("");
   const [roleOptions, setRoleOptions] = useState([
     { label: "All Roles", value: "all" },
   ]);
@@ -85,6 +82,7 @@ const Staff = () => {
           ITEMS_PER_PAGE,
         );
         setStaffList(collection.rows.map(normalizeStaffMember));
+        setSummary(normalizeStaffSummary(collection.summary));
         setTotalItems(collection.totalItems);
         setTotalPages(collection.totalPages);
         setLoadError("");
@@ -96,6 +94,7 @@ const Staff = () => {
           "Unable to load staff members",
         );
         setStaffList([]);
+        setSummary(null);
         setTotalItems(0);
         setTotalPages(0);
         setLoadError(message);
@@ -113,45 +112,15 @@ const Staff = () => {
   useEffect(() => {
     let isActive = true;
 
-    getTenantStaffSummary()
-      .then((response) => {
-        if (!isActive) return;
-        setSummary(normalizeStaffSummary(response));
-        setSummaryError("");
-      })
-      .catch((error) => {
-        if (!isActive) return;
-        const message = getApiErrorMessage(error, "Unable to load staff stats");
-        setSummary(null);
-        setSummaryError(message);
-        toast.error(message);
-      })
-      .finally(() => {
-        if (isActive) setIsSummaryLoading(false);
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [refreshKey]);
-
-  useEffect(() => {
-    let isActive = true;
-
-    Promise.all([
-      getTenantStaffRoles({ page: 1, limit: 100 }),
-      getTenantStaffRoles({ page: 1, limit: 100, status: "active" }),
-    ])
-      .then(([rolesResponse, activeRolesResponse]) => {
+    getTenantStaffRoles({ page: 1, limit: 100 })
+      .then((rolesResponse) => {
         if (!isActive) return;
         const roles = getStaffRolePaginatedCollection(
           rolesResponse,
           100,
         ).rows.map(normalizeStaffRole);
-        const activeRoles = getStaffRolePaginatedCollection(
-          activeRolesResponse,
-          100,
-        ).rows.map(normalizeStaffRole);
+        const activeRoles = roles.filter((role) => role.status === "Active");
+
         setRoleOptions(createStaffRoleOptions(roles));
         setActiveRoleOptions(createStaffRoleOptions(activeRoles));
         setRolesError("");
@@ -178,10 +147,8 @@ const Staff = () => {
 
   const retryLoad = () => {
     setIsLoading(true);
-    setIsSummaryLoading(true);
     setLoadError("");
     setRolesError("");
-    setSummaryError("");
     setRefreshKey((current) => current + 1);
   };
 
@@ -189,7 +156,6 @@ const Staff = () => {
     setIsFormModalOpen(false);
     setSelectedStaff(null);
     setIsLoading(true);
-    setIsSummaryLoading(true);
     resetCurrentPage();
     setRefreshKey((current) => current + 1);
   };
@@ -260,12 +226,12 @@ const Staff = () => {
 
   return (
     <div className="space-y-5">
-      <StaffStats loading={isSummaryLoading} summary={summary} />
+      <StaffStats loading={isLoading && !summary} summary={summary} />
 
-      {(loadError || rolesError || summaryError) && (
+      {(loadError || rolesError) && (
         <Alert leftIcon={<TriangleAlert size={18} />} variant="danger">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span>{loadError || rolesError || summaryError}</span>
+            <span>{loadError || rolesError}</span>
             <Button
               leftIcon={<RefreshCw size={15} />}
               onClick={retryLoad}

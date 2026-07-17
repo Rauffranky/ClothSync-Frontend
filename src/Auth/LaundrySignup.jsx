@@ -29,6 +29,7 @@ import {
   resendLaundrySignupOtp,
   completeLaundryProfile,
 } from "../axios/auth/laundryAuth";
+import { storeAuthSessionFromResponse } from "../axios/auth/authSession";
 
 const getLaundryUserId = (response) =>
   response?.userId ??
@@ -175,7 +176,6 @@ const LaundrySignup = ({ portal }) => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [signupEmail, setSignupEmail] = useState("");
-  const [signupName, setSignupName] = useState("");
   const [otpValue, setOtpValue] = useState("");
   const [otpError, setOtpError] = useState("");
   const [verifiedLaundryUserId, setVerifiedLaundryUserId] = useState("");
@@ -199,7 +199,6 @@ const LaundrySignup = ({ portal }) => {
           confirmPassword: values.confirmPassword,
         });
         setSignupEmail(values.email.trim());
-        setSignupName(values.fullName.trim());
         setOtpValue("");
         setOtpError("");
         toast.success(response?.message || "Verification code sent successfully");
@@ -241,7 +240,8 @@ const LaundrySignup = ({ portal }) => {
         };
 
         const response = await completeLaundryProfile(payload);
-        
+
+        storeAuthSessionFromResponse(response);
         setCompletedProfile({
           laundryName: values.laundryName,
           city: values.city,
@@ -302,12 +302,13 @@ const LaundrySignup = ({ portal }) => {
         email: signupEmail,
         otp: otpValue,
       });
-      
+
       const userId = getLaundryUserId(response);
       if (userId) {
         setVerifiedLaundryUserId(userId);
       }
-      
+
+      storeAuthSessionFromResponse(response);
       toast.success(response?.message || "Email verified successfully");
       setCurrentStep(2);
     } catch (error) {

@@ -30,7 +30,6 @@ export const TENANT_LOGIN = AUTH_ENDPOINTS.TENANT_LOGIN;
 
 export const TENANT_CATEGORY_ENDPOINTS = Object.freeze({
   LIST: "/tenant-categories/show",
-  SUMMARY: "/tenant-categories/summary",
   CREATE: "/tenant-categories/create",
   DETAILS: (id) => `/tenant-categories/show/${id}`,
   UPDATE: (id) => `/tenant-categories/update/${id}`,
@@ -52,7 +51,6 @@ export const TENANT_STAFF_ROLE_ENDPOINTS = Object.freeze({
   DETAILS: (id) => `/tenant-staff-roles/show/${id}`,
   UPDATE: (id) => `/tenant-staff-roles/update/${id}`,
   UPDATE_STATUS: (id) => `/tenant-staff-roles/update-status/${id}`,
-  SUMMARY: "/tenant-staff-roles/summary",
 });
 
 export const TENANT_ACCESS_SECTION_ENDPOINTS = Object.freeze({
@@ -62,7 +60,6 @@ export const TENANT_ACCESS_SECTION_ENDPOINTS = Object.freeze({
 export const TENANT_STAFF_ENDPOINTS = Object.freeze({
   CREATE: "/tenant-staff/create",
   LIST: "/tenant-staff/show",
-  SUMMARY: "/tenant-staff/summary",
   DETAILS: (id) => `/tenant-staff/show/${id}`,
   UPDATE: (id) => `/tenant-staff/update/${id}`,
   UPDATE_STATUS: (id) => `/tenant-staff/update-status/${id}`,
@@ -74,7 +71,6 @@ export const TENANT_LAUNDRY_ENDPOINTS = Object.freeze({
   DETAILS: (id) => `/tenant-laundries/show/${id}`,
   PENDING_INVITES: "/tenant-laundries/pending-invites",
   CLOSED_INVITES: "/tenant-laundries/closed-invites",
-  SUMMARY: "/tenant-laundries/summary",
   SEND_INVITE: "/tenant-laundries/send-invite",
   RESEND_INVITE: (id) => `/tenant-laundries/resend-invite/${id}`,
   CANCEL_INVITE: (id) => `/tenant-laundries/cancel-invite/${id}`,

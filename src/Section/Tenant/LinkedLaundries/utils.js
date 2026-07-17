@@ -33,8 +33,39 @@ export const getPaginatedCollection = (response, collectionKeys, limit) => {
 
   return {
     rows: Array.isArray(rows) ? rows : [],
+    summary:
+      payload?.counts ??
+      payload?.summary ??
+      root?.counts ??
+      root?.summary ??
+      null,
     totalItems: Number.isFinite(totalItems) ? totalItems : 0,
     totalPages: Number.isFinite(totalPages) ? totalPages : 0,
+  };
+};
+
+const getSummaryCount = (value) => {
+  if (value === null || value === undefined) return null;
+
+  const count = Number(value);
+  return Number.isFinite(count) ? count : null;
+};
+
+export const normalizeLinkedLaundrySummary = (counts) => {
+  const summary = Array.isArray(counts)
+    ? Object.fromEntries(
+        counts
+          .filter((item) => item?.key)
+          .map((item) => [item.key, getSummaryCount(item.count)]),
+      )
+    : counts || {};
+
+  return {
+    totalLinked: getSummaryCount(summary.totalLinked),
+    pendingRequests: getSummaryCount(summary.pendingRequests),
+    activeDispatches: getSummaryCount(summary.activeDispatches),
+    itemsCurrentlySent: getSummaryCount(summary.itemsCurrentlySent),
+    delayedItems: getSummaryCount(summary.delayedItems),
   };
 };
 
@@ -109,7 +140,13 @@ export const normalizeLinkedLaundry = (record) => {
     statusVariant: isConnected ? "success" : isSuspended ? "neutral" : "warning",
     isDefault: Boolean(record?.isDefault),
     dispatchMode: record?.dispatchMode || "-",
-    batches: Number(record?.batches ?? record?.batchCount ?? record?.totalBatchesCount ?? 0),
+    batches: Number(
+      record?.activeBatchesCount ??
+        record?.batches ??
+        record?.batchCount ??
+        record?.totalBatchesCount ??
+        0,
+    ),
     itemsSent: Number(record?.itemsSent ?? record?.sentItemsCount ?? record?.itemsCurrentlySentCount ?? 0),
     missing: Number(record?.missing ?? record?.missingItemsCount ?? record?.delayedItemsCount ?? 0),
   };

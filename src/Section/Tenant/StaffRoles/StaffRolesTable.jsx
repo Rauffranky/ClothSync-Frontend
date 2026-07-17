@@ -35,7 +35,7 @@ const StaffRolesTable = ({
       ),
     },
     {
-      key: "staffMembersCount",
+      key: "numberOfStaff",
       label: "Staff",
       align: "center",
       render: (value) => (
@@ -57,7 +57,7 @@ const StaffRolesTable = ({
       key: "status",
       label: "Status",
       render: (_, row) => (
-        <Badge dot size="sm" variant={row.statusVariant}>
+        <Badge size="sm" variant={row.statusVariant}>
           {row.status}
         </Badge>
       ),

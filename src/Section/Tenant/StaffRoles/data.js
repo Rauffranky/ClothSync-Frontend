@@ -55,8 +55,10 @@ const normalizeRolePermission = (permission, index) => {
 
 const getRolePermissionCollection = (role, payload) => {
   const permissions =
+    role?.modulePermissions ||
     role?.permissions ||
     role?.rolePermissions ||
+    payload?.modulePermissions ||
     payload?.permissions ||
     payload?.rolePermissions ||
     [];
@@ -210,6 +212,12 @@ export const getStaffRolePaginatedCollection = (response, limit) => {
 
   return {
     rows: Array.isArray(rows) ? rows : [],
+    summary:
+      payload?.counts ??
+      payload?.summary ??
+      response?.counts ??
+      response?.summary ??
+      null,
     totalItems: Number.isFinite(totalItems) ? totalItems : 0,
     totalPages: Number.isFinite(totalPages) ? totalPages : 0,
   };
@@ -229,7 +237,8 @@ export const normalizeStaffRole = (role) => {
     name: role?.roleName || role?.name || role?.title || "Unnamed Role",
     description: role?.description || "-",
     staffCount: Number(
-      role?.staffCount ??
+      role?.numberOfStaff ??
+        role?.staffCount ??
         role?.assignedStaffCount ??
         role?.usersCount ??
         role?.membersCount ??
@@ -267,7 +276,15 @@ const getSummaryCount = (...values) => {
 
 export const normalizeStaffRoleSummary = (response) => {
   const payload = response?.data ?? response ?? {};
-  const summary = payload?.summary || payload?.stats || payload;
+  const summarySource =
+    payload?.counts ?? payload?.summary ?? payload?.stats ?? payload;
+  const summary = Array.isArray(summarySource)
+    ? Object.fromEntries(
+        summarySource
+          .filter((item) => item?.key)
+          .map((item) => [item.key, getSummaryCount(item.count)]),
+      )
+    : summarySource;
 
   return {
     totalRoles: getSummaryCount(summary?.totalRoles),

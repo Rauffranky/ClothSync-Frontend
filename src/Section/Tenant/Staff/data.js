@@ -25,6 +25,41 @@ const getStatusVariant = (status) => {
   return "danger";
 };
 
+export const staffPermissionActions = [
+  { key: "canView", sourceKey: "view", label: "View" },
+  { key: "canCreate", sourceKey: "create", label: "Create" },
+  { key: "canEdit", sourceKey: "edit", label: "Edit" },
+  { key: "canDelete", sourceKey: "delete", label: "Delete" },
+  { key: "canExport", sourceKey: "export", label: "Export" },
+  { key: "canApprove", sourceKey: "approve", label: "Approve" },
+];
+
+const normalizeStaffPermissions = (permissions) => {
+  const permissionRows = Array.isArray(permissions)
+    ? permissions.map((permission, index) => [
+        permission?.sectionKey || permission?.key || `module-${index}`,
+        permission,
+      ])
+    : Object.entries(permissions || {});
+
+  return permissionRows.map(([sectionKey, permission], index) => ({
+    id: permission?.id || sectionKey || `permission-${index}`,
+    sectionKey,
+    sectionName: titleCase(
+      permission?.sectionName || permission?.name || sectionKey,
+    ),
+    ...staffPermissionActions.reduce(
+      (actions, action) => ({
+        ...actions,
+        [action.key]: Boolean(
+          permission?.[action.key] ?? permission?.[action.sourceKey],
+        ),
+      }),
+      {},
+    ),
+  }));
+};
+
 const getStaffRows = (payload) => {
   const rows = Array.isArray(payload)
     ? payload
@@ -41,7 +76,10 @@ const getStaffRows = (payload) => {
 
 export const normalizeStaffMember = (staff, index = 0) => {
   const user = staff?.user || {};
-  const role = staff?.staffRole || staff?.role || {};
+  const role =
+    (typeof staff?.staffRole === "object" && staff.staffRole) ||
+    (typeof staff?.role === "object" && staff.role) ||
+    {};
   const location = staff?.location || {};
   const rawName =
     staff?.fullName || staff?.name || user?.fullName || user?.name || "Unnamed Staff";
@@ -70,6 +108,7 @@ export const normalizeStaffMember = (staff, index = 0) => {
     role:
       role?.name ||
       role?.roleName ||
+      (typeof staff?.staffRole === "string" ? staff.staffRole : null) ||
       staff?.roleName ||
       (typeof staff?.role === "string" ? staff.role : "-") ||
       "-",
@@ -105,6 +144,7 @@ export const normalizeStaffMember = (staff, index = 0) => {
       ) || "-",
     createdAt: staff?.createdAt || null,
     updatedAt: staff?.updatedAt || null,
+    permissions: normalizeStaffPermissions(staff?.permissions),
     avatarVariant: ["info", "purple", "success", "warning", "danger"][
       index % 5
     ],
@@ -132,6 +172,12 @@ export const getStaffPaginatedCollection = (response, page, limit) => {
     : allRows.slice((page - 1) * limit, page * limit);
   return {
     rows,
+    summary:
+      payload?.counts ??
+      payload?.summary ??
+      response?.counts ??
+      response?.summary ??
+      null,
     totalItems: Number.isFinite(totalItems) ? totalItems : 0,
     totalPages: Number.isFinite(totalPages) ? totalPages : 0,
   };
@@ -147,22 +193,33 @@ const getSummaryCount = (...values) => {
 
 export const normalizeStaffSummary = (response) => {
   const payload = response?.data ?? response ?? {};
-  const summary = payload?.summary || payload?.stats || payload;
+  const summarySource =
+    payload?.counts ?? payload?.summary ?? payload?.stats ?? payload;
+  const summary = Array.isArray(summarySource)
+    ? Object.fromEntries(
+        summarySource
+          .filter((item) => item?.key)
+          .map((item) => [item.key, getSummaryCount(item.count)]),
+      )
+    : summarySource;
 
   return {
     totalStaff: getSummaryCount(
       summary?.totalStaff,
       summary?.totalStaffMembers,
+      summary?.totalRoles,
       summary?.total,
     ),
     activeStaff: getSummaryCount(
       summary?.activeStaff,
       summary?.activeStaffMembers,
+      summary?.activeRoles,
       summary?.active,
     ),
     inactiveStaff: getSummaryCount(
       summary?.inactiveStaff,
       summary?.inactiveStaffMembers,
+      summary?.inactiveRoles,
       summary?.inactive,
     ),
   };
@@ -184,7 +241,7 @@ export const createStaffRoleOptions = (roles) => [
 ];
 
 export const statusOptions = [
-  { label: "All Statuses", value: "all" },
+  { label: "All Status", value: "all" },
   { label: "Active", value: "active" },
   { label: "Inactive", value: "inactive" },
   { label: "Suspend", value: "suspend" },

@@ -13,9 +13,6 @@ export const getClosedTenantLaundryInvites = (params) =>
     timeout: 15000,
   });
 
-export const getTenantLaundrySummary = () =>
-  api.get(TENANT_LAUNDRY_ENDPOINTS.SUMMARY, { timeout: 15000 });
-
 export const sendTenantLaundryInvite = ({ email, message = "", locale = "en" }) =>
   api.post(TENANT_LAUNDRY_ENDPOINTS.SEND_INVITE, { email: email.trim(), message, locale });
 

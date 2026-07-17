@@ -1,90 +1,117 @@
-export const categories = [
-  {
-    id: "CAT-007",
-    name: "Kitchen Cloths",
-    status: "Inactive",
-    statusVariant: "danger",
-    usage: "Not in Use",
-    usageState: "unused",
-    assets: null,
-    created: "May 15, 2025",
-    lastUpdated: "May 15, 2025",
-  },
-  {
-    id: "CAT-006",
-    name: "Spa Robes",
-    status: "Inactive",
-    statusVariant: "danger",
-    usage: "Not in Use",
-    usageState: "unused",
-    assets: null,
-    created: "Apr 2, 2025",
-    lastUpdated: "Apr 2, 2025",
-  },
-  {
-    id: "CAT-005",
-    name: "Pool Towels",
-     status: "Active",
-    statusVariant: "success",
-    usage: "In Use",
-    usageState: "used",
-    assets: 95,
-    created: "Mar 8, 2025",
-    lastUpdated: "Jun 1, 2025",
-  },
-  {
-    id: "CAT-004",
-    name: "Table Linen",
-    status: "Active",
-    statusVariant: "success",
-    usage: "In Use",
-    usageState: "used",
-    assets: 203,
-    created: "Feb 14, 2025",
-    lastUpdated: "Jun 5, 2025",
-  },
-  {
-    id: "CAT-003",
-    name: "Staff Uniforms",
-    status: "Active",
-    statusVariant: "success",
-    usage: "In Use",
-    usageState: "used",
-    assets: 178,
-    created: "Feb 3, 2025",
-    lastUpdated: "May 28, 2025",
-  },
-  {
-    id: "CAT-002",
-    name: "Bath Towels",
-    status: "Active",
-    statusVariant: "success",
-    usage: "In Use",
-    usageState: "used",
-    assets: 289,
-    created: "Jan 12, 2025",
-    lastUpdated: "Jun 9, 2025",
-  },
-  {
-    id: "CAT-001",
-    name: "Bed Linen",
-    status: "Active",
-    statusVariant: "success",
-    usage: "In Use",
-    usageState: "used",
-    assets: 412,
-    created: "Jan 12, 2025",
-    lastUpdated: "Jun 10, 2025",
-  },
-  {
-    id: "CAT-000",
-    name: "Bed Linen",
-    status: "Inactive",
-    statusVariant: "danger",
-    usage: "Not in Use",
-    usageState: "unused",
-    assets: 412,
-    created: "Jan 12, 2025",
-    lastUpdated: "Jun 10, 2025",
-  },
+import { formatDateWithUserPreferences } from "../../../Utils/date";
+
+export const CATEGORY_ITEMS_PER_PAGE = 5;
+
+export const categoryStatusOptions = [
+  { label: "All Statuses", value: "all" },
+  { label: "Active", value: "active" },
+  { label: "Inactive", value: "inactive" },
 ];
+
+export const categoryUsageOptions = [
+  { label: "All Usage", value: "all" },
+  { label: "In Use", value: "in use" },
+  { label: "Not In Use", value: "not in use" },
+];
+
+const getCount = (value, fallback = null) => {
+  const count = Number(value);
+  return Number.isFinite(count) ? count : fallback;
+};
+
+export const normalizeCategory = (category) => {
+  const status = String(category?.status || "inactive").toLowerCase();
+  const translation = category?.translations?.en || {};
+  const assetCount = getCount(
+    category?.totalMappedAssets ??
+      category?.assetCount ??
+      category?.assetsCount ??
+      category?.assets?.length,
+    0,
+  );
+  const usageValue = category?.usage ?? category?.usageStatus;
+  const isUsed = usageValue
+    ? String(usageValue).toLowerCase() === "in use"
+    : assetCount > 0;
+
+  return {
+    ...category,
+    apiId: category?._id || category?.id,
+    id:
+      category?.categoryCode ||
+      category?.categoryId ||
+      category?.code ||
+      category?._id ||
+      category?.id,
+    name:
+      category?.title ||
+      category?.name ||
+      category?.categoryName ||
+      translation.title ||
+      "Unnamed Category",
+    description: category?.description || translation.description || "",
+    status: status === "active" ? "Active" : "Inactive",
+    statusVariant: status === "active" ? "success" : "danger",
+    usage: isUsed ? "In Use" : "Not in Use",
+    usageState: isUsed ? "used" : "unused",
+    assets: assetCount,
+    created: formatDateWithUserPreferences(
+      category?.createdAt || category?.created,
+    ),
+    lastUpdated: formatDateWithUserPreferences(
+      category?.updatedAt || category?.lastUpdated,
+    ),
+  };
+};
+
+export const normalizeCategorySummary = (counts) => {
+  const summary = Array.isArray(counts)
+    ? Object.fromEntries(
+        counts
+          .filter((item) => item?.key)
+          .map((item) => [item.key, getCount(item.count)]),
+      )
+    : counts || {};
+
+  return {
+    totalCategories: getCount(summary.totalCategories),
+    activeCategories: getCount(summary.activeCategories),
+    inactiveCategories: getCount(summary.inactiveCategories),
+    categoriesInUse: getCount(summary.categoriesInUse),
+  };
+};
+
+export const getCategoryPaginatedCollection = (
+  response,
+  limit = CATEGORY_ITEMS_PER_PAGE,
+) => {
+  const payload = response?.data ?? response ?? {};
+  const rows = Array.isArray(payload)
+    ? payload
+    : payload?.items ||
+      payload?.categories ||
+      payload?.docs ||
+      payload?.results ||
+      [];
+  const pagination = payload?.pagination || payload?.meta || {};
+  const totalItems = getCount(
+    pagination?.totalItems ??
+      pagination?.totalDocs ??
+      pagination?.total ??
+      rows.length,
+    0,
+  );
+  const totalPages = getCount(
+    pagination?.totalPages ??
+      pagination?.pages ??
+      Math.ceil(totalItems / limit),
+    0,
+  );
+
+  return {
+    rows: Array.isArray(rows) ? rows : [],
+    summary: normalizeCategorySummary(payload?.counts),
+    totalItems,
+    totalPages,
+  };
+};

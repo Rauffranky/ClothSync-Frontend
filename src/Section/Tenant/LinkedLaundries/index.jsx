@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -7,13 +7,20 @@ import Button from "../../../Components/UI/Button";
 import Card from "../../../Components/UI/Card";
 import Tabs from "../../../Components/UI/Tabs";
 import { getApiErrorMessage } from "../../../axios/api";
-import { sendTenantLaundryInvite } from "../../../axios/laundries/tenantLaundries";
+import {
+  getTenantLaundries,
+  sendTenantLaundryInvite,
+} from "../../../axios/laundries/tenantLaundries";
 import { toast } from "../../../Utils/toast";
 import InviteLaundryModal from "./InviteLaundryModal";
 import LinkedLaundries from "./LinkedLaundries";
 import PendingRequest from "./PendingRequest";
 import RejectedLaundries from "./RejectedLaundries";
 import Stats from "./Stats";
+import {
+  getPaginatedCollection,
+  normalizeLinkedLaundrySummary,
+} from "./utils";
 
 const TAB_VALUES = ["linked", "pending", "rejected"];
 const inviteLaundryInitialValues = { email: "" };
@@ -27,6 +34,9 @@ const inviteLaundryValidationSchema = Yup.object({
 const Laundries = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(true);
+  const [linkedRefreshKey, setLinkedRefreshKey] = useState(0);
   const requestedTab = searchParams.get("tab");
   const activeTab = TAB_VALUES.includes(requestedTab) ? requestedTab : "linked";
 
@@ -38,6 +48,7 @@ const Laundries = () => {
         const response = await sendTenantLaundryInvite({ email: values.email });
         toast.success(response?.message || "Invitation sent successfully");
         closeInviteModal();
+        setLinkedRefreshKey((current) => current + 1);
       } catch (error) {
         toast.error(getApiErrorMessage(error, "Failed to send invitation"));
       } finally {
@@ -50,6 +61,41 @@ const Laundries = () => {
     setIsInviteModalOpen(false);
     inviteLaundryFormik.resetForm();
   };
+
+  const handleSummaryChange = useCallback((nextSummary) => {
+    setSummary(nextSummary);
+    setIsSummaryLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "linked" || summary) return undefined;
+
+    let isActive = true;
+
+    getTenantLaundries({ page: 1, limit: 1 })
+      .then((response) => {
+        if (!isActive) return;
+        const collection = getPaginatedCollection(
+          response,
+          ["laundries", "tenantLaundries"],
+          1,
+        );
+        handleSummaryChange(
+          normalizeLinkedLaundrySummary(collection.summary),
+        );
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        handleSummaryChange(null);
+        toast.error(
+          getApiErrorMessage(error, "Failed to load summary stats"),
+        );
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [activeTab, handleSummaryChange, linkedRefreshKey, summary]);
 
   const handleTabChange = (nextTab) => {
     setSearchParams((currentParams) => {
@@ -67,7 +113,7 @@ const Laundries = () => {
 
   return (
     <div className="space-y-5">
-      <Stats />
+      <Stats loading={isSummaryLoading} summary={summary} />
 
       <Card padding="0" rounded="18px">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-(--theme-border) px-4 py-4">
@@ -107,7 +153,12 @@ const Laundries = () => {
           )}
         </div>
 
-        {activeTab === "linked" && <LinkedLaundries />}
+        {activeTab === "linked" && (
+          <LinkedLaundries
+            externalRefreshKey={linkedRefreshKey}
+            onSummaryChange={handleSummaryChange}
+          />
+        )}
         {activeTab === "pending" && <PendingRequest />}
         {activeTab === "rejected" && <RejectedLaundries />}
       </Card>

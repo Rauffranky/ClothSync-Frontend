@@ -49,7 +49,7 @@ const StaffTable = ({
       ),
     },
     {
-      key: "role",
+      key: "staffRole",
       label: "Role",
       sortable: true,
       render: (value) => (
@@ -78,17 +78,6 @@ const StaffTable = ({
         <Badge size="sm" variant={row.statusVariant}>
           {row.status}
         </Badge>
-      ),
-    },
-    {
-      key: "lastActive",
-      label: "Last Active",
-      sortable: true,
-      align: "center",
-      render: (value) => (
-        <span className="font-mono text-xs font-semibold text-(--theme-text-muted)">
-          {value}
-        </span>
       ),
     },
     {

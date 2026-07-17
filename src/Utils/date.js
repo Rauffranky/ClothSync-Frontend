@@ -1,4 +1,4 @@
-import { getTenantSessionUser } from "../axios/auth/tenantSession";
+import { getAuthSessionUser } from "../axios/auth/authSession";
 
 const DEFAULT_TIMEZONE = "UTC";
 const DEFAULT_DATE_FORMAT = "MM/DD/YYYY";
@@ -19,7 +19,7 @@ const SUPPORTED_DATE_FORMATS = new Set([
 ]);
 
 export const getUserDatePreferences = () => {
-  const user = getTenantSessionUser();
+  const user = getAuthSessionUser();
 
   return {
     timezone: user?.timezone || DEFAULT_TIMEZONE,

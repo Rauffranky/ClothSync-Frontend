@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import {
-  getTenantAccessToken,
-  getTenantSessionUser,
-  setTenantSessionUser,
-} from "../../../axios/auth/tenantSession";
+  getAuthAccessToken,
+  getAuthSessionUser,
+  setAuthSessionUser,
+} from "../../../axios/auth/authSession";
 import { getTenantSettingsProfile } from "../../../axios/settings/tenantSettings";
 import Header from "./Header";
 import SideBar from "./SideBar";
@@ -24,7 +24,7 @@ const DashboardLayout = ({ portalKey }) => {
   }, [pathname, portalKey]);
 
   useEffect(() => {
-    if (activePortalKey !== "business" || !getTenantAccessToken()) {
+    if (activePortalKey !== "business" || !getAuthAccessToken()) {
       return undefined;
     }
 
@@ -36,8 +36,8 @@ const DashboardLayout = ({ portalKey }) => {
 
         const settingsProfile = response?.data?.profile || response?.profile;
         if (settingsProfile) {
-          setTenantSessionUser({
-            ...getTenantSessionUser(),
+          setAuthSessionUser({
+            ...getAuthSessionUser(),
             ...settingsProfile,
           });
         }
@@ -56,7 +56,7 @@ const DashboardLayout = ({ portalKey }) => {
 
   const areTenantPreferencesReady =
     activePortalKey !== "business" ||
-    !getTenantAccessToken() ||
+    !getAuthAccessToken() ||
     haveTenantPreferencesLoaded;
 
   return (

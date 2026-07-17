@@ -9,6 +9,7 @@ const ActionDropdown = ({
   triggerAriaLabel = "Open actions",
   width = 200,
   align = "left",
+  disabled = false,
 }) => {
   const menuId = useId();
   const [menuPosition, setMenuPosition] = useState(null);
@@ -38,6 +39,8 @@ const ActionDropdown = ({
 
   const openMenu = (event) => {
     event.stopPropagation();
+    if (disabled) return;
+
     window.dispatchEvent(
       new CustomEvent("action-dropdown-open", { detail: menuId }),
     );
@@ -71,6 +74,7 @@ const ActionDropdown = ({
       <Button
         aria-label={triggerAriaLabel}
         disableHoverTransform
+        disabled={disabled}
         leftIcon={triggerIcon}
         onClick={openMenu}
         onMouseDown={(event) => event.stopPropagation()}

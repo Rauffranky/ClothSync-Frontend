@@ -1,13 +1,5 @@
 import api from "../api";
 import { AUTH_ENDPOINTS } from "../endpoint";
-export {
-  clearTenantSession,
-  getTenantAccessToken,
-  getTenantSessionUser,
-  setTenantSessionUser,
-  storeTenantSessionFromResponse,
-  TENANT_SESSION_USER_UPDATED_EVENT,
-} from "./tenantSession";
 
 export const loginTenant = ({ email, password }) =>
   api.post(AUTH_ENDPOINTS.TENANT_LOGIN, {

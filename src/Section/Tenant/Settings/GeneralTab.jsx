@@ -9,9 +9,9 @@ import Dropdown from "../../../Components/UI/Dropdown";
 import Input from "../../../Components/UI/Input";
 import { getApiErrorMessage } from "../../../axios/api";
 import {
-  getTenantSessionUser,
-  setTenantSessionUser,
-} from "../../../axios/auth/tenantSession";
+  getAuthSessionUser,
+  setAuthSessionUser,
+} from "../../../axios/auth/authSession";
 import { uploadSingleFile } from "../../../axios/files/fileUpload";
 import {
   getTenantSettingsDateFormats,
@@ -92,8 +92,8 @@ const GeneralTab = () => {
         setLogoPreview("");
         if (logoInputRef.current) logoInputRef.current.value = "";
 
-        setTenantSessionUser({
-          ...getTenantSessionUser(),
+        setAuthSessionUser({
+          ...getAuthSessionUser(),
           ...nextProfile,
         });
 

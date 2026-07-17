@@ -1,8 +1,8 @@
 import axios from "axios";
 import {
-  clearTenantSession,
-  getTenantAccessToken,
-} from "./auth/tenantSession";
+  clearAuthSession,
+  getAuthAccessToken,
+} from "./auth/authSession";
 
 const getPortalLoginPath = (pathname) => {
   if (pathname.startsWith("/laundry")) return "/laundry/login";
@@ -19,10 +19,7 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    const isLaundryApi = config.url?.includes("/laundry");
-    const token = isLaundryApi 
-      ? localStorage.getItem("laundry_access_token") // Replace with actual laundry token getter when available
-      : getTenantAccessToken();
+    const token = getAuthAccessToken();
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -37,10 +34,10 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     const isUnauthorized = error?.response?.status === 401;
-    const hasActiveSession = Boolean(getTenantAccessToken());
+    const hasActiveSession = Boolean(getAuthAccessToken());
 
     if (isUnauthorized && hasActiveSession) {
-      clearTenantSession();
+      clearAuthSession();
 
       if (typeof window !== "undefined") {
         const loginPath = getPortalLoginPath(window.location.pathname);

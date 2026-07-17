@@ -159,6 +159,11 @@ Confirmed API-backed areas:
   `email` and a six-digit `otp`. It can request a new code with
   `POST /tenant-auth/resend-otp` using `email`; the UI applies a 10-minute OTP
   expiry countdown and restarts it after a successful resend.
+- Laundry signup uses `POST /laundry-auth/signup`, verifies the email through
+  `POST /laundry-auth/verify-otp`, and completes the profile through
+  `POST /laundry-auth/complete-profile`. Authentication data returned by its
+  verify or profile-completion response is stored in the shared current-tab
+  session before entering the Laundry dashboard.
 - After verification, Business signup saves the business profile with
   `POST /tenant-auth/complete-profile`, using the verified response's `userId`,
   business details, an internationalized phone number, and the browser timezone.
@@ -171,9 +176,12 @@ Confirmed API-backed areas:
 - Tenant categories list, create, details, update, and status actions use tenant
   category services. The list sends backend `page`, `limit`, `keywords`,
   `status`, and `use` (`in use`/`not in use`) filters; the inactive All Usage
-  option is omitted from the request. Category summary cards use
-  `GET /tenant-categories/summary` and
-  refresh after category create, update, or status mutations.
+  option is omitted from the request. The list consumes `data.items`,
+  `data.pagination`, and the four-card `{ key, label, count }[]` summary under
+  `data.counts`; no separate category summary request is made. Category
+  normalization/pagination lives in the feature data boundary, while add, edit,
+  and status mutations use separate feature modals coordinated by the Categories
+  section.
 - Tenant scanners list through `GET /tenant-scanners/show` with backend
   pagination and optional `keywords`, `scannerType`, `scannerMode`, `status`,
   and `assignedOperatorId` filters. The operator filter loads only active staff
@@ -233,8 +241,7 @@ Partial or placeholder areas:
 - Super Admin login navigates without a backend request.
 - Forgot-password email, OTP, and reset steps are UI-only.
 - Business signup completion presentation remains UI-only. Pricing is currently
-  hidden entirely, and profile completion opens Done directly. Laundry signup
-  remains UI-only.
+  hidden entirely, and profile completion opens Done directly.
 - Many Tenant features import local `data.js`, including assets, scanners,
   tags, and asset-detail subviews. Treat them as
   sample data unless the same feature also calls a domain service.
@@ -261,13 +268,21 @@ Shared client facts:
 
 - Base URL is `import.meta.env.VITE_API_BASE_URL || ""`.
 - Default content type is `application/json`.
-- The request interceptor reads `accessToken` from `sessionStorage` and attaches a
-  Bearer authorization header.
+- The request interceptor reads the active Business or Laundry portal's shared
+  `accessToken` from `sessionStorage` and attaches a Bearer authorization header.
 - The response interceptor clears the stored authentication session when an
   authenticated request returns `401`, then replaces the current URL with the
   active portal's login route (`/business/login`, `/laundry/login`, or
   `/superadmin/login`). It does not attempt token refresh.
+- Business and Laundry logout call their portal logout endpoint when an access
+  token exists, then always clear the current-tab session and return to the
+  matching login route. A stale dashboard session with no token is cleared
+  locally without making an unauthenticated logout request.
 - `src/axios/api.js` returns `response.data`, not the full Axios response.
+- Concurrent identical GET requests are deduplicated in the shared API wrapper,
+  including the current access-token context. This prevents React development
+  Strict Mode remounts from sending the same GET request twice; callers can opt
+  out with `{ dedupe: false }`, and signalled requests bypass deduplication.
 - `getApiErrorMessage` checks server `message`, server `error`, JavaScript error
   message, and then a supplied fallback.
 
@@ -305,9 +320,9 @@ Current endpoints:
   file string in the subsequent profile update.
 - `GET /tenant-categories/show` with `page`, `limit`, optional `keywords`,
   optional `status` (`active`/`inactive`), and optional `use`
-  (`in use`/`not in use`).
-- `GET /tenant-categories/summary` returning `totalCategories`,
-  `activeCategories`, `inactiveCategories`, and `categoriesInUse`.
+  (`in use`/`not in use`). It returns `data.items`, `data.pagination`, and
+  `data.counts` for `totalCategories`, `activeCategories`,
+  `inactiveCategories`, and `categoriesInUse`.
 - `POST /tenant-categories/create`.
 - `GET /tenant-categories/show/:id`.
 - `PUT /tenant-categories/update/:id`.
@@ -336,18 +351,19 @@ Current endpoints:
   records. The linked laundry detail page renders this response without a mock
   detail fallback.
 - `GET /tenant-staff-roles/show` lists tenant staff roles for the Staff Roles
-  screen with backend `page`/`limit` pagination plus optional `keywords`,
-  `status`, and `accessLevel` filters. `GET /tenant-staff-roles/show/:id` powers
-  the role details and edit flows. `PUT /tenant-staff-roles/update/:id` updates role details and module
+  screen with backend `page`/`limit` pagination, optional `keywords`, `status`,
+  and `accessLevel` filters, and the six-card `{ key, label, count }[]` summary
+  under `data.counts`.
+  The list and summary share this request.
+  `GET /tenant-staff-roles/show/:id` powers the role details and edit flows,
+  returning role metadata plus `modulePermissions` rows with the six supported
+  permission booleans.
+  `PUT /tenant-staff-roles/update/:id` updates role details and module
   permissions using the same `StaffRoleRequest` shape as create, while
   `PUT /tenant-staff-roles/update-status/:id` activates or deactivates a role
   with `{ status }`. Delete remains disabled because no delete contract is
   integrated.
-- `GET /tenant-staff-roles/summary` provides `totalRoles`, `fullAccessRoles`,
-  `viewOnlyRoles`, `limitedAccessRoles`, `activeRoles`, and `inactiveRoles`; the
-  six summary cards load independently from the roles list.
 - Tenant Staff uses `POST /tenant-staff/create`, `GET /tenant-staff/show`,
-  `GET /tenant-staff/summary`,
   `GET /tenant-staff/show/:id`, `PUT /tenant-staff/update/:id`, and
   `PUT /tenant-staff/update-status/:id`. Create/update follow `StaffRequest`:
   required `fullName`, `email`, `phone`, and `staffRoleId`, with optional
@@ -355,16 +371,20 @@ Current endpoints:
   `GET /tenant-staff/verify-email?token=...` powers the public staff verification
   route. The list sends `page`, `limit`, and optional `status` (`active`,
   `inactive`, `suspend`), `staffRoleId`, and `keywords`, then consumes the
-  returned pagination. Staff summary cards load independently from
-  `GET /tenant-staff/summary`. The role filter and Add Staff form load only
-  active roles from `GET /tenant-staff-roles/show?status=active`; inactive roles
-  remain available when editing an existing staff member.
+  returned pagination and the `{ key, label, count }[]` summary under
+  `data.counts`; the list and Staff summary cards share this request. The role
+  filter and Staff form share one `GET /tenant-staff-roles/show` request; active
+  Add Staff options are derived from that collection, while inactive roles
+  remain available when editing an existing staff member. Staff details include
+  identity, role/access information, email verification, status, creation date,
+  and a module-keyed permissions object; the profile modal displays enabled
+  actions for every returned module.
 - `GET /tenant-access-sections/show` supplies the module permission sections for
   the Staff Roles create modal. `POST /tenant-staff-roles/create` creates an
   active role with `name`, optional `description`, and permission rows containing
   `sectionKey` and all permission booleans for modules where at least one action
   is selected. Completely unselected modules are omitted. Successful creation
-  refreshes both the role list and summary.
+  refreshes the role list and its included summary.
 - `GET /tenant-laundries/pending-invites` with optional `page`, `limit`, and
   `keywords` query parameters.
 - `GET /tenant-laundries/closed-invites` with optional `page`, `limit`,
@@ -374,9 +394,13 @@ Current endpoints:
   `data.tenant`, `existingUser`, `existingLaundry`, `requiresProfile`, and
   `laundry`. The invitation token is used only to request details and is never
   rendered in the UI.
-- `GET /tenant-laundries/summary` returning `data` with `totalLinked`,
-  `defaultLaundry`, `pendingRequests`, `activeDispatches`,
-  `itemsCurrentlySent`, `delayedItems`, and `activeBatches`.
+- `GET /tenant-laundries/show` returns `data.items`, `data.pagination`, and the
+  `{ key, label, count }[]` summary under `data.counts` for `totalLinked`,
+  `pendingRequests`, `activeDispatches`, `itemsCurrentlySent`, and
+  `delayedItems`; no separate linked-laundry summary endpoint is used. The
+  linked tab shares its list response with the summary cards, and a minimal list
+  request is made only when a pending/rejected tab is opened directly without
+  an already loaded summary.
 - `PUT /tenant-laundries/unlink/:id`, where `id` is the linked-laundry
   relationship UUID preserved as `apiId` by the list normalizer.
 - Category services send `x-language`, defaulting to `en`.
@@ -385,7 +409,8 @@ These facts are not permission to guess future contracts. Use the exact method,
 path, key names, values, pagination parameters, envelope, headers, and identifier
 provided by the user/backend.
 
-Business login accepts `accessToken`, `access_token`, or `token`, then stores:
+Business and Laundry login/signup authentication responses accept `accessToken`,
+`access_token`, or `token`, then store:
 
 - `accessToken`.
 - `refreshToken` when returned.
@@ -393,9 +418,9 @@ Business login accepts `accessToken`, `access_token`, or `token`, then stores:
 
 All three authentication values use `sessionStorage`, so they are scoped to the
 current browser tab/session and are cleared when that tab closes. Legacy auth
-keys are removed from `localStorage`; `clearTenantSession` removes the session
-values as well. Updating the stored tenant user emits the shared
-`tenant-session-user-updated` browser event; the dashboard Header subscribes so
+keys are removed from `localStorage`; `clearAuthSession` removes the session
+values as well. Updating the stored auth user emits the shared
+`auth-session-user-updated` browser event; the dashboard Header subscribes so
 saved business names, initials, email, and avatar update without a reload. Theme
 preference is separately stored as `theme-mode` in `localStorage`. Never print
 or expose stored values.
@@ -437,7 +462,8 @@ Important contracts:
   controlled/server sorting. Trace every consumer before changing this shared
   component.
 - `ActionDropdown` portals its menu and expects labeled item callbacks. Keep item
-  labels unique within the menu.
+  labels unique within the menu. Its `disabled` prop disables the complete
+  actions trigger when a row has no permitted actions.
 - Use `toast` from `src/Utils/toast`; `ToastProvider` is already mounted.
 
 Always read a primitive's source for its full prop contract before using or

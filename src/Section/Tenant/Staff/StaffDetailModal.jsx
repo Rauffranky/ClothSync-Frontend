@@ -18,7 +18,10 @@ import Modal from "../../../Components/UI/Modal";
 import { getApiErrorMessage } from "../../../axios/api";
 import { getTenantStaffDetails } from "../../../axios/staff/tenantStaff";
 import { formatDateTime } from "../../../Utils/date";
-import { normalizeStaffDetails } from "./data";
+import {
+  normalizeStaffDetails,
+  staffPermissionActions,
+} from "./data";
 
 const StaffDetailModal = ({ onClose, staff }) => {
   const [details, setDetails] = useState(null);
@@ -132,12 +135,59 @@ const StaffDetailModal = ({ onClose, staff }) => {
                     {label}
                   </span>
                 </div>
-                <p className="m-0 mt-2 break-words text-sm font-bold text-(--theme-text-primary)">
+                <p className="m-0 mt-2 wrap-break-word text-sm font-bold text-(--theme-text-primary)">
                   {value || "-"}
                 </p>
               </div>
             ))}
           </div>
+
+          <section>
+            <div className="mb-3 flex items-center gap-2">
+              <ShieldCheck size={17} className="text-(--color-aurora-teal)" />
+              <h3 className="m-0 text-base font-bold text-(--theme-text-primary)">
+                Module Permissions
+              </h3>
+            </div>
+
+            {displayedStaff.permissions?.length > 0 ? (
+              <div className="overflow-hidden rounded-xl border border-(--theme-border)">
+                {displayedStaff.permissions.map((permission) => {
+                  const enabledActions = staffPermissionActions.filter(
+                    (action) => permission[action.key],
+                  );
+
+                  return (
+                    <div
+                      className="flex flex-col gap-3 border-b border-(--theme-border) p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+                      key={permission.id}
+                    >
+                      <p className="m-0 font-bold text-(--theme-text-primary)">
+                        {permission.sectionName}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {enabledActions.length > 0 ? (
+                          enabledActions.map((action) => (
+                            <Badge key={action.key} size="sm" variant="info">
+                              {action.label}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-sm font-medium text-(--theme-text-muted)">
+                            No access
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <Alert variant="neutral">
+                No module permissions assigned to this staff member.
+              </Alert>
+            )}
+          </section>
         </div>
       )}
     </Modal>

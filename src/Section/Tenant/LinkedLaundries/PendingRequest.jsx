@@ -88,16 +88,36 @@ const PendingRequest = ({ onTotalChange }) => {
       key: "actions",
       label: "Actions",
       align: "center",
-      render: (_, row) => (
-        <ActionDropdown
-          items={[
-            // { label: "View Detail", icon: Eye, onClick: () => setViewDetailRequest(row) },
-            { label: "Resend", icon: Send, onClick: () => setPendingAction({ action: "resend", request: row }) },
-            { label: "Cancel Invite", icon: Ban, danger: true, onClick: () => setPendingAction({ action: "cancel", request: row }) },
-          ]}
-          width={180}
-        />
-      ),
+      render: (_, row) => {
+        const isCancelled = row.statusValue === "cancelled";
+
+        return (
+          <ActionDropdown
+            disabled={isCancelled}
+            items={[
+              {
+                label: "Resend",
+                icon: Send,
+                onClick: () =>
+                  setPendingAction({ action: "resend", request: row }),
+              },
+              {
+                label: "Cancel Invite",
+                icon: Ban,
+                danger: true,
+                onClick: () =>
+                  setPendingAction({ action: "cancel", request: row }),
+              },
+            ]}
+            triggerAriaLabel={
+              isCancelled
+                ? "Actions unavailable for cancelled invitation"
+                : "Open invitation actions"
+            }
+            width={180}
+          />
+        );
+      },
     },
   ], []);
 
@@ -152,6 +172,11 @@ const PendingRequest = ({ onTotalChange }) => {
 
   const handleActionConfirm = async (actionData) => {
     const { action, request } = actionData;
+    if (request?.statusValue === "cancelled") {
+      setPendingAction(null);
+      return;
+    }
+
     setIsActionSubmitting(true);
     try {
       if (action === "resend") {
@@ -164,7 +189,14 @@ const PendingRequest = ({ onTotalChange }) => {
         toast.success(response?.message || "Invitation cancelled successfully");
         setRequests((current) =>
           current.map((r) =>
-            r.id === request.id ? { ...r, status: "Cancelled", statusVariant: "danger" } : r
+            r.id === request.id
+              ? {
+                  ...r,
+                  status: "Cancelled",
+                  statusValue: "cancelled",
+                  statusVariant: "danger",
+                }
+              : r,
           )
         );
       }

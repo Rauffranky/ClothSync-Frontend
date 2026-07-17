@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TENANT_SESSION_USER_UPDATED_EVENT } from "../axios/auth/tenantSession";
+import { AUTH_SESSION_USER_UPDATED_EVENT } from "../axios/auth/authSession";
 import { getUserDatePreferences } from "../Utils/date";
 
 export const useUserDatePreferences = () => {
@@ -9,13 +9,13 @@ export const useUserDatePreferences = () => {
     const syncPreferences = () => setPreferences(getUserDatePreferences());
 
     window.addEventListener(
-      TENANT_SESSION_USER_UPDATED_EVENT,
+      AUTH_SESSION_USER_UPDATED_EVENT,
       syncPreferences,
     );
 
     return () => {
       window.removeEventListener(
-        TENANT_SESSION_USER_UPDATED_EVENT,
+        AUTH_SESSION_USER_UPDATED_EVENT,
         syncPreferences,
       );
     };

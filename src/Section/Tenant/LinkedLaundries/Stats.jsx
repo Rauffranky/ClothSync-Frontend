@@ -5,13 +5,9 @@ import {
   Hourglass,
   RefreshCw,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import Card from "../../../Components/UI/Card";
 import CardSkeleton from "../../../Components/UI/CardSkeleton";
 import IconWrapper from "../../../Components/UI/IconWrapper";
-import { getTenantLaundrySummary } from "../../../axios/laundries/tenantLaundries";
-import { toast } from "../../../Utils/toast";
-import { getApiErrorMessage } from "../../../axios/api";
 
 const SUMMARY_STATS = [
   {
@@ -52,44 +48,8 @@ const SUMMARY_STATS = [
   
 ];
 
-const Stats = ({ onPendingTotalChange }) => {
-  const [summary, setSummary] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let isActive = true;
-
-    const fetchSummary = async () => {
-      try {
-        const response = await getTenantLaundrySummary();
-        if (!isActive) return;
-
-        const summaryData = response?.data ?? {};
-        const pendingCount = Number(summaryData.pendingRequests);
-
-        setSummary(summaryData);
-        if (Number.isFinite(pendingCount)) {
-          onPendingTotalChange?.(pendingCount);
-        }
-      } catch (error) {
-        if (isActive) {
-          toast.error(
-            getApiErrorMessage(error, "Failed to load summary stats"),
-          );
-        }
-      } finally {
-        if (isActive) setIsLoading(false);
-      }
-    };
-
-    fetchSummary();
-
-    return () => {
-      isActive = false;
-    };
-  }, [onPendingTotalChange]);
-
-  if (isLoading) {
+const Stats = ({ loading = false, summary = null }) => {
+  if (loading) {
     return (
       <section className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
         {SUMMARY_STATS.map((item) => (

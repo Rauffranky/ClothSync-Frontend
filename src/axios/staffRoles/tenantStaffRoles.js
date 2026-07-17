@@ -13,9 +13,6 @@ export const getTenantStaffRoles = (params = {}) =>
 export const getTenantStaffRoleDetails = (id) =>
   api.get(TENANT_STAFF_ROLE_ENDPOINTS.DETAILS(id), { timeout: 15000 });
 
-export const getTenantStaffRoleSummary = () =>
-  api.get(TENANT_STAFF_ROLE_ENDPOINTS.SUMMARY, { timeout: 15000 });
-
 export const updateTenantStaffRole = (id, payload) =>
   api.put(TENANT_STAFF_ROLE_ENDPOINTS.UPDATE(id), payload, {
     timeout: 15000,

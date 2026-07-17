@@ -7,9 +7,6 @@ export const getTenantCategories = (params, language = "en") =>
     headers: { "x-language": language },
   });
 
-export const getTenantCategorySummary = () =>
-  api.get(TENANT_CATEGORY_ENDPOINTS.SUMMARY);
-
 export const createTenantCategory = (data, language = "en") =>
   api.post(TENANT_CATEGORY_ENDPOINTS.CREATE, data, {
     headers: { "x-language": language },

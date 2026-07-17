@@ -26,7 +26,11 @@ import {
 } from "../../../axios/laundries/tenantLaundries";
 import { getApiErrorMessage } from "../../../axios/api";
 import { toast } from "../../../Utils/toast";
-import { getPaginatedCollection, normalizeLinkedLaundry } from "./utils";
+import {
+  getPaginatedCollection,
+  normalizeLinkedLaundry,
+  normalizeLinkedLaundrySummary,
+} from "./utils";
 import UnlinkLaundryModal from "./UnlinkLaundryModal";
 import DefaultConfirmModal from "./DefaultConfirmModal";
 import DefaultBlockedModal from "./DefaultBlockedModal";
@@ -41,7 +45,11 @@ const laundryOptions = [
   { label: "Non Default", value: "non-default" },
 ];
 
-const LinkedLaundries = ({ onTotalChange }) => {
+const LinkedLaundries = ({
+  externalRefreshKey = 0,
+  onSummaryChange,
+  onTotalChange,
+}) => {
   const navigate = useNavigate();
   const [linkedLaundries, setLinkedLaundries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +89,7 @@ const LinkedLaundries = ({ onTotalChange }) => {
         setLinkedLaundries(collection.rows.map(normalizeLinkedLaundry));
         setTotalItems(collection.totalItems);
         setTotalPages(collection.totalPages);
+        onSummaryChange?.(normalizeLinkedLaundrySummary(collection.summary));
         onTotalChange?.(collection.totalItems);
       })
       .catch((error) => {
@@ -88,6 +97,7 @@ const LinkedLaundries = ({ onTotalChange }) => {
         setLinkedLaundries([]);
         setTotalItems(0);
         setTotalPages(0);
+        onSummaryChange?.(null);
         onTotalChange?.(0);
         toast.error(
           error?.code === "ECONNABORTED"
@@ -102,7 +112,15 @@ const LinkedLaundries = ({ onTotalChange }) => {
     return () => {
       isActive = false;
     };
-  }, [currentPage, debouncedSearch, laundryFilter, onTotalChange, refreshKey]);
+  }, [
+    currentPage,
+    debouncedSearch,
+    externalRefreshKey,
+    laundryFilter,
+    onSummaryChange,
+    onTotalChange,
+    refreshKey,
+  ]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
     useSortableTableData(linkedLaundries);
@@ -170,6 +188,7 @@ const LinkedLaundries = ({ onTotalChange }) => {
     
     // Refresh the data after setting default
     setCurrentPage(0);
+    setRefreshKey((current) => current + 1);
   };
 
   const handleConfirmUnlink = async () => {

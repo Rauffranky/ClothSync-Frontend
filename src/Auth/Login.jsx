@@ -10,13 +10,15 @@ import Tabs from "../Components/UI/Tabs";
 import { portalTabs } from "./authConfig";
 import OtpInput from "./components/OtpInput";
 import {
-  clearTenantSession,
   loginTenant,
-  storeTenantSessionFromResponse,
   forgotTenantPassword,
   verifyTenantForgotPasswordOtp,
   resetTenantPassword,
 } from "../axios/auth/tenantAuth";
+import {
+  clearAuthSession,
+  storeAuthSessionFromResponse,
+} from "../axios/auth/authSession";
 import { 
   loginLaundry,
   forgotLaundryPassword,
@@ -108,10 +110,10 @@ const Login = ({ portal }) => {
             email: values.email,
             password: values.password,
           });
-          const accessToken = storeTenantSessionFromResponse(response);
+          const accessToken = storeAuthSessionFromResponse(response);
 
           if (!accessToken) {
-            clearTenantSession();
+            clearAuthSession();
             throw new Error("Login succeeded, but no access token was returned");
           }
 

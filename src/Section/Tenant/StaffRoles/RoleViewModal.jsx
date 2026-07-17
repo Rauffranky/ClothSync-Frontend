@@ -3,7 +3,6 @@ import {
   Building2,
   CalendarDays,
   LockKeyhole,
-  MapPin,
   RefreshCw,
   ShieldCheck,
   TriangleAlert,
@@ -64,7 +63,6 @@ const RoleViewModal = ({ role, onClose }) => {
           value: displayedRole.accessLevel,
           icon: LockKeyhole,
         },
-        { label: "Locations", value: displayedRole.locations, icon: MapPin },
         {
           label: "Last Updated",
           value: displayedRole.lastUpdated
@@ -136,7 +134,7 @@ const RoleViewModal = ({ role, onClose }) => {
                     {label}
                   </span>
                 </div>
-                <p className="m-0 mt-2 break-words text-sm font-bold text-(--theme-text-primary)">
+                <p className="m-0 mt-2 wrap-break-word text-sm font-bold text-(--theme-text-primary)">
                   {value ?? "-"}
                 </p>
               </div>

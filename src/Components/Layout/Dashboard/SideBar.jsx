@@ -14,10 +14,11 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { NAV } from "./nav";
 import GlobalTooltip from "../../UI/Tooltip";
+import { logoutTenant } from "../../../axios/auth/tenantAuth";
 import {
-  clearTenantSession,
-  logoutTenant,
-} from "../../../axios/auth/tenantAuth";
+  clearAuthSession,
+  getAuthAccessToken,
+} from "../../../axios/auth/authSession";
 import { logoutLaundry } from "../../../axios/auth/laundryAuth";
 import { getApiErrorMessage } from "../../../axios/api";
 import { toast } from "../../../Utils/toast";
@@ -65,16 +66,18 @@ const SideBar = ({
     }
 
     try {
-      if (portal === "business") {
-        await logoutTenant();
-      } else {
-        await logoutLaundry();
+      if (getAuthAccessToken()) {
+        if (portal === "business") {
+          await logoutTenant();
+        } else {
+          await logoutLaundry();
+        }
       }
       toast.success("Logout successful");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Unable to logout from the server"));
     } finally {
-      clearTenantSession();
+      clearAuthSession();
       navigate(`/${portal}/login`, { replace: true });
       if (isOpen) onClose();
     }

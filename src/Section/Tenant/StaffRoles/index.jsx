@@ -13,7 +13,6 @@ import {
 import { getApiErrorMessage } from "../../../axios/api";
 import {
   getTenantStaffRoles,
-  getTenantStaffRoleSummary,
   updateTenantStaffRoleStatus,
 } from "../../../axios/staffRoles/tenantStaffRoles";
 import { toast } from "../../../Utils/toast";
@@ -38,8 +37,6 @@ const StaffRoles = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [summary, setSummary] = useState(null);
-  const [isSummaryLoading, setIsSummaryLoading] = useState(true);
-  const [summaryError, setSummaryError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedRole, setSelectedRole] = useState(null);
   const [editingRole, setEditingRole] = useState(null);
@@ -75,6 +72,7 @@ const StaffRoles = () => {
           ITEMS_PER_PAGE,
         );
         setRoles(collection.rows.map(normalizeStaffRole));
+        setSummary(normalizeStaffRoleSummary(collection.summary));
         setTotalItems(collection.totalItems);
         setTotalPages(collection.totalPages);
         setLoadError("");
@@ -97,41 +95,11 @@ const StaffRoles = () => {
     };
   }, [accessFilter, currentPage, debouncedSearch, refreshKey, statusFilter]);
 
-  useEffect(() => {
-    let isActive = true;
-
-    getTenantStaffRoleSummary()
-      .then((response) => {
-        if (!isActive) return;
-        setSummary(normalizeStaffRoleSummary(response));
-        setSummaryError("");
-      })
-      .catch((error) => {
-        if (!isActive) return;
-        const message = getApiErrorMessage(
-          error,
-          "Unable to load staff role stats",
-        );
-        setSummary(null);
-        setSummaryError(message);
-        toast.error(message);
-      })
-      .finally(() => {
-        if (isActive) setIsSummaryLoading(false);
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [refreshKey]);
-
   const activePage = totalPages > 0 ? Math.min(currentPage, totalPages - 1) : 0;
 
   const retryLoad = () => {
     setIsLoading(true);
-    setIsSummaryLoading(true);
     setLoadError("");
-    setSummaryError("");
     setRefreshKey((current) => current + 1);
   };
 
@@ -139,7 +107,6 @@ const StaffRoles = () => {
     setIsCreateRoleOpen(false);
     setEditingRole(null);
     setIsLoading(true);
-    setIsSummaryLoading(true);
     setCurrentPage(0);
     setRefreshKey((current) => current + 1);
   };
@@ -196,12 +163,12 @@ const StaffRoles = () => {
 
   return (
     <div className="space-y-5">
-      <StaffRoleStats loading={isSummaryLoading} summary={summary} />
+      <StaffRoleStats loading={isLoading && !summary} summary={summary} />
 
-      {(loadError || summaryError) && (
+      {loadError && (
         <Alert leftIcon={<TriangleAlert size={18} />} variant="danger">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span>{loadError || summaryError}</span>
+            <span>{loadError}</span>
             <Button
               leftIcon={<RefreshCw size={15} />}
               onClick={retryLoad}

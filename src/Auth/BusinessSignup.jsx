@@ -25,9 +25,9 @@ import {
   completeTenantProfile,
   resendTenantSignupOtp,
   signupTenant,
-  storeTenantSessionFromResponse,
   verifyTenantSignupOtp,
 } from "../axios/auth/tenantAuth";
+import { storeAuthSessionFromResponse } from "../axios/auth/authSession";
 import { toast } from "../Utils/toast";
 import OtpInput from "./components/OtpInput";
 
@@ -506,7 +506,7 @@ const BusinessSignup = ({ portal }) => {
           avatar: "",
         });
 
-        storeTenantSessionFromResponse(response);
+        storeAuthSessionFromResponse(response);
         const completedProfileDisplay = getCompletedProfileDisplay(
           response,
           profileValues,
@@ -620,7 +620,7 @@ const BusinessSignup = ({ portal }) => {
         throw new Error("Email verified, but no tenant user ID was returned");
       }
 
-      storeTenantSessionFromResponse(response);
+      storeAuthSessionFromResponse(response);
       setVerifiedTenantUserId(userId);
       toast.success(response?.message || "Email verified successfully");
       setCurrentStep(2);
