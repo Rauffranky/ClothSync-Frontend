@@ -578,12 +578,20 @@ body {
 
 .global-input-control::selection {
   color: var(--theme-text-primary);
-  background: transparent;
+  background: rgba(96, 165, 250, 0.4);
 }
 
 .global-input-control::-moz-selection {
   color: var(--theme-text-primary);
-  background: transparent;
+  background: rgba(96, 165, 250, 0.4);
+}
+
+input::selection, textarea::selection {
+  background: rgba(96, 165, 250, 0.4);
+}
+
+input::-moz-selection, textarea::-moz-selection {
+  background: rgba(96, 165, 250, 0.4);
 }
 
 .global-input-control:-webkit-autofill,
