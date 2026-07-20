@@ -7,6 +7,9 @@ import Button from "../../../Components/UI/Button";
 import Dropdown from "../../../Components/UI/Dropdown";
 import Input from "../../../Components/UI/Input";
 import Modal from "../../../Components/UI/Modal";
+import ReactPhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+const PhoneInput = ReactPhoneInput.default || ReactPhoneInput;
 import { getApiErrorMessage } from "../../../axios/api";
 import {
   createTenantStaff,
@@ -275,18 +278,51 @@ const StaffFormModal = ({
             value={formik.values.email}
           />
 
-          <Input
-            disabled={formik.isSubmitting}
-            error={formik.touched.phone && Boolean(formik.errors.phone)}
-            helperText={formik.touched.phone ? formik.errors.phone : ""}
-            label="Phone Number"
-            name="phone"
-            onBlur={formik.handleBlur}
-            onChange={(value) => formik.setFieldValue("phone", value)}
-            placeholder="+1 (555) 000-0000"
-            required
-            value={formik.values.phone}
-          />
+          <div className="flex flex-col gap-1.5">
+            <label className="mb-0.5 block text-sm font-semibold" style={{ color: "var(--theme-text-secondary)" }}>
+              Phone Number <span style={{ color: "var(--color-overdue)" }}>*</span>
+            </label>
+            <PhoneInput
+              country={"us"}
+              disabled={formik.isSubmitting}
+              value={formik.values.phone}
+              onChange={(phone) =>
+                formik.setFieldValue(
+                  "phone",
+                  phone.startsWith("+") ? phone : `+${phone}`,
+                )
+              }
+              onBlur={() => formik.setFieldTouched("phone", true)}
+              inputStyle={{
+                width: "100%",
+                height: "46px",
+                borderRadius: "14px",
+                borderColor:
+                  formik.touched.phone && formik.errors.phone
+                    ? "var(--color-overdue)"
+                    : "var(--theme-border-soft)",
+                backgroundColor: "var(--theme-surface-strong)",
+                color: "var(--theme-text-primary)",
+                fontSize: "14px",
+                fontWeight: "500",
+                paddingLeft: "48px",
+              }}
+              buttonStyle={{
+                borderTopLeftRadius: "14px",
+                borderBottomLeftRadius: "14px",
+                borderColor:
+                  formik.touched.phone && formik.errors.phone
+                    ? "var(--color-overdue)"
+                    : "var(--theme-border-soft)",
+                backgroundColor: "var(--theme-surface-strong)",
+              }}
+            />
+            {formik.touched.phone && formik.errors.phone && (
+              <p className="m-0 text-xs" style={{ color: "var(--color-overdue)" }}>
+                {formik.errors.phone}
+              </p>
+            )}
+          </div>
 
           <Dropdown
             disabled={formik.isSubmitting}
