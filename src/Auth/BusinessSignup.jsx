@@ -19,6 +19,10 @@ import Card from "../Components/UI/Card";
 import Dropdown from "../Components/UI/Dropdown";
 import Input from "../Components/UI/Input";
 import Tabs from "../Components/UI/Tabs";
+import OtpInput from "./components/OtpInput";
+import ReactPhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+const PhoneInput = ReactPhoneInput.default || ReactPhoneInput;
 import { portalTabs } from "./authConfig";
 import { getApiErrorMessage } from "../axios/api";
 import {
@@ -29,7 +33,6 @@ import {
 } from "../axios/auth/tenantAuth";
 import { storeAuthSessionFromResponse } from "../axios/auth/authSession";
 import { toast } from "../Utils/toast";
-import OtpInput from "./components/OtpInput";
 
 const SHOW_PRICING_STEP = false;
 
@@ -83,7 +86,6 @@ const profileSchema = Yup.object({
   businessName: Yup.string().trim().required("Business name is required"),
   businessType: Yup.string().required("Business type is required"),
   businessPhone: Yup.string().trim().required("Business phone is required"),
-  phoneCountryCode: Yup.string().required("Country code is required"),
   address: Yup.string().trim().required("Business address is required"),
   city: Yup.string().trim().required("City is required"),
   state: Yup.string().trim().required("State / province is required"),
@@ -94,7 +96,6 @@ const profileSchema = Yup.object({
 const profileInitialValues = {
   businessName: "",
   businessType: "hospital",
-  phoneCountryCode: "+1",
   businessPhone: "",
   address: "",
   city: "",
@@ -109,13 +110,6 @@ const businessTypeOptions = [
   // { label: "Spa & Wellness", value: "Spa & Wellness" },
   // { label: "Restaurant", value: "Restaurant" },
   // { label: "Commercial Laundry", value: "Commercial Laundry" },
-];
-
-const phoneCountryOptions = [
-  { label: "🇺🇸 +1", value: "+1" },
-  { label: "🇵🇰 +92", value: "+92" },
-  { label: "🇬🇧 +44", value: "+44" },
-  { label: "🇦🇪 +971", value: "+971" },
 ];
 
 const countryOptions = [
@@ -394,13 +388,12 @@ const BusinessSignup = ({ portal }) => {
   const [values, setValues] = useState({
     fullName: savedProgress.fullName,
     businessEmail: savedProgress.email,
-    phone: "",
     password: "",
     confirmPassword: "",
     acceptedTerms: false,
     otp: "",
     businessName: savedProgress.profile.businessName,
-    businessType: savedProgress.profile.businessType,
+    businessType: savedProgress.profile.businessType || "hospital",
     businessPhone: savedProgress.profile.businessPhone,
     profileEmail: savedProgress.email,
     address: savedProgress.profile.address,
@@ -483,11 +476,6 @@ const BusinessSignup = ({ portal }) => {
         toast.error("Verified tenant user ID is missing. Please verify your email again.");
         return;
       }
-
-      const localPhone = profileValues.businessPhone
-        .replace(/\D/g, "")
-        .replace(/^0+/, "");
-      const phone = `${profileValues.phoneCountryCode}${localPhone}`;
       const timezone =
         Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
@@ -496,7 +484,7 @@ const BusinessSignup = ({ portal }) => {
           userId: verifiedTenantUserId,
           businessName: profileValues.businessName,
           businessType: profileValues.businessType,
-          phone,
+          phone: profileValues.businessPhone.startsWith("+") ? profileValues.businessPhone : `+${profileValues.businessPhone}`,
           address: profileValues.address,
           city: profileValues.city,
           state: profileValues.state,
@@ -517,7 +505,7 @@ const BusinessSignup = ({ portal }) => {
           ...profileValues,
           businessName: completedProfileDisplay.businessName,
           businessType: completedProfileDisplay.businessType,
-          businessPhone: phone,
+          businessPhone: profileValues.businessPhone,
           timezone,
           avatar: "",
         }));
@@ -877,23 +865,41 @@ const BusinessSignup = ({ portal }) => {
             options={businessTypeOptions}
             value={profileFormik.values.businessType}
           />
-          <div className="grid gap-4 sm:grid-cols-[160px_minmax(0,1fr)]">
-            <Dropdown
-              label="Country Code"
-              name="phoneCountryCode"
-              onChange={(value) =>
-                profileFormik.setFieldValue("phoneCountryCode", value)
-              }
-              options={phoneCountryOptions}
-              value={profileFormik.values.phoneCountryCode}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-semibold text-(--theme-text-secondary)">
+              Business Phone
+            </label>
+            <PhoneInput
+              country={"us"}
+              value={profileFormik.values.businessPhone}
+              onChange={(phone) => profileFormik.setFieldValue("businessPhone", phone)}
+              inputStyle={{
+                width: "100%",
+                height: "46px",
+                borderRadius: "14px",
+                borderColor: getProfileFieldError("businessPhone") ? "var(--color-overdue)" : "var(--theme-border-soft)",
+                backgroundColor: "var(--theme-surface-strong)",
+                color: "var(--theme-text-primary)",
+                fontSize: "14px",
+                fontWeight: "500",
+                paddingLeft: "48px",
+              }}
+              buttonStyle={{
+                borderTopLeftRadius: "14px",
+                borderBottomLeftRadius: "14px",
+                borderColor: getProfileFieldError("businessPhone") ? "var(--color-overdue)" : "var(--theme-border-soft)",
+                backgroundColor: "var(--theme-surface-strong)",
+              }}
+              dropdownStyle={{
+                backgroundColor: "var(--theme-bg)",
+                color: "var(--theme-text-primary)",
+              }}
             />
-            <Input
-              label="Business Phone"
-              placeholder="555 000 0000"
-              required
-              type="tel"
-              {...bindProfileInput("businessPhone")}
-            />
+            {getProfileFieldError("businessPhone") && (
+              <p className="m-0 text-xs text-(--color-overdue)">
+                {getProfileFieldError("businessPhone")}
+              </p>
+            )}
           </div>
           <Input
             disabled
@@ -1129,12 +1135,11 @@ const BusinessSignup = ({ portal }) => {
           fullWidth
           onClick={() => {
             clearTenantSignupProgress();
-            navigate("/business/dashboard");
+            navigate("/login");
           }}
-          rightIcon={<ArrowRight size={17} />}
           size="lg"
         >
-          Go to Dashboard
+          Back to Login
         </Button>
       </div>
     );

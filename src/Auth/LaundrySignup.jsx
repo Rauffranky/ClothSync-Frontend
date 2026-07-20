@@ -20,6 +20,9 @@ import Dropdown from "../Components/UI/Dropdown";
 import Input from "../Components/UI/Input";
 import Tabs from "../Components/UI/Tabs";
 import OtpInput from "./components/OtpInput";
+import ReactPhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+const PhoneInput = ReactPhoneInput.default || ReactPhoneInput;
 import { portalTabs } from "./authConfig";
 import { getApiErrorMessage } from "../axios/api";
 import { toast } from "../Utils/toast";
@@ -71,7 +74,6 @@ const accountSchema = Yup.object({
 const profileSchema = Yup.object({
   laundryName: Yup.string().trim().required("Laundry name is required"),
   phone: Yup.string().trim().required("Phone number is required"),
-  phoneCountryCode: Yup.string().required("Country code is required"),
   address: Yup.string().trim().required("Address is required"),
   city: Yup.string().trim().required("City is required"),
   state: Yup.string().trim().required("State / province is required"),
@@ -79,12 +81,7 @@ const profileSchema = Yup.object({
   postalCode: Yup.string().trim().required("Postal code is required"),
 });
 
-const phoneCountryOptions = [
-  { label: "🇺🇸 +1", value: "+1" },
-  { label: "🇵🇰 +92", value: "+92" },
-  { label: "🇬🇧 +44", value: "+44" },
-  { label: "🇦🇪 +971", value: "+971" },
-];
+
 
 const countryOptions = [
   { label: "United States", value: "United States" },
@@ -214,7 +211,6 @@ const LaundrySignup = ({ portal }) => {
   const profileFormik = useFormik({
     initialValues: {
       laundryName: "",
-      phoneCountryCode: "+1",
       phone: "",
       address: "",
       city: "",
@@ -231,7 +227,7 @@ const LaundrySignup = ({ portal }) => {
           contactPersonName: accountFormik.values.fullName,
           password: accountFormik.values.password,
           confirmPassword: accountFormik.values.confirmPassword,
-          phone: `${values.phoneCountryCode}${values.phone}`,
+          phone: values.phone.startsWith("+") ? values.phone : `+${values.phone}`,
           address: values.address,
           city: values.city,
           state: values.state,
@@ -543,24 +539,41 @@ const LaundrySignup = ({ portal }) => {
             {...bindProfile("laundryName")}
           />
 
-          <div className="grid gap-4 sm:grid-cols-[160px_minmax(0,1fr)]">
-            <Dropdown
-              label="Country Code"
-              name="phoneCountryCode"
-              onChange={(value) =>
-                profileFormik.setFieldValue("phoneCountryCode", value)
-              }
-              options={phoneCountryOptions}
-              value={profileFormik.values.phoneCountryCode}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-semibold text-(--theme-text-secondary)">
+              Phone Number
+            </label>
+            <PhoneInput
+              country={"us"}
+              value={profileFormik.values.phone}
+              onChange={(phone) => profileFormik.setFieldValue("phone", phone)}
+              inputStyle={{
+                width: "100%",
+                height: "46px",
+                borderRadius: "14px",
+                borderColor: getProfileError("phone") ? "var(--color-overdue)" : "var(--theme-border-soft)",
+                backgroundColor: "var(--theme-surface-strong)",
+                color: "var(--theme-text-primary)",
+                fontSize: "14px",
+                fontWeight: "500",
+                paddingLeft: "48px",
+              }}
+              buttonStyle={{
+                borderTopLeftRadius: "14px",
+                borderBottomLeftRadius: "14px",
+                borderColor: getProfileError("phone") ? "var(--color-overdue)" : "var(--theme-border-soft)",
+                backgroundColor: "var(--theme-surface-strong)",
+              }}
+              dropdownStyle={{
+                backgroundColor: "var(--theme-bg)",
+                color: "var(--theme-text-primary)",
+              }}
             />
-            <Input
-              label="Phone Number"
-              leftIcon={<Phone size={18} />}
-              placeholder="555 000 0000"
-              required
-              type="tel"
-              {...bindProfile("phone")}
-            />
+            {getProfileError("phone") && (
+              <p className="m-0 text-xs text-(--color-overdue)">
+                {getProfileError("phone")}
+              </p>
+            )}
           </div>
 
           <Input
