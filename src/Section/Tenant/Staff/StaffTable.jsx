@@ -13,6 +13,7 @@ const StaffTable = ({
   onStatusAction,
   sortBy,
   sortDirection,
+  canEdit = true,
 }) => {
   const columns = [
     {
@@ -94,12 +95,12 @@ const StaffTable = ({
               label: "View Profile",
               onClick: () => onViewStaff?.(row),
             },
-            {
+            canEdit && {
               icon: Edit3,
               label: "Edit Staff",
               onClick: () => onEditStaff?.(row),
             },
-            {
+            canEdit && {
               icon: Power,
               label: row.status === "Active" ? "Deactivate" : "Activate",
               danger: row.status === "Active",
@@ -109,7 +110,7 @@ const StaffTable = ({
                   staff: row,
                 }),
             },
-          ]}
+          ].filter(Boolean)}
         />
       ),
     },

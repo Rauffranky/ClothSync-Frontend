@@ -22,6 +22,10 @@ import {
 import { logoutLaundry } from "../../../axios/auth/laundryAuth";
 import { getApiErrorMessage } from "../../../axios/api";
 import { toast } from "../../../Utils/toast";
+import {
+  getFirstPermittedHref,
+  hasPermission,
+} from "../../../Utils/permissions";
 
 const SideBar = ({
   isOpen = false,
@@ -35,7 +39,7 @@ const SideBar = ({
     () =>
       (NAV[portal] || []).flatMap((item) =>
         Array.isArray(item.items) ? item.items : item,
-      ),
+      ).filter((item) => hasPermission(item.permissionKey)),
     [portal],
   );
   const navigate = useNavigate();
@@ -55,7 +59,9 @@ const SideBar = ({
   };
 
   const handleLogo = () => {
-    navigate(`/${portal}/dashboard`);
+    navigate(
+      getFirstPermittedHref(NAV[portal]) || `/${portal}/dashboard`,
+    );
   };
 
   const handleLogout = async () => {

@@ -160,6 +160,11 @@ Re-check these facts in source during every related task.
 Confirmed API-backed areas:
 
 - Business and Laundry logins call their respective login APIs and store session information.
+- Laundry staff login permissions are read from the stored authenticated user.
+  The Laundry sidebar shows only modules whose permission has `view: true`, and
+  implemented Laundry routes enforce the same module-level view permission.
+  Laundry owners/admins whose auth response has no permissions matrix retain
+  full portal access.
 - The Business signup Account step calls `POST /tenant-auth/signup` with
   `fullName`, `email`, `password`, and `confirmPassword`, then advances to email
   verification after the backend accepts the request and sends an OTP.
@@ -255,14 +260,15 @@ Confirmed API-backed areas:
   Non-default linked laundries can be unlinked through the live unlink service;
   the UI blocks unlinking the current default until another laundry is set as
   default.
-- Tenant General Settings loads the authenticated profile, IANA time zones, and
+- Tenant General Settings loads its settings profile, IANA time zones, and
   supported date formats from the tenant settings APIs. Updating a selected
   logo first uploads the file through the shared multipart upload service, then
   sends the returned file string as `avatar` in the profile update payload. The
-  dashboard shell hydrates the saved settings profile before rendering Business
-  routes, merges it into the tenant session without allowing the auth profile
-  refresh to discard settings, and tenant API-backed date/time displays use the
-  shared preference-aware formatter in `src/Utils/date.js`. That formatter
+- The Business dashboard header refreshes the authenticated user through
+  `GET /tenant-auth/me`; `GET /tenant-settings/profile` is scoped to the General
+  Settings screen instead of running on every Business route. Settings profile
+  updates merge into the tenant session, and tenant API-backed date/time
+  displays use the shared preference-aware formatter in `src/Utils/date.js`. That formatter
   applies the saved IANA `timezone` and exact `dateFormat` contract globally;
   the related hook also reacts to same-tab tenant-profile updates.
 - Tenant Notification Settings loads the server-defined preference rows from

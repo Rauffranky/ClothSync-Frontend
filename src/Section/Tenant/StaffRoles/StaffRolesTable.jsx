@@ -16,6 +16,7 @@ const StaffRolesTable = ({
   onToggleStatus,
   onView,
   roles = [],
+  canEdit = true,
 }) => {
   const columns = [
     {
@@ -84,21 +85,18 @@ const StaffRolesTable = ({
               label: "View Role",
               onClick: () => onView?.(row),
             },
-            {
-              disabled: !onEdit,
+            canEdit && {
               icon: Pencil,
               label: "Edit Role",
               onClick: () => onEdit?.(row),
             },
-            {
-              disabled: !onToggleStatus,
+            canEdit && {
               danger: row.status === "Active",
               icon: Power,
               label: row.status === "Active" ? "Deactivate" : "Activate",
               onClick: () => onToggleStatus?.(row),
             },
-           
-          ]}
+          ].filter(Boolean)}
           triggerAriaLabel={`Open actions for ${row.name}`}
           triggerIcon={<MoreHorizontal size={16} />}
         />

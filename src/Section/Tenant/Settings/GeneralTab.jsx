@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ImagePlus, RefreshCw, Upload } from "lucide-react";
+import {
+  AlertTriangle,
+  ImagePlus,
+  RefreshCw,
+  Upload,
+  X,
+} from "lucide-react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Alert from "../../../Components/UI/Alert";
@@ -179,6 +185,13 @@ const GeneralTab = () => {
     setLogoPreview(URL.createObjectURL(file));
   };
 
+  const removeLogo = () => {
+    setSelectedLogo(null);
+    setLogoPreview("");
+    formik.setFieldValue("avatar", null);
+    if (logoInputRef.current) logoInputRef.current.value = "";
+  };
+
   const discardChanges = () => {
     formik.resetForm();
     setSelectedLogo(null);
@@ -242,15 +255,28 @@ const GeneralTab = () => {
               Business Logo
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl border border-(--theme-border) bg-(--button-secondary-bg) text-(--color-aurora-teal)">
-                {logoPreview || formik.values.avatar ? (
-                  <img
-                    alt="Business logo preview"
-                    className="h-full w-full object-cover"
-                    src={logoPreview || formik.values.avatar}
-                  />
-                ) : (
-                  <ImagePlus size={22} />
+              <div className="group relative h-14 w-14 shrink-0">
+                <div className="grid h-full w-full place-items-center overflow-hidden rounded-xl border border-(--theme-border) bg-(--button-secondary-bg) text-(--color-aurora-teal)">
+                  {logoPreview || formik.values.avatar ? (
+                    <img
+                      alt="Business logo preview"
+                      className="h-full w-full object-cover"
+                      src={logoPreview || formik.values.avatar}
+                    />
+                  ) : (
+                    <ImagePlus size={22} />
+                  )}
+                </div>
+                {(logoPreview || formik.values.avatar) && (
+                  <button
+                    aria-label="Remove business logo"
+                    className="cursor-pointer absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full border-2 border-(--theme-bg) bg-(--color-overdue) text-white opacity-0 shadow-md transition-all hover:scale-105 focus:scale-105 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-(--color-overdue)/40 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={formik.isSubmitting}
+                    onClick={removeLogo}
+                    type="button"
+                  >
+                    <X aria-hidden="true" size={13} strokeWidth={3} />
+                  </button>
                 )}
               </div>
               <input

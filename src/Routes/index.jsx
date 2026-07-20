@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import DashboardLayout from "../Components/Layout/Dashboard";
 import LandingLayout from "../Components/Layout/Landing";
+import PermissionRoute from "./PermissionRoute";
 
 // ============================================================================
 // LAZY LOADED PAGES
@@ -98,11 +99,46 @@ const AppRoutes = () => {
 
           {/* Laundry Portal */}
           <Route path="/laundry" element={<Navigate to="/laundry/dashboard" replace />} />
-          <Route path="/laundry/dashboard" element={<LaundryDashboard />} />
-          <Route path="/laundry/linked-businesses" element={<LaundryLinkedBusinessesPage />} />
-          <Route path="/laundry/linked-businesses/:id" element={<LaundryLinkedBusinessDetailsPage />} />
-          <Route path="/laundry/staff" element={<LaundryStaffPage />} />
-          <Route path="/laundry/staff-roles" element={<LaundryStaffRolesPage />} />
+          <Route
+            path="/laundry/dashboard"
+            element={
+              <PermissionRoute permissionKey="dashboard">
+                <LaundryDashboard />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/laundry/linked-businesses"
+            element={
+              <PermissionRoute permissionKey="linked_tenants">
+                <LaundryLinkedBusinessesPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/laundry/linked-businesses/:id"
+            element={
+              <PermissionRoute permissionKey="linked_tenants">
+                <LaundryLinkedBusinessDetailsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/laundry/staff"
+            element={
+              <PermissionRoute permissionKey="staff">
+                <LaundryStaffPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/laundry/staff-roles"
+            element={
+              <PermissionRoute permissionKey="staff">
+                <LaundryStaffRolesPage />
+              </PermissionRoute>
+            }
+          />
         </Route>
 
         {/* Error Routes */}

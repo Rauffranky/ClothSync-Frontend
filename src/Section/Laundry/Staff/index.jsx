@@ -7,6 +7,7 @@ import {
   updateLaundryStaff,
   updateLaundryStaffStatus,
 } from "../../../axios/laundryStaff/laundryStaff";
+import { hasPermission } from "../../../Utils/permissions";
 
 const LaundryStaff = () => (
   <TenantStaff
@@ -16,6 +17,10 @@ const LaundryStaff = () => (
     getStaffRoles={getLaundryStaffRoles}
     updateStaff={updateLaundryStaff}
     updateStaffStatus={updateLaundryStaffStatus}
+    permissions={{
+      create: hasPermission("staff", "create"),
+      edit: hasPermission("staff", "edit"),
+    }}
   />
 );
 

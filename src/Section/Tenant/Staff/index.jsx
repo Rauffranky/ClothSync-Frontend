@@ -48,6 +48,7 @@ const Staff = ({
   includeSendInvite = true,
   updateStaff = updateTenantStaff,
   updateStaffStatus = updateTenantStaffStatus,
+  permissions = { create: true, edit: true },
 }) => {
   const [staffList, setStaffList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -281,13 +282,15 @@ const Staff = ({
             options={statusOptions}
             value={statusFilter}
           />
-          <Button
-            disabled={activeRoleOptions.length <= 1}
-            leftIcon={<Plus size={16} />}
-            onClick={openAddModal}
-          >
-            Add Staff
-          </Button>
+          {permissions.create && (
+            <Button
+              disabled={activeRoleOptions.length <= 1}
+              leftIcon={<Plus size={16} />}
+              onClick={openAddModal}
+            >
+              Add Staff
+            </Button>
+          )}
         </div>
 
         <div className="px-4 py-4">
@@ -298,6 +301,7 @@ const Staff = ({
             onSort={handleTableSort}
             onStatusAction={setStatusActionData}
             onViewStaff={setViewingStaff}
+            canEdit={permissions.edit}
             sortBy={sortBy}
             sortDirection={sortDirection}
           />
@@ -314,7 +318,7 @@ const Staff = ({
         </div>
       </Card>
 
-      {isFormModalOpen && (
+      {isFormModalOpen && (formMode === "add" ? permissions.create : permissions.edit) && (
         <StaffFormModal
           createStaff={createStaff}
           getStaffDetails={getStaffDetails}
@@ -335,7 +339,7 @@ const Staff = ({
           staff={viewingStaff}
         />
       )}
-      {statusActionData && (
+      {statusActionData && permissions.edit && (
         <StaffStatusModal
           actionData={statusActionData}
           isSubmitting={isStatusSubmitting}

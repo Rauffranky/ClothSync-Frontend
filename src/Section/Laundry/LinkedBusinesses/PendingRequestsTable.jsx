@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
+import { hasPermission } from "../../../Utils/permissions";
 import Alert from "../../../Components/UI/Alert";
 import Badge from "../../../Components/UI/Badge";
 import Button from "../../../Components/UI/Button";
@@ -224,7 +225,10 @@ const PendingRequestsTable = ({ onRequestResolved }) => {
         label: "Actions",
         render: (_, row) => {
           const disabled =
-            !row.apiId || !row.canRespond || isSubmitting;
+            !hasPermission("linked_tenants", "approve") ||
+            !row.apiId ||
+            !row.canRespond ||
+            isSubmitting;
 
           return (
             <ActionDropdown

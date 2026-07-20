@@ -44,6 +44,7 @@ const StaffRoles = ({
   getStaffRoles = getTenantStaffRoles,
   updateStaffRole = updateTenantStaffRole,
   updateStaffRoleStatus = updateTenantStaffRoleStatus,
+  permissions = { create: true, edit: true },
 }) => {
   const [roles, setRoles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -229,13 +230,15 @@ const StaffRoles = ({
             options={accessLevelOptions}
             value={accessFilter}
           />
-          <Button
-            className="w-full md:w-auto"
-            leftIcon={<Plus size={17} />}
-            onClick={() => setIsCreateRoleOpen(true)}
-          >
-            Create Role
-          </Button>
+          {permissions.create && (
+            <Button
+              className="w-full md:w-auto"
+              leftIcon={<Plus size={17} />}
+              onClick={() => setIsCreateRoleOpen(true)}
+            >
+              Create Role
+            </Button>
+          )}
         </div>
 
         <div className="px-4 py-4">
@@ -244,6 +247,7 @@ const StaffRoles = ({
             onEdit={setEditingRole}
             onToggleStatus={handleToggleStatus}
             onView={setSelectedRole}
+            canEdit={permissions.edit}
             roles={roles}
           />
           <Pagination
@@ -266,7 +270,7 @@ const StaffRoles = ({
           role={selectedRole}
         />
       )}
-      {isCreateRoleOpen && (
+      {isCreateRoleOpen && permissions.create && (
         <CreateRoleModal
           createStaffRole={createStaffRole}
           getAccessSections={getAccessSections}
@@ -277,7 +281,7 @@ const StaffRoles = ({
           updateStaffRole={updateStaffRole}
         />
       )}
-      {editingRole && (
+      {editingRole && permissions.edit && (
         <CreateRoleModal
           createStaffRole={createStaffRole}
           getAccessSections={getAccessSections}
@@ -289,7 +293,7 @@ const StaffRoles = ({
           updateStaffRole={updateStaffRole}
         />
       )}
-      {statusAction && (
+      {statusAction && permissions.edit && (
         <RoleStatusModal
           actionData={statusAction}
           isSubmitting={isStatusSubmitting}

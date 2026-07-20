@@ -27,6 +27,8 @@ import {
 } from "../axios/auth/laundryAuth";
 import { getApiErrorMessage } from "../axios/api";
 import { toast } from "../Utils/toast";
+import { NAV } from "../Components/Layout/Dashboard/nav";
+import { getFirstPermittedHref } from "../Utils/permissions";
 
 const initialLoginValues = {
   email: "",
@@ -118,7 +120,10 @@ const Login = ({ portal }) => {
           }
 
           toast.success(response?.message || "Login successful");
-          navigate(portal.dashboardPath, { replace: true });
+          navigate(
+            getFirstPermittedHref(NAV[portal.value]) || portal.dashboardPath,
+            { replace: true },
+          );
         } catch (error) {
           toast.error(getApiErrorMessage(error, "Unable to login. Please try again."));
         } finally {
