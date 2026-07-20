@@ -723,3 +723,51 @@ input::-moz-selection, textarea::-moz-selection {
     text-shadow: 0 0 32px rgba(110, 231, 242, 0.42);
   }
 }
+
+/* react-phone-input-2 Theme Overrides */
+.react-tel-input .form-control {
+  background-color: var(--theme-surface-strong) !important;
+  color: var(--theme-text-primary) !important;
+  border-color: var(--theme-border-soft) !important;
+}
+
+.react-tel-input .flag-dropdown {
+  background-color: transparent !important;
+  border-color: var(--theme-border-soft) !important;
+}
+
+.react-tel-input .flag-dropdown.open .selected-flag {
+  background-color: var(--button-secondary-bg) !important;
+}
+
+.react-tel-input .selected-flag:hover,
+.react-tel-input .selected-flag:focus {
+  background-color: var(--button-secondary-bg) !important;
+}
+
+.react-tel-input .country-list {
+  background-color: var(--theme-bg) !important;
+  border-color: var(--theme-border-soft) !important;
+  color: var(--theme-text-primary) !important;
+  box-shadow: var(--layout-panel-shadow) !important;
+}
+
+.react-tel-input .country-list .country:hover,
+.react-tel-input .country-list .country.highlight {
+  background-color: var(--button-secondary-bg) !important;
+  color: var(--theme-text-primary) !important;
+}
+
+.react-tel-input .country-list .country .dial-code {
+  color: var(--theme-text-muted) !important;
+}
+
+.react-tel-input .country-list .search {
+  background-color: var(--theme-bg) !important;
+}
+
+.react-tel-input .country-list .search-box {
+  background-color: var(--theme-surface-strong) !important;
+  color: var(--theme-text-primary) !important;
+  border-color: var(--theme-border-soft) !important;
+}
