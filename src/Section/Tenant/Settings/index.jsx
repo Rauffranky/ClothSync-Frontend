@@ -12,7 +12,11 @@ const tabItems = settingsTabs.map(({ icon: Icon, ...tab }) => ({
 }));
 const tabValues = settingsTabs.map((tab) => tab.value);
 
-const TenantSettings = () => {
+const TenantSettings = ({
+  generalTabProps,
+  notificationTabProps,
+  securityTabProps,
+}) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const activeTab = tabValues.includes(requestedTab)
@@ -50,9 +54,11 @@ const TenantSettings = () => {
           className="space-y-7 p-4 sm:p-7"
           id={`settings-panel-${activeTab}`}
         >
-          {activeTab === "general" && <GeneralTab />}
-          {activeTab === "notifications" && <NotificationsTab />}
-          {activeTab === "security" && <SecurityTab />}
+          {activeTab === "general" && <GeneralTab {...generalTabProps} />}
+          {activeTab === "notifications" && (
+            <NotificationsTab {...notificationTabProps} />
+          )}
+          {activeTab === "security" && <SecurityTab {...securityTabProps} />}
         </div>
       </Card>
     </section>

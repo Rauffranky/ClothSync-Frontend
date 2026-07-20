@@ -90,6 +90,7 @@ const Header = ({ portalKey, onOpenSidebar }) => {
 
   const profileName =
     tenantProfile?.businessName ||
+    tenantProfile?.companyName ||
     tenantProfile?.name ||
     tenantProfile?.fullName ||
     activePortal?.user.name ||

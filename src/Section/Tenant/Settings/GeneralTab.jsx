@@ -44,13 +44,27 @@ const emptyProfile = {
 };
 
 const profileValidationSchema = Yup.object({
-  businessName: Yup.string().trim().required("Business display name is required"),
+  businessName: Yup.string().trim().required("Display name is required"),
   language: Yup.string().oneOf(["en", "ar"]).required("Language is required"),
   timezone: Yup.string().required("Time zone is required"),
   dateFormat: Yup.string().required("Date format is required"),
 });
 
-const GeneralTab = () => {
+const GeneralTab = ({
+  canEdit = true,
+  displayNameField = "businessName",
+  displayNameLabel = "Business Display Name",
+  displayNamePlaceholder = "Enter business display name",
+  getDateFormats = getTenantSettingsDateFormats,
+  getProfile = getTenantSettingsProfile,
+  getTimeZones = getTenantSettingsTimeZones,
+  logoLabel = "Business Logo",
+  logoPreviewAlt = "Business logo preview",
+  removeLogoAriaLabel = "Remove business logo",
+  panelDescription = "Update your business display name and branding",
+  panelTitle = "Business Profile",
+  updateProfile = updateTenantSettingsProfile,
+}) => {
   const logoInputRef = useRef(null);
   const [initialProfile, setInitialProfile] = useState(emptyProfile);
   const [timeZoneOptions, setTimeZoneOptions] = useState([]);
@@ -78,19 +92,24 @@ const GeneralTab = () => {
           }
         }
 
+        const displayName = values.businessName.trim();
         const payload = {
-          businessName: values.businessName.trim(),
+          [displayNameField]: displayName,
           avatar: avatar || null,
           language: values.language,
           timezone: values.timezone,
           dateFormat: values.dateFormat,
         };
-        const response = await updateTenantSettingsProfile(payload);
+        const response = await updateProfile(payload);
         const updatedProfile = getSettingsProfile(response) || payload;
         const nextProfile = {
           ...payload,
           ...updatedProfile,
-          businessName: updatedProfile.businessName || payload.businessName,
+          businessName:
+            updatedProfile[displayNameField] ||
+            updatedProfile.businessName ||
+            updatedProfile.companyName ||
+            displayName,
         };
 
         setInitialProfile(nextProfile);
@@ -114,9 +133,9 @@ const GeneralTab = () => {
     let isActive = true;
 
     Promise.all([
-      getTenantSettingsTimeZones(),
-      getTenantSettingsDateFormats(),
-      getTenantSettingsProfile(),
+      getTimeZones(),
+      getDateFormats(),
+      getProfile(),
     ])
       .then(([timeZonesResponse, dateFormatsResponse, profileResponse]) => {
         if (!isActive) return;
@@ -132,7 +151,12 @@ const GeneralTab = () => {
         setTimeZoneOptions(nextTimeZones);
         setDateFormatOptions(nextDateFormats);
         setInitialProfile({
-          businessName: profile.businessName || profile.fullName || "",
+          businessName:
+            profile[displayNameField] ||
+            profile.businessName ||
+            profile.companyName ||
+            profile.fullName ||
+            "",
           avatar: profile.avatar || null,
           language: profile.language || "en",
           timezone: profile.timezone || "UTC",
@@ -153,7 +177,7 @@ const GeneralTab = () => {
     return () => {
       isActive = false;
     };
-  }, [retryKey]);
+  }, [displayNameField, getDateFormats, getProfile, getTimeZones, retryKey]);
 
   useEffect(
     () => () => {
@@ -235,31 +259,32 @@ const GeneralTab = () => {
   return (
     <form className="space-y-7" noValidate onSubmit={formik.handleSubmit}>
       <SettingsPanel
-        description="Update your business display name and branding"
-        title="Business Profile"
+        description={panelDescription}
+        title={panelTitle}
       >
         <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-2 lg:items-end">
           <Input
+            disabled={!canEdit || formik.isSubmitting}
             error={Boolean(getFieldError("businessName"))}
             helperText={getFieldError("businessName")}
-            label="Business Display Name"
+            label={displayNameLabel}
             name="businessName"
             onBlur={formik.handleBlur}
             onChange={(value) => formik.setFieldValue("businessName", value)}
-            placeholder="Enter business display name"
+            placeholder={displayNamePlaceholder}
             required
             value={formik.values.businessName}
           />
           <div>
             <p className="mb-2 text-sm font-semibold text-(--theme-text-secondary)">
-              Business Logo
+              {logoLabel}
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <div className="group relative h-14 w-14 shrink-0">
                 <div className="grid h-full w-full place-items-center overflow-hidden rounded-xl border border-(--theme-border) bg-(--button-secondary-bg) text-(--color-aurora-teal)">
                   {logoPreview || formik.values.avatar ? (
                     <img
-                      alt="Business logo preview"
+                      alt={logoPreviewAlt}
                       className="h-full w-full object-cover"
                       src={logoPreview || formik.values.avatar}
                     />
@@ -269,9 +294,9 @@ const GeneralTab = () => {
                 </div>
                 {(logoPreview || formik.values.avatar) && (
                   <button
-                    aria-label="Remove business logo"
+                    aria-label={removeLogoAriaLabel}
                     className="cursor-pointer absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full border-2 border-(--theme-bg) bg-(--color-overdue) text-white opacity-0 shadow-md transition-all hover:scale-105 focus:scale-105 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-(--color-overdue)/40 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={formik.isSubmitting}
+                    disabled={!canEdit || formik.isSubmitting}
                     onClick={removeLogo}
                     type="button"
                   >
@@ -282,13 +307,13 @@ const GeneralTab = () => {
               <input
                 accept="image/png,image/jpeg"
                 className="hidden"
-                disabled={formik.isSubmitting}
+                disabled={!canEdit || formik.isSubmitting}
                 onChange={handleLogoChange}
                 ref={logoInputRef}
                 type="file"
               />
               <Button
-                disabled={formik.isSubmitting}
+                disabled={!canEdit || formik.isSubmitting}
                 leftIcon={<Upload size={16} />}
                 onClick={() => logoInputRef.current?.click()}
                 size="sm"
@@ -318,7 +343,7 @@ const GeneralTab = () => {
             </div>
             <div>
               <Dropdown
-                disabled={formik.isSubmitting}
+                disabled={!canEdit || formik.isSubmitting}
                 onChange={(value) => formik.setFieldValue("timezone", value)}
                 options={timeZoneOptions}
                 search
@@ -338,7 +363,7 @@ const GeneralTab = () => {
               </p>
             </div>
             <Dropdown
-              disabled={formik.isSubmitting}
+              disabled={!canEdit || formik.isSubmitting}
               onChange={(value) => formik.setFieldValue("language", value)}
               options={languageOptions}
               value={formik.values.language}
@@ -354,7 +379,7 @@ const GeneralTab = () => {
             </div>
             <div>
               <Dropdown
-                disabled={formik.isSubmitting}
+                disabled={!canEdit || formik.isSubmitting}
                 onChange={(value) => formik.setFieldValue("dateFormat", value)}
                 options={dateFormatOptions}
                 value={formik.values.dateFormat}
@@ -368,7 +393,7 @@ const GeneralTab = () => {
       </SettingsPanel>
 
       <FormActions
-        disabled={!formik.dirty && !selectedLogo}
+        disabled={!canEdit || (!formik.dirty && !selectedLogo)}
         loading={formik.isSubmitting}
         onDiscard={discardChanges}
         onSave={formik.submitForm}

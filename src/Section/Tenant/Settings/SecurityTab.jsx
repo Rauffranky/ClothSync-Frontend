@@ -20,7 +20,11 @@ const passwordValidationSchema = Yup.object({
     .required("Please confirm your new password"),
 });
 
-const SecurityTab = () => {
+const SecurityTab = ({
+  canEdit = true,
+  changePassword = changeTenantPassword,
+  portalLabel = "Business Admin",
+}) => {
   const passwordFormik = useFormik({
     initialValues: {
       currentPassword: "",
@@ -30,7 +34,7 @@ const SecurityTab = () => {
     validationSchema: passwordValidationSchema,
     onSubmit: async (values, { resetForm }) => {
       try {
-        const response = await changeTenantPassword({
+        const response = await changePassword({
           currentPassword: values.currentPassword,
           newPassword: values.newPassword,
           confirmNewPassword: values.confirmNewPassword,
@@ -50,7 +54,7 @@ const SecurityTab = () => {
   return (
     <>
       <SettingsPanel
-        description="Update your Business Admin account password"
+        description={`Update your ${portalLabel} account password`}
         title="Change Password"
       >
         <form
@@ -63,7 +67,7 @@ const SecurityTab = () => {
               error={Boolean(getPasswordError("currentPassword"))}
               helperText={getPasswordError("currentPassword")}
               autoComplete="current-password"
-              disabled={passwordFormik.isSubmitting}
+              disabled={!canEdit || passwordFormik.isSubmitting}
               label="Current Password"
               name="currentPassword"
               onBlur={passwordFormik.handleBlur}
@@ -79,7 +83,7 @@ const SecurityTab = () => {
               error={Boolean(getPasswordError("newPassword"))}
               helperText={getPasswordError("newPassword")}
               autoComplete="new-password"
-              disabled={passwordFormik.isSubmitting}
+              disabled={!canEdit || passwordFormik.isSubmitting}
               label="New Password"
               name="newPassword"
               onBlur={passwordFormik.handleBlur}
@@ -97,7 +101,7 @@ const SecurityTab = () => {
               error={Boolean(getPasswordError("confirmNewPassword"))}
               helperText={getPasswordError("confirmNewPassword")}
               autoComplete="new-password"
-              disabled={passwordFormik.isSubmitting}
+              disabled={!canEdit || passwordFormik.isSubmitting}
               label="Confirm New Password"
               name="confirmNewPassword"
               onBlur={passwordFormik.handleBlur}
@@ -111,6 +115,7 @@ const SecurityTab = () => {
             />
           </div>
           <Button
+            disabled={!canEdit}
             leftIcon={<KeyRound size={17} />}
             loading={passwordFormik.isSubmitting}
             type="submit"
@@ -123,6 +128,7 @@ const SecurityTab = () => {
       <SettingsPanel
         action={
           <Button
+            disabled={!canEdit}
             leftIcon={<LogOut size={16} />}
             onClick={() =>
               toast.info("Session management will be enabled when its API is connected")

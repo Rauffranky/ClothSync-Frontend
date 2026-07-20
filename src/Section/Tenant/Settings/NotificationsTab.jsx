@@ -33,7 +33,11 @@ const NotificationPreferencesSkeleton = () => (
   </div>
 );
 
-const NotificationsTab = () => {
+const NotificationsTab = ({
+  canEdit = true,
+  getPreferences = getTenantNotificationPreferences,
+  updatePreferences = updateTenantNotificationPreferences,
+}) => {
   const [savedPreferences, setSavedPreferences] = useState([]);
   const [preferences, setPreferences] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +48,7 @@ const NotificationsTab = () => {
   useEffect(() => {
     let isActive = true;
 
-    getTenantNotificationPreferences()
+    getPreferences()
       .then((response) => {
         if (!isActive) return;
 
@@ -68,7 +72,7 @@ const NotificationsTab = () => {
     return () => {
       isActive = false;
     };
-  }, [retryKey]);
+  }, [getPreferences, retryKey]);
 
   const isDirty = useMemo(
     () => JSON.stringify(preferences) !== JSON.stringify(savedPreferences),
@@ -95,7 +99,7 @@ const NotificationsTab = () => {
         inAppEnabled: preference.inAppEnabled,
         emailEnabled: preference.emailEnabled,
       }));
-      const response = await updateTenantNotificationPreferences(payload);
+      const response = await updatePreferences(payload);
       const updatedPreferences = getNotificationPreferences(response);
       const nextPreferences = updatedPreferences.length
         ? updatedPreferences
@@ -152,7 +156,7 @@ const NotificationsTab = () => {
           </div>
         ) : preferences.length ? (
           <ChannelPreferences
-            disabled={isSaving}
+            disabled={!canEdit || isSaving}
             items={preferences}
             onChange={updateChannel}
           />
@@ -165,7 +169,7 @@ const NotificationsTab = () => {
 
       {!isLoading && !loadError && preferences.length > 0 && (
         <FormActions
-          disabled={!isDirty}
+          disabled={!canEdit || !isDirty}
           loading={isSaving}
           onDiscard={discardPreferences}
           onSave={savePreferences}

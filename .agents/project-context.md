@@ -127,7 +127,7 @@ Dashboard routes:
   `/business/tags`, `/business/tags/:id`, and `/business/settings`.
 - Laundry: `/laundry/dashboard`, `/laundry/linked-businesses`, connected
   business details at `/laundry/linked-businesses/:id`, `/laundry/staff`, and
-  `/laundry/staff-roles`.
+  `/laundry/staff-roles`, and `/laundry/settings`.
 - Each portal root redirects to its dashboard.
 
 `src/Components/Layout/Dashboard/nav.js` contains additional future links with no
@@ -208,6 +208,16 @@ Confirmed API-backed areas:
   email verification is available at `/laundry/staff/verify-email?token=...`;
   after a successful API response, the shared verification screen redirects to
   the Laundry login. The Tenant equivalent redirects to the Business login.
+- Laundry Settings reuses the established General, Notifications, and Security
+  interface at `/laundry/settings`. General settings use
+  `GET /laundry-settings/timezones`, `GET /laundry-settings/date-formats`,
+  `GET /laundry-settings/profile`, and `PUT /laundry-settings/profile` with
+  `companyName`, nullable string `avatar`, `language`, `timezone`, and
+  `dateFormat`. Notification preferences use
+  `GET /laundry-notification-preferences/show` and
+  `PUT /laundry-notification-preferences/update` with the exact
+  `{ preferences: [{ notificationKey, inAppEnabled, emailEnabled }] }` payload.
+  Laundry Security uses the existing Laundry change-password service.
 - After verification, Business signup saves the business profile with
   `POST /tenant-auth/complete-profile`, using the verified response's `userId`,
   business details, an internationalized phone number, and the browser timezone.
@@ -469,6 +479,12 @@ Current endpoints:
   `PUT /laundry-staff-roles/update-status/:id` manage Laundry roles.
 - `GET /laundry-access-sections/show` returns the Laundry permission matrix used
   by role create/edit.
+- `GET /laundry-settings/timezones`, `GET /laundry-settings/date-formats`,
+  `GET /laundry-settings/profile`, and `PUT /laundry-settings/profile` provide
+  Laundry profile and regional settings.
+- `GET /laundry-notification-preferences/show` and
+  `PUT /laundry-notification-preferences/update` provide Laundry notification
+  preferences.
 - `GET /tenant-laundries/show` returns `data.items`, `data.pagination`, and the
   `{ key, label, count }[]` summary under `data.counts` for `totalLinked`,
   `pendingRequests`, `activeDispatches`, `itemsCurrentlySent`, and

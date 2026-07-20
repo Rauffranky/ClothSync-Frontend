@@ -121,6 +121,17 @@ export const TENANT_NOTIFICATION_PREFERENCE_ENDPOINTS = Object.freeze({
   UPDATE: "/tenant-notification-preferences/update",
 });
 
+export const LAUNDRY_SETTINGS_ENDPOINTS = Object.freeze({
+  TIMEZONES: "/laundry-settings/timezones",
+  DATE_FORMATS: "/laundry-settings/date-formats",
+  PROFILE: "/laundry-settings/profile",
+});
+
+export const LAUNDRY_NOTIFICATION_PREFERENCE_ENDPOINTS = Object.freeze({
+  SHOW: "/laundry-notification-preferences/show",
+  UPDATE: "/laundry-notification-preferences/update",
+});
+
 export const FILE_UPLOAD_ENDPOINTS = Object.freeze({
   SINGLE: "/file-upload/single",
 });
