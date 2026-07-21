@@ -4,8 +4,14 @@ import useDashboardPeriod from "../../../Hooks/useDashboardPeriod";
 import ReportsFilters from "./ReportsFilters";
 import ReportsHeader from "./ReportsHeader";
 import ReportsStatsGrid from "./ReportsStatsGrid";
+import DelayedItems from "./DelayedItems";
+import MissingLost from "./MissingLost";
 import Overview from "./overview";
 import SentVsReturn from "./SentVsReturn";
+import TurnaroundTime from "./TurnAroundTime";
+import CategoryWise from "./CategoryWise";
+import LaundryWise from "./LaundryWise";
+import WashCycleSummary from "./WashCycleSummary";
 
 const TABS = [
   { value: "overview", label: "Overview" },
@@ -19,17 +25,17 @@ const TABS = [
 ];
 
 const TAB_CONTENT = {
-  delayed: "Delayed Items report content will be available here.",
-  missing: "Missing / Lost report content will be available here.",
-  turnaround: "Turnaround Time report content will be available here.",
-  wash_cycle: "Wash Cycle Summary report content will be available here.",
-  category_wise: "Category Wise report content will be available here.",
-  laundry_wise: "Laundry Wise report content will be available here.",
 };
 
 const TAB_COMPONENTS = {
   overview: Overview,
   sent_returned: SentVsReturn,
+  delayed: DelayedItems,
+  missing: MissingLost,
+  turnaround: TurnaroundTime,
+  category_wise: CategoryWise,
+  wash_cycle: WashCycleSummary,
+  laundry_wise: LaundryWise,
 };
 
 const ReportsAnalytics = () => {

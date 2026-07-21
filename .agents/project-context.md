@@ -307,10 +307,14 @@ Partial or placeholder areas:
   refresh and can be linked directly; missing or invalid values select General.
   Active-session controls clearly report that their APIs are not connected.
 - Tenant Reports & Analytics is available at `/business/reports-analytics` and
-  uses the shared global `Tabs` and chart primitives. Its Overview and Sent vs
-  Returned tabs currently render responsive local sample-data charts, summary
-  cards, and tables; report detail and export actions remain disabled until
-  backend contracts are integrated.
+  uses the shared global `Tabs`, `Alert`, table, and chart primitives. Its
+  All report tabs—Overview, Sent vs Returned, Delayed Items, Missing / Lost,
+  Turnaround Time, Wash Cycle Summary, Category Wise, and Laundry Wise—currently
+  render responsive local sample-data charts, summary cards, and tables; report
+  detail and export actions remain unavailable until backend contracts are
+  integrated. Delayed Items and Missing / Lost link their sample rows to the
+  existing asset-detail route. Laundry Wise and Wash Cycle Summary actions lead
+  to the corresponding existing linked-laundries and category screens.
 
 When integrating a placeholder feature, do not retain hidden mock fallback data
 unless the user explicitly requests offline/sample behavior.
