@@ -1,31 +1,28 @@
+import useDashboardPeriod from "../../../Hooks/useDashboardPeriod";
 import ActiveDispatchTable from "./ActiveDispatchTable";
 import AssetLifecycleOverview from "./AssetLifecycleOverview";
 import BottomChartsRow from "./BottomChartsRow";
 import ChartsRow from "./ChartsRow";
+import DashboardHeader from "./DashboardHeader";
 import InventoryAlerts from "./InventoryAlerts";
 import LinkedLaundriesPanel from "./LinkedLaundriesPanel";
 import ScannerActivityPanel from "./ScannerActivityPanel";
 import StatsGrid from "./StatsGrid";
 
 const Dashboard = () => {
+  const { period, customRange, selectPeriod, setCustomFrom, setCustomTo } =
+    useDashboardPeriod();
+
   return (
-    <div className="flex flex-col gap-5 p-4 sm:p-6">
-      {/* Page heading */}
-      <div>
-        <h1
-          className="text-2xl font-black tracking-tight"
-          style={{ color: "var(--theme-text-primary)" }}
-        >
-          Dashboard
-        </h1>
-        <p
-          className="mt-1 text-sm"
-          style={{ color: "var(--theme-text-muted)" }}
-        >
-          Monitor linen movement, inventory status, scanner activity, and
-          laundry operations.
-        </p>
-      </div>
+    <div className="flex flex-col gap-5">
+      {/* Page heading + period filter + date range */}
+      <DashboardHeader
+        period={period}
+        customRange={customRange}
+        onPeriod={selectPeriod}
+        onFromChange={setCustomFrom}
+        onToChange={setCustomTo}
+      />
 
       {/* Row 1 — 8 stat cards */}
       <StatsGrid />

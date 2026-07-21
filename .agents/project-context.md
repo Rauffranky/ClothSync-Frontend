@@ -125,6 +125,7 @@ Dashboard routes:
   `/business/assets/:id`, `/business/scanners`, `/business/scanners/:id`,
   `/business/scanners/warnings`, `/business/staff`, `/business/staff-roles`,
   `/business/tags`, `/business/tags/:id`, and `/business/settings`.
+  Reports & Analytics is available at `/business/reports-analytics`.
 - Laundry: `/laundry/dashboard`, `/laundry/linked-businesses`, connected
   business details at `/laundry/linked-businesses/:id`, `/laundry/staff`, and
   `/laundry/staff-roles`, and `/laundry/settings`.
@@ -305,6 +306,11 @@ Partial or placeholder areas:
   non-default tab is stored in the `tab` URL query parameter so it survives a
   refresh and can be linked directly; missing or invalid values select General.
   Active-session controls clearly report that their APIs are not connected.
+- Tenant Reports & Analytics is available at `/business/reports-analytics` and
+  uses the shared global `Tabs` and chart primitives. Its Overview and Sent vs
+  Returned tabs currently render responsive local sample-data charts, summary
+  cards, and tables; report detail and export actions remain disabled until
+  backend contracts are integrated.
 
 When integrating a placeholder feature, do not retain hidden mock fallback data
 unless the user explicitly requests offline/sample behavior.
@@ -526,7 +532,8 @@ Reuse `src/Components/UI` before creating feature-local replacements:
 - Overlays/actions: `ActionDropdown`, `Dropdown`, `Modal`, `SlideOver`, `Tooltip`.
 - Inputs/navigation: `Input`, `Tabs`, `Toggle`, `Pagination`, `BusinessSelector`.
 - Data display: `Table`, `TableSkeleton`, `CardSkeleton`, `Badge`, `Card`,
-  `Alert`, `ProgressBar`.
+  `Alert`, `ProgressBar`, and the shared `Charts` primitives (`ChartCard`,
+  `LineChart`, `BarChart`, `DonutChart`, and `SegmentedBarChart`).
 - Identity/icons: `Avatar`, `InitialsAvatar`, `IconWrapper`.
 - Primary action primitive: `Button`.
 

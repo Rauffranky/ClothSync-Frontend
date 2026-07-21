@@ -224,7 +224,7 @@ export const NAV = {
     {
       id: 109,
       label: "Reports & Analytics",
-      href: "/business/analytics",
+      href: "/business/reports-analytics",
       Icon: ChartNoAxesCombined,
     },
     {
@@ -239,7 +239,7 @@ export const NAV = {
       href: "/business/settings",
       Icon: Settings,
     },
-   
+
   ],
   laundry: [
     {

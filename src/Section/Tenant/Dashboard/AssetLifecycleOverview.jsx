@@ -1,5 +1,6 @@
 import { ArrowRight, ChevronDown } from "lucide-react";
 import Card from "../../../Components/UI/Card";
+import { SegmentedBarChart } from "../../../Components/UI/Charts";
 
 const stages = [
   { id: "at-facility", label: "In Facility", value: 437, color: "var(--color-seafoam)" },
@@ -41,17 +42,6 @@ const LifecycleStage = ({ stage, isLast }) => (
   </div>
 );
 
-const legendItems = [
-  { label: "In Facility", color: "var(--color-seafoam)" },
-  { label: "Sent to Laundry", color: "var(--color-pending)" },
-  { label: "In Laundry", color: "var(--color-super-admin-light)" },
-  { label: "Sent to Facility", color: "var(--color-sky-blue)" },
-  { label: "Returned to Facility", color: "var(--color-aqua-mist)" },
-];
-
-// Progress bar widths proportional to values
-const total = stages.reduce((s, st) => s + st.value, 0);
-
 const AssetLifecycleOverview = () => (
   <Card padding="20px 24px">
     {/* Header */}
@@ -87,35 +77,11 @@ const AssetLifecycleOverview = () => (
       ))}
     </div>
 
-    {/* Progress bar */}
-    <div className="mt-4 flex h-2 w-full overflow-hidden rounded-full">
-      {stages.map((stage) => (
-        <div
-          key={stage.id}
-          style={{
-            width: `${(stage.value / total) * 100}%`,
-            background: stage.color,
-          }}
-        />
-      ))}
-    </div>
-
-    {/* Legend */}
-    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-      {legendItems.map((item) => (
-        <div key={item.label} className="flex items-center gap-1.5">
-          <div
-            className="h-2 w-2 rounded-full"
-            style={{ background: item.color }}
-          />
-          <span
-            className="text-xs font-semibold"
-            style={{ color: "var(--theme-text-muted)" }}
-          >
-            {item.label}
-          </span>
-        </div>
-      ))}
+    <div className="mt-4">
+      <SegmentedBarChart
+        ariaLabel="Asset distribution across operational lifecycle stages"
+        data={stages}
+      />
     </div>
   </Card>
 );
