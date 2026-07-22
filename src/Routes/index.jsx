@@ -29,6 +29,7 @@ const LaundryLinkedBusinessDetailsPage = lazy(() => import("../Page/Dashboard/La
 const LaundryStaffPage = lazy(() => import("../Page/Dashboard/Laundry/StaffPage"));
 const LaundryStaffRolesPage = lazy(() => import("../Page/Dashboard/Laundry/StaffRolesPage"));
 const LaundrySettingsPage = lazy(() => import("../Page/Dashboard/Laundry/SettingsPage"));
+const LaundryReportAnalyticsPage = lazy(() => import("../Page/Dashboard/Laundry/ReportAnalyticsPage"));
 
 //Tenant 
 const AssetsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetsPage"));
@@ -147,6 +148,14 @@ const AppRoutes = () => {
             element={
               <PermissionRoute permissionKey="settings">
                 <LaundrySettingsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/laundry/reports"
+            element={
+              <PermissionRoute permissionKey="reports">
+                <LaundryReportAnalyticsPage />
               </PermissionRoute>
             }
           />

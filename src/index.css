@@ -11,6 +11,11 @@
   --color-blue-gray: #94a3b8;
   --color-deep-teal: #1e3a3a;
 
+  /* Chart colour aliases — used across dashboards & reports */
+  --color-aurora-purple: #a78bfa;
+  --color-sunset-orange: #f59e0b;
+  --color-neon-cyan: #22d3ee;
+
   /* Neutrals */
   --color-mist: #e6f2f1;
   --color-glass: #f1f6f6;
