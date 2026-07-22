@@ -18,40 +18,32 @@ const FiltersSection = () => {
 
   return (
     <Card padding="16px">
-      <div className="mb-4 flex flex-wrap items-center gap-4">
-        {/* <div className="flex items-center gap-2 font-semibold text-(--theme-text-muted)">
-          <Filter size={16} />
-          <span className="text-sm">Filters:</span>
-        </div> */}
-
-        <div className="w-48">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="w-full sm:w-48">
           <Dropdown placeholder="Jun 23–29, 2026" options={[]} />
         </div>
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Dropdown placeholder="All Linked Businesses" options={[]} />
         </div>
-        <div className="w-40">
+        <div className="w-full sm:w-40">
           <Dropdown placeholder="Batch Status" options={[]} />
         </div>
-        <div className="w-40">
+        <div className="w-full sm:w-40">
           <Dropdown placeholder="Category" options={[]} />
         </div>
 
-        <div className="ml-auto flex gap-2">
-          <Button variant="primary" icon={Check} size="sm">
+        <div className="flex w-full gap-2 sm:ml-auto sm:w-auto">
+          <Button variant="primary" icon={Check} size="sm" className="flex-1 sm:flex-none">
             Apply Filters
           </Button>
-          <Button variant="ghost" icon={X} size="sm">
+          <Button variant="ghost" icon={X} size="sm" className="flex-1 sm:flex-none">
             Reset
           </Button>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 border-t border-(--theme-border-soft) pt-4">
-        {/* <span className="text-sm font-semibold text-(--theme-text-muted)">
-          Viewing:
-        </span> */}
-        <div className="w-[500px]">
+      <div className="flex flex-wrap items-center gap-4 border-t border-(--theme-border-soft) pt-4">
+        <div className="w-full overflow-x-auto sm:w-auto">
           <Tabs
             items={viewingOptions}
             value={viewingTab}
@@ -66,3 +58,4 @@ const FiltersSection = () => {
 };
 
 export default FiltersSection;
+

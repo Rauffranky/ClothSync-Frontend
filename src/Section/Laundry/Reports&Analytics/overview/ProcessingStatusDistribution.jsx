@@ -34,19 +34,19 @@ const ProcessingStatusDistribution = () => {
         <p className="mt-0.5 text-xs text-(--theme-text-muted)">Current snapshot — all businesses</p>
       </div>
 
-      <div className="flex items-center gap-8">
+      <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
         {/* Donut Chart — no built-in legend */}
         <div className="shrink-0">
           <DonutChart
             data={chartData}
-            size={180}
-            strokeWidth={26}
+            size={160}
+            strokeWidth={24}
             showLegend={false}
           />
         </div>
 
         {/* Custom Legend */}
-        <div className="flex flex-1 flex-col gap-2.5">
+        <div className="flex w-full flex-1 flex-col gap-2.5">
           {processingStatusData.map((stat) => (
             <div key={stat.label} className="flex items-center gap-2 text-xs">
               <span
