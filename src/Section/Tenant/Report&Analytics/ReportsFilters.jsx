@@ -1,5 +1,6 @@
 import { FileDown } from "lucide-react";
 import Dropdown from "../../../Components/UI/Dropdown";
+import Button from "../../../Components/UI/Button";
 
 const dateOptions = [
   { label: "Last 7 days", value: "7d" },
@@ -34,6 +35,7 @@ const ReportsFilters = ({ filters, onFilter }) => (
       placeholder="Date"
       width="w-40"
       rounded="10px"
+      triggerClassName="h-[36px]! min-h-0! py-0!"
     />
 
     {/* Laundry filter */}
@@ -44,6 +46,7 @@ const ReportsFilters = ({ filters, onFilter }) => (
       placeholder="Laundries"
       width="w-44"
       rounded="10px"
+      triggerClassName="h-[36px]! min-h-0! py-0!"
     />
 
     {/* Category filter */}
@@ -54,32 +57,29 @@ const ReportsFilters = ({ filters, onFilter }) => (
       placeholder="Categories"
       width="w-44"
       rounded="10px"
+      triggerClassName="h-[36px]! min-h-0! py-0!"
     />
 
     {/* Spacer */}
     <div className="flex-1" />
 
     {/* Quick export */}
-    <span
+    {/* <span
       className="text-xs font-semibold"
       style={{ color: "var(--theme-text-muted)" }}
     >
       Quick export:
-    </span>
+    </span> */}
     {["CSV", "XLSX"].map((fmt) => (
-      <button
+      <Button
         key={fmt}
-        type="button"
-        className="flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all hover:border-[var(--color-aurora-teal)] hover:text-[var(--color-aurora-teal)]"
-        style={{
-          borderColor: "var(--theme-border-soft)",
-          color: "var(--theme-text-secondary)",
-          background: "var(--theme-surface-strong)",
-        }}
+        variant="ghost"
+        size="sm"
+        className="h-[28px]! px-3! text-xs!"
+        leftIcon={<FileDown size={12} />}
       >
-        <FileDown size={12} />
         {fmt}
-      </button>
+      </Button>
     ))}
   </div>
 );

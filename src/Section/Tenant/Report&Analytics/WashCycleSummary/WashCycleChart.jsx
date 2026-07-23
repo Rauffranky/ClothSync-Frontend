@@ -9,7 +9,6 @@ const WashCycleChart = () => (
     <BarChart
       ariaLabel="Total wash cycles by category: Bed Linen 412, Bath Towels 289, Uniforms 178, Table Linen 203, Pool Towels 95"
       data={washCycleChartData}
-      height={250}
       maxValue={600}
       ticks={[0, 150, 300, 450, 600]}
     />

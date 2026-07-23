@@ -8,7 +8,6 @@ const SentReturnedTrend = () => (
   >
     <LineChart
       ariaLabel="Weekly sent and returned item comparison"
-      height={250}
       labels={weekLabels}
       maxValue={320}
       series={sentReturnedSeries}

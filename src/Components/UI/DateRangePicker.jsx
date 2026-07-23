@@ -18,10 +18,10 @@ const parseKey = (key) => {
 };
 
 const isBefore = (a, b) => a && b && parseKey(a) < parseKey(b);
-const isAfter  = (a, b) => a && b && parseKey(a) > parseKey(b);
+const isAfter = (a, b) => a && b && parseKey(a) > parseKey(b);
 
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-const getFirstDay   = (year, month) => new Date(year, month, 1).getDay();
+const getFirstDay = (year, month) => new Date(year, month, 1).getDay();
 
 const getTodayKey = () => {
   const t = new Date();
@@ -162,6 +162,7 @@ const DateRangePicker = ({
   placeholder = "Select date range",
   disableFuture = false,
   disablePast = false,
+  className = "",
 }) => {
   const today = new Date();
   const [open, setOpen] = useState(false);
@@ -185,7 +186,7 @@ const DateRangePicker = ({
 
   // Second month
   const nextMonth = viewMonth === 11 ? 0 : viewMonth + 1;
-  const nextYear  = viewMonth === 11 ? viewYear + 1 : viewYear;
+  const nextYear = viewMonth === 11 ? viewYear + 1 : viewYear;
 
   const prevMonthView = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
@@ -225,8 +226,8 @@ const DateRangePicker = ({
   const label = from && to
     ? `${formatDisplay(from)} → ${formatDisplay(to)}`
     : from
-    ? `${formatDisplay(from)} → pick end`
-    : placeholder;
+      ? `${formatDisplay(from)} → pick end`
+      : placeholder;
 
   return (
     <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
@@ -234,7 +235,7 @@ const DateRangePicker = ({
       <button
         type="button"
         onClick={() => { setOpen((o) => !o); setSelecting("from"); }}
-        className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-all"
+        className={`flex items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-all ${className || "py-2"}`}
         style={{
           background: hasRange ? "rgba(20,184,166,0.08)" : "var(--theme-surface-strong)",
           borderColor: open || hasRange ? "var(--color-aurora-teal)" : "var(--theme-border-soft)",

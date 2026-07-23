@@ -38,7 +38,7 @@ const BottomChartsRow = () => (
         ariaLabel="Items currently sent per laundry partner"
         centerLabel="total items"
         data={laundryDistribution}
-        size={150}
+        size={190}
       />
     </ChartCard>
   </div>

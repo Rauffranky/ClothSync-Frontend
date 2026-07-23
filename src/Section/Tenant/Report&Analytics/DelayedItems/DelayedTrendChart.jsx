@@ -7,8 +7,7 @@ const DelayedTrendChart = () => (
     title="Delayed Items Trend"
   >
     <LineChart
-      ariaLabel="Weekly delayed items trend"
-      height={220}
+      ariaLabel="Weekly delayed item trend"
       labels={delayedWeekLabels}
       maxValue={32}
       series={[

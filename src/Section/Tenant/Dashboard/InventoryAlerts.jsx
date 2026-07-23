@@ -1,6 +1,8 @@
-import { ChevronUp, Clock, Scale, Search, TriangleAlert } from "lucide-react";
+import { ArrowRight, ChevronUp, Clock, Scale, Search, TriangleAlert } from "lucide-react";
 import Badge from "../../../Components/UI/Badge";
 import Card from "../../../Components/UI/Card";
+import IconWrapper from "../../../Components/UI/IconWrapper";
+import Button from "../../../Components/UI/Button";
 
 const alerts = [
   {
@@ -59,12 +61,10 @@ const AlertCard = ({ alert }) => {
         minWidth: "140px",
       }}
     >
-      <div
-        className="flex h-9 w-9 items-center justify-center rounded-lg"
-        style={{ background: iconBg }}
-      >
-        <Icon size={18} style={{ color: iconColor }} />
-      </div>
+      <IconWrapper
+        icon={Icon}
+        style={{ background: iconBg, color: iconColor }}
+      />
       <div>
         <p
           className="text-2xl font-black leading-none"
@@ -89,13 +89,20 @@ const AlertCard = ({ alert }) => {
         <Badge variant={severity === "danger" ? "danger" : "warning"} size="sm">
           {severityLabel}
         </Badge>
-        <button
-          type="button"
-          className="text-xs font-bold"
-          style={{ color: "var(--color-sky-blue)" }}
+        <Button
+          rightIcon={<ArrowRight size={14} />}
+          variant="link"
+          className="text-[12px]!"
+          style={{
+            minHeight: "auto",
+            padding: 0,
+            border: "none",
+            color: "var(--color-sky-blue)",
+          }}
+          disableHoverTransform
         >
-          View &rsaquo;
-        </button>
+          View
+        </Button>
       </div>
     </div>
   );
@@ -104,12 +111,12 @@ const AlertCard = ({ alert }) => {
 const totalAlerts = alerts.reduce((s, a) => s + a.count, 0);
 
 const InventoryAlerts = () => (
-  <Card padding="20px 24px">
+  <Card>
     {/* Header */}
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
         <h2
-          className="text-base font-black"
+          className="font-bold"
           style={{ color: "var(--theme-text-primary)" }}
         >
           Inventory Alerts

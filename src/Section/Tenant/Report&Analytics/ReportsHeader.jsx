@@ -7,7 +7,7 @@ const ReportsHeader = ({ customRange, onFromChange, onToChange }) => (
     {/* Title */}
     <div>
       <h1
-        className="text-2xl font-black tracking-tight"
+        className="text-2xl font-bold tracking-tight"
         style={{ color: "var(--theme-text-primary)" }}
       >
         Reports &amp; Analytics
@@ -29,6 +29,7 @@ const ReportsHeader = ({ customRange, onFromChange, onToChange }) => (
         }}
         placeholder="Date Range"
         disableFuture
+        className="h-[36px]"
       />
 
       <Button

@@ -1,5 +1,6 @@
 import { Box, Clock, LogIn, ScanLine, Truck } from "lucide-react";
 import Card from "../../../Components/UI/Card";
+import IconWrapper from "../../../Components/UI/IconWrapper";
 
 const stats = [
   {
@@ -69,15 +70,16 @@ const StatCard = ({ stat }) => {
   return (
     <Card padding="18px 20px">
       <div className="flex flex-col gap-3">
-        <div
-          className="flex h-10 w-10 items-center justify-center rounded-xl"
-          style={{ background: bgColor }}
-        >
-          <Icon size={20} style={{ color }} />
-        </div>
+        <IconWrapper
+          icon={Icon}
+          sizeClassName="h-10 w-10"
+          roundedClassName="rounded-xl"
+          iconSize={20}
+          color={color}
+        />
         <div>
           <p
-            className="text-3xl font-black leading-none tracking-tight"
+            className="text-2xl font-bold"
             style={{ color: color }}
           >
             {value}
@@ -88,12 +90,12 @@ const StatCard = ({ stat }) => {
           >
             {label}
           </p>
-          <p
+          {/* <p
             className="mt-0.5 text-xs font-semibold"
             style={{ color: trendColor }}
           >
             {trend}
-          </p>
+          </p> */}
         </div>
       </div>
     </Card>

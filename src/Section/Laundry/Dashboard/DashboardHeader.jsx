@@ -7,7 +7,7 @@ const DashboardHeader = () => {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1
-            className="text-2xl font-black tracking-tight"
+            className="text-2xl font-bold"
             style={{ color: "var(--theme-text-primary)" }}
           >
             Laundry Dashboard
@@ -20,18 +20,19 @@ const DashboardHeader = () => {
 
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
-           <span className="text-sm font-semibold" style={{ color: "var(--theme-text-muted)" }}>Viewing:</span>
-           <div className="w-56">
-             <Dropdown 
-               options={[{label: "All Linked Businesses", value: "all"}]} 
-               value="all" 
-               onChange={() => {}} 
-             />
-           </div>
+          {/* <span className="text-sm font-semibold" style={{ color: "var(--theme-text-muted)" }}>Viewing:</span> */}
+          <div className="w-56">
+            <Dropdown
+              options={[{ label: "All Linked Businesses", value: "all" }]}
+              value="all"
+              onChange={() => { }}
+              triggerClassName="h-[36px]! min-h-0! py-0!"
+            />
+          </div>
         </div>
         <div className="flex items-center gap-2 text-sm font-semibold">
-           <div className="h-2 w-2 rounded-full" style={{ background: "var(--color-seafoam)" }} />
-           <span style={{ color: "var(--theme-text-muted)" }}>6 batches - 1003 items in laundry</span>
+          <div className="h-2 w-2 rounded-full" style={{ background: "var(--color-seafoam)" }} />
+          <span style={{ color: "var(--theme-text-muted)" }}>6 batches - 1003 items in laundry</span>
         </div>
       </div>
 

@@ -10,7 +10,7 @@ const StatusBreakdownChart = () => (
       ariaLabel="Missing and lost status breakdown: 7 missing, 3 suspected lost, 1 lost"
       data={missingStatusBreakdown}
       showLegend={false}
-      size={160}
+      size={140}
       strokeWidth={25}
     />
     <div className="mt-3 flex flex-wrap justify-center gap-4" aria-hidden="true">

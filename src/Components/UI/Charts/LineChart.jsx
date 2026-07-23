@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 
-const DEFAULT_PADDING = { top: 18, right: 16, bottom: 36, left: 42 };
+const DEFAULT_PADDING = { top: 20, right: 20, bottom: 36, left: 45 };
 
 const getPoints = (values, maxValue, width, height, padding) => {
   const plotWidth = width - padding.left - padding.right;
@@ -34,9 +34,9 @@ const LineChart = ({
   series = [],
   maxValue,
   ticks,
-  width = 520,
-  height = 220,
-  minWidth = 420,
+  width = 720,
+  height = 260,
+  minWidth = 500,
   padding = DEFAULT_PADDING,
   smooth = true,
   showLegend = true,
@@ -109,7 +109,7 @@ const LineChart = ({
                 />
                 <text
                   fill="var(--theme-text-muted)"
-                  fontSize="10"
+                  fontSize="9"
                   textAnchor="end"
                   x={padding.left - 9}
                   y={y + 4}
@@ -135,7 +135,7 @@ const LineChart = ({
                 strokeDasharray={item.dashArray}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={item.strokeWidth || 2.5}
+                strokeWidth={item.strokeWidth || 2}
               />
               {(item.showPoints || hoveredIndex !== null) && item.points.map((point, index) => (
                 <circle
@@ -143,7 +143,7 @@ const LineChart = ({
                   cx={point.x}
                   cy={point.y}
                   fill={item.color}
-                  r={hoveredIndex === index ? 5 : 3}
+                  r={hoveredIndex === index ? 4 : 2}
                   stroke="var(--theme-surface)"
                   strokeWidth="2"
                 />
@@ -164,7 +164,7 @@ const LineChart = ({
               />
               <text
                 fill="var(--theme-text-muted)"
-                fontSize="10"
+                fontSize="9"
                 textAnchor="middle"
                 x={point.x}
                 y={height - 10}

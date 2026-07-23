@@ -1,7 +1,8 @@
-import { MoreHorizontal } from "lucide-react";
+import { ArrowRight, MoreHorizontal } from "lucide-react";
 import Badge from "../../../Components/UI/Badge";
 import Card from "../../../Components/UI/Card";
 import Table from "../../../Components/UI/Table";
+import Button from "../../../Components/UI/Button";
 
 const dispatches = [
   {
@@ -111,7 +112,7 @@ const ActiveDispatchTable = () => (
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
         <h2
-          className="text-base font-black"
+          className="font-bold"
           style={{ color: "var(--theme-text-primary)" }}
         >
           Active Dispatch Items
@@ -123,16 +124,14 @@ const ActiveDispatchTable = () => (
           15 batches in the last 14 days
         </p>
       </div>
-      <button
-        type="button"
-        className="flex items-center gap-1 rounded-xl border px-3 py-1.5 text-xs font-bold transition-colors hover:bg-[color-mix(in_srgb,var(--color-aurora-teal)_8%,transparent)]"
-        style={{
-          color: "var(--theme-text-secondary)",
-          borderColor: "var(--theme-border-soft)",
-        }}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-[30px]! px-3! text-xs!"
+        rightIcon={<ArrowRight size={14} />}
       >
-        View All &rsaquo;
-      </button>
+        View All
+      </Button>
     </div>
 
     <Table

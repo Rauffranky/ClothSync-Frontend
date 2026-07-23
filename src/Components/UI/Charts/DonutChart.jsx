@@ -102,7 +102,7 @@ const DonutChart = ({
                 onMouseLeave={() => setHoveredIndex(null)}
               >
                 <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-sm transition-transform"
+                  className="h-2.5 w-2.5 shrink-0 rounded-full transition-transform"
                   style={{ background: item.color, transform: isHovered ? "scale(1.2)" : undefined }}
                 />
                 <span className="flex-1 font-semibold text-(--theme-text-secondary)">{item.label}</span>

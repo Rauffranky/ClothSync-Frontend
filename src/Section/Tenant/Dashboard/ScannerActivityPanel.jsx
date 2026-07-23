@@ -1,6 +1,8 @@
 import { ArrowRight, Radio } from "lucide-react";
 import Badge from "../../../Components/UI/Badge";
 import Card from "../../../Components/UI/Card";
+import Button from "../../../Components/UI/Button";
+import IconWrapper from "../../../Components/UI/IconWrapper";
 
 const scanners = [
   {
@@ -44,30 +46,27 @@ const statusVariant = {
 };
 
 const ScannerItem = ({ scanner }) => (
-  <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-[color-mix(in_srgb,var(--color-aurora-teal)_6%,transparent)]">
-    <div
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+  <div className="flex items-center gap-3 rounded-xl py-2.5 transition-colors hover:bg-[color-mix(in_srgb,var(--color-aurora-teal)_6%,transparent)]">
+    <IconWrapper
+      icon={Radio}
+      sizeClassName="h-9 w-9"
+      roundedClassName="rounded-xl"
+      iconSize={17}
       style={{
         background:
           scanner.status === "Active"
             ? "rgba(20,184,166,0.1)"
             : scanner.status === "Warning"
-            ? "rgba(245,158,11,0.1)"
-            : "rgba(239,68,68,0.1)",
-      }}
-    >
-      <Radio
-        size={17}
-        style={{
-          color:
-            scanner.status === "Active"
-              ? "var(--color-aurora-teal)"
-              : scanner.status === "Warning"
+              ? "rgba(245,158,11,0.1)"
+              : "rgba(239,68,68,0.1)",
+        color:
+          scanner.status === "Active"
+            ? "var(--color-aurora-teal)"
+            : scanner.status === "Warning"
               ? "var(--color-pending)"
               : "var(--color-overdue)",
-        }}
-      />
-    </div>
+      }}
+    />
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-1.5">
         <span
@@ -110,12 +109,12 @@ const ScannerActivityPanel = () => {
   const offlineCount = scanners.filter((s) => s.status === "Offline").length;
 
   return (
-    <Card padding="20px 24px">
+    <Card>
       {/* Header */}
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <h2
-            className="text-base font-black"
+            className="font-bold"
             style={{ color: "var(--theme-text-primary)" }}
           >
             Scanner Activity
@@ -141,13 +140,20 @@ const ScannerActivityPanel = () => {
               {offlineCount} offline
             </span>
           </div>
-          <button
-            type="button"
-            className="flex items-center gap-1 text-xs font-bold"
-            style={{ color: "var(--color-sky-blue)" }}
+          <Button
+            rightIcon={<ArrowRight size={14} />}
+            variant="link"
+            className="text-[12px]!"
+            style={{
+              minHeight: "auto",
+              padding: 0,
+              border: "none",
+              color: "var(--color-sky-blue)",
+            }}
+            disableHoverTransform
           >
-            View All <ArrowRight size={13} />
-          </button>
+            View All
+          </Button>
         </div>
       </div>
 
