@@ -9,13 +9,13 @@ const SentReturnedStats = () => (
 
       return (
         <Card key={stat.id} padding="16px 20px">
-          <p className="text-xs font-black uppercase tracking-wide text-(--theme-text-muted)">
+          <p className="text-xs font-bold uppercase tracking-wide text-(--theme-text-muted)">
             {stat.label}
           </p>
-          <p className="mt-2 text-3xl font-black" style={{ color: stat.color }}>
+          <p className="mt-2 text-2xl font-bold" style={{ color: stat.color }}>
             {stat.value}
           </p>
-          <div
+          {/* <div
             className="mt-2 flex items-center gap-1 text-xs font-bold"
             style={{
               color: stat.positive
@@ -25,7 +25,7 @@ const SentReturnedStats = () => (
           >
             <TrendIcon aria-hidden="true" size={13} />
             <span>{stat.change}</span>
-          </div>
+          </div> */}
         </Card>
       );
     })}

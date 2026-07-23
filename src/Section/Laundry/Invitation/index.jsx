@@ -23,6 +23,10 @@ import {
   acceptTenantLaundryInvite,
   handleTenantLaundryInvite,
 } from "../../../axios/laundries/tenantLaundries";
+import ReactPhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+
+const PhoneInput = ReactPhoneInput.default || ReactPhoneInput;
 
 const initialProfileValues = {
   companyName: "",
@@ -187,12 +191,12 @@ const LaundryInvitation = () => {
     inviteState.token === token
       ? inviteState
       : {
-          token,
-          status: token ? "loading" : "error",
-          message: token
-            ? "Checking your laundry invitation..."
-            : "Invitation token is missing.",
-        };
+        token,
+        status: token ? "loading" : "error",
+        message: token
+          ? "Checking your laundry invitation..."
+          : "Invitation token is missing.",
+      };
   const isLoading = currentInviteState.status === "loading";
   const isProfileRequired = currentInviteState.status === "profile";
   const isSuccess = currentInviteState.status === "success";
@@ -212,15 +216,14 @@ const LaundryInvitation = () => {
           <div aria-live="polite">
             <div className="text-center">
               <div
-                className={`mx-auto grid h-16 w-16 place-items-center rounded-2xl ${
-                  isSuccess
-                    ? "bg-emerald-500/15 text-emerald-500"
-                    : isLoading
-                      ? "bg-sky-500/15 text-sky-500"
-                      : isProfileRequired
-                        ? "bg-teal-500/15 text-(--color-aurora-teal)"
-                        : "bg-red-500/15 text-red-500"
-                }`}
+                className={`mx-auto grid h-16 w-16 place-items-center rounded-2xl ${isSuccess
+                  ? "bg-emerald-500/15 text-emerald-500"
+                  : isLoading
+                    ? "bg-sky-500/15 text-sky-500"
+                    : isProfileRequired
+                      ? "bg-teal-500/15 text-(--color-aurora-teal)"
+                      : "bg-red-500/15 text-red-500"
+                  }`}
               >
                 {isSuccess ? (
                   <CheckCircle2 size={32} />
@@ -293,14 +296,52 @@ const LaundryInvitation = () => {
                     type="password"
                     {...bindInput("confirmPassword")}
                   />
-                  <Input
-                    label="Phone"
-                    leftIcon={<Phone size={18} />}
-                    placeholder="+1 (555) 000-0000"
-                    required
-                    type="tel"
-                    {...bindInput("phone")}
-                  />
+                  <div className="flex flex-col gap-1.5">
+                    <label className="mb-0.5 block text-sm font-semibold" style={{ color: "var(--theme-text-secondary)" }}>
+                      Phone <span style={{ color: "var(--color-overdue)" }}>*</span>
+                    </label>
+                    <PhoneInput
+                      country={"us"}
+                      disabled={formik.isSubmitting}
+                      value={formik.values.phone}
+                      onChange={(phone) => {
+                        formik.setFieldValue(
+                          "phone",
+                          phone.startsWith("+") || !phone ? phone : `+${phone}`
+                        );
+                        if (formik.status?.submitError) formik.setStatus(undefined);
+                      }}
+                      onBlur={() => formik.setFieldTouched("phone", true)}
+                      inputStyle={{
+                        width: "100%",
+                        height: "46px",
+                        borderRadius: "14px",
+                        borderColor:
+                          formik.touched.phone && formik.errors.phone
+                            ? "var(--color-overdue)"
+                            : "var(--theme-border-soft)",
+                        backgroundColor: "var(--theme-surface-strong)",
+                        color: "var(--theme-text-primary)",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        paddingLeft: "48px",
+                      }}
+                      buttonStyle={{
+                        borderTopLeftRadius: "14px",
+                        borderBottomLeftRadius: "14px",
+                        borderColor:
+                          formik.touched.phone && formik.errors.phone
+                            ? "var(--color-overdue)"
+                            : "var(--theme-border-soft)",
+                        backgroundColor: "var(--theme-surface-strong)",
+                      }}
+                    />
+                    {formik.touched.phone && formik.errors.phone && (
+                      <p className="m-0 text-xs" style={{ color: "var(--color-overdue)" }}>
+                        {formik.errors.phone}
+                      </p>
+                    )}
+                  </div>
                   <Input
                     label="Address"
                     leftIcon={<MapPin size={18} />}

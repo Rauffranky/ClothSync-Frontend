@@ -7,6 +7,7 @@ import {
   WashingMachine,
 } from "lucide-react";
 import Card from "../../../Components/UI/Card";
+import IconWrapper from "../../../Components/UI/IconWrapper";
 
 const stats = [
   {
@@ -74,12 +75,20 @@ const stats = [
 const StatCard = ({ stat }) => (
   <Card padding="16px 20px">
     <div className="flex items-start justify-between gap-2">
-      <div
+      {/* <div
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
         style={{ background: `${stat.color}18` }}
       >
         <stat.Icon size={17} style={{ color: stat.color }} />
-      </div>
+      </div> */}
+
+      <IconWrapper
+        icon={stat.Icon}
+        sizeClassName="h-9 w-9"
+        roundedClassName="rounded-xl"
+        iconSize={17}
+        color={stat.color}
+      />
       <span
         className="rounded-full px-2 py-0.5 text-xs font-bold"
         style={{

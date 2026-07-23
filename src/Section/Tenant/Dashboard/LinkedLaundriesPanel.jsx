@@ -1,6 +1,8 @@
 import { ArrowRight, Star, WashingMachine } from "lucide-react";
 import Badge from "../../../Components/UI/Badge";
 import Card from "../../../Components/UI/Card";
+import Button from "../../../Components/UI/Button";
+import IconWrapper from "../../../Components/UI/IconWrapper";
 
 const laundries = [
   {
@@ -35,27 +37,18 @@ const laundries = [
 
 const LaundryItem = ({ item }) => (
   <div
-    className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-[color-mix(in_srgb,var(--color-aurora-teal)_6%,transparent)]"
+    className="flex items-center gap-3 rounded-xl py-2.5 transition-colors hover:bg-[color-mix(in_srgb,var(--color-aurora-teal)_6%,transparent)]"
   >
-    <div
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+    <IconWrapper
+      icon={WashingMachine}
+      sizeClassName="h-9 w-9"
+      roundedClassName="rounded-xl"
+      iconSize={17}
       style={{
-        background:
-          item.status === "Linked"
-            ? "rgba(20,184,166,0.1)"
-            : "rgba(148,163,184,0.1)",
+        background: item.status === "Linked" ? "rgba(20,184,166,0.1)" : "rgba(148,163,184,0.1)",
+        color: item.status === "Linked" ? "var(--color-aurora-teal)" : "var(--color-blue-gray)",
       }}
-    >
-      <WashingMachine
-        size={17}
-        style={{
-          color:
-            item.status === "Linked"
-              ? "var(--color-aurora-teal)"
-              : "var(--color-blue-gray)",
-        }}
-      />
-    </div>
+    />
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-1.5">
         <span
@@ -88,11 +81,11 @@ const LaundryItem = ({ item }) => (
 );
 
 const LinkedLaundriesPanel = () => (
-  <Card padding="20px 24px">
+  <Card>
     <div className="mb-3 flex items-start justify-between gap-3">
       <div>
         <h2
-          className="text-base font-black"
+          className="font-bold"
           style={{ color: "var(--theme-text-primary)" }}
         >
           Linked Laundries
@@ -105,13 +98,20 @@ const LinkedLaundriesPanel = () => (
           partners
         </p>
       </div>
-      <button
-        type="button"
-        className="flex items-center gap-1 text-xs font-bold"
-        style={{ color: "var(--color-sky-blue)" }}
+      <Button
+        rightIcon={<ArrowRight size={14} />}
+        variant="link"
+        className="text-[12px]!"
+        style={{
+          minHeight: "auto",
+          padding: 0,
+          border: "none",
+          color: "var(--color-sky-blue)",
+        }}
+        disableHoverTransform
       >
-        View All <ArrowRight size={13} />
-      </button>
+        View All
+      </Button>
     </div>
     <div className="flex flex-col gap-0.5">
       {laundries.map((item) => (

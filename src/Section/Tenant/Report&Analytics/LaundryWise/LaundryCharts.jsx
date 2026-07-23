@@ -34,22 +34,9 @@ const LaundryCharts = () => (
         ariaLabel="Market share by sent items: PureWash 312, CleanFlow 175, Metro 98"
         centerLabel="items sent"
         data={laundryMarketShare}
-        showLegend={false}
-        size={180}
+        size={150}
         strokeWidth={26}
       />
-      <div className="mx-auto mt-3 max-w-sm space-y-2" aria-hidden="true">
-        {laundryMarketShare.map((item) => (
-          <div
-            className="flex items-center gap-2 text-xs font-semibold text-(--theme-text-secondary)"
-            key={item.label}
-          >
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: item.color }} />
-            <span className="flex-1">{item.label}</span>
-            <strong className="text-(--theme-text-primary)">{item.value}</strong>
-          </div>
-        ))}
-      </div>
     </ChartCard>
   </div>
 );

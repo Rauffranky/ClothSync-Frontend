@@ -43,12 +43,12 @@ const LifecycleStage = ({ stage, isLast }) => (
 );
 
 const AssetLifecycleOverview = () => (
-  <Card padding="20px 24px">
+  <Card>
     {/* Header */}
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
         <h2
-          className="text-base font-black"
+          className=" font-bold"
           style={{ color: "var(--theme-text-primary)" }}
         >
           Asset Lifecycle Overview

@@ -1,15 +1,15 @@
 import { useState } from "react";
 
-const DEFAULT_PADDING = { top: 16, right: 16, bottom: 48, left: 44 };
+const DEFAULT_PADDING = { top: 20, right: 20, bottom: 44, left: 45 };
 
 const BarChart = ({
   ariaLabel,
   data = [],
   maxValue,
   ticks,
-  width = 520,
-  height = 220,
-  minWidth = 420,
+  width = 720,
+  height = 260,
+  minWidth = 500,
   padding = DEFAULT_PADDING,
   defaultColor = "var(--color-sky-blue)",
   showValues = false,
@@ -23,7 +23,7 @@ const BarChart = ({
   const plotHeight = height - padding.top - padding.bottom;
   const plotWidth = width - padding.left - padding.right;
   const slotWidth = data.length ? plotWidth / data.length : plotWidth;
-  const barWidth = Math.min(56, slotWidth * 0.58);
+  const barWidth = Math.min(44, slotWidth * 0.45);
 
   if (data.length === 0) {
     return (
@@ -57,7 +57,7 @@ const BarChart = ({
               />
               <text
                 fill="var(--theme-text-muted)"
-                fontSize="10"
+                fontSize="9"
                 textAnchor="end"
                 x={padding.left - 9}
                 y={y + 4}
@@ -94,7 +94,7 @@ const BarChart = ({
               {showValues && (
                 <text
                   fill={isHovered ? color : "var(--theme-text-secondary)"}
-                  fontSize="10"
+                  fontSize="9"
                   fontWeight="700"
                   textAnchor="middle"
                   x={x + barWidth / 2}
@@ -105,7 +105,7 @@ const BarChart = ({
               )}
               <text
                 fill="var(--theme-text-muted)"
-                fontSize="9"
+                fontSize="8"
                 textAnchor="middle"
                 x={x + barWidth / 2}
                 y={height - 19}

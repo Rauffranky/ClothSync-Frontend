@@ -35,7 +35,7 @@ const ChartsRow = () => (
     >
       <LineChart
         ariaLabel="Daily sent and returned asset volumes"
-        height={190}
+        height={160}
         labels={days}
         maxValue={100}
         series={sentReturnedSeries}
@@ -49,7 +49,7 @@ const ChartsRow = () => (
     >
       <LineChart
         ariaLabel="Weekly delayed item count"
-        height={190}
+        height={160}
         labels={weeks}
         maxValue={40}
         series={delayedSeries}

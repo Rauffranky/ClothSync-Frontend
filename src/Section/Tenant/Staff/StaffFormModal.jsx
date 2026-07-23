@@ -90,9 +90,9 @@ const StaffFormModal = ({
           : await createStaff(payload);
         toast.success(
           response?.message ||
-            (isEdit
-              ? "Staff member updated successfully"
-              : "Staff member created successfully"),
+          (isEdit
+            ? "Staff member updated successfully"
+            : "Staff member created successfully"),
         );
         helpers.resetForm();
         onSaved?.();
@@ -366,7 +366,7 @@ const StaffFormModal = ({
             value={formik.values.locationName}
           />
 
-          {!isEdit && includeSendInvite && (
+          {/* {!isEdit && includeSendInvite && (
             <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold text-(--theme-text-secondary)">
               <input
                 checked={formik.values.sendInvite}
@@ -379,7 +379,7 @@ const StaffFormModal = ({
               />
               Send invite email to staff member
             </label>
-          )}
+          )} */}
         </form>
       )}
     </Modal>

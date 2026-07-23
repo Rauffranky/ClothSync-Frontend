@@ -18,7 +18,7 @@ const DashboardHeader = ({
       {/* Title */}
       <div>
         <h1
-          className="text-2xl font-black tracking-tight"
+          className="text-2xl font-bold!"
           style={{ color: "var(--theme-text-primary)" }}
         >
           Dashboard
@@ -38,12 +38,13 @@ const DashboardHeader = ({
               key={tab.value}
               type="button"
               onClick={() => onPeriod(tab.value)}
-              className="rounded-xl border px-4 py-2 text-sm font-semibold transition-all"
+              className="rounded-xl border px-4 py-2 text-sm font-semibold transition-all cursor"
               style={{
                 background: isActive ? "var(--gradient-aurora-flow)" : "var(--theme-surface-strong)",
                 borderColor: isActive ? "transparent" : "var(--theme-border-soft)",
                 color: isActive ? "var(--button-primary-text)" : "var(--theme-text-secondary)",
                 boxShadow: isActive ? "0 4px 14px rgba(20,184,166,0.25)" : "none",
+                height: "36px"
               }}
             >
               {tab.label}
@@ -61,6 +62,7 @@ const DashboardHeader = ({
           }}
           placeholder="Date Range"
           disableFuture
+          className="h-[36px]!"
         />
       </div>
     </div>
