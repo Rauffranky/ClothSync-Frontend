@@ -25,12 +25,14 @@ const ActionDropdown = ({
     };
 
     window.addEventListener("action-dropdown-open", closeOtherMenus);
+    window.addEventListener("modal-open", closeMenu);
     window.addEventListener("mousedown", closeMenu);
     window.addEventListener("resize", closeMenu);
     window.addEventListener("scroll", closeMenu, true);
 
     return () => {
       window.removeEventListener("action-dropdown-open", closeOtherMenus);
+      window.removeEventListener("modal-open", closeMenu);
       window.removeEventListener("mousedown", closeMenu);
       window.removeEventListener("resize", closeMenu);
       window.removeEventListener("scroll", closeMenu, true);

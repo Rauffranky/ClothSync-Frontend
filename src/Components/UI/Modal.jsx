@@ -22,6 +22,7 @@ const Modal = ({
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    window.dispatchEvent(new CustomEvent("modal-open"));
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {

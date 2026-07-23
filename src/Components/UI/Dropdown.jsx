@@ -115,21 +115,31 @@ const Dropdown = ({
   }, [filteredOptions.length, menuHeader, search]);
 
   useEffect(() => {
+    const closeDropdownMenu = () => {
+      setOpen(false);
+      setMenuPosition(null);
+      setActiveIndex(-1);
+      setQuery("");
+    };
     const handleClickOutside = (event) => {
       const target = event.target;
       const isInTrigger = wrapRef.current?.contains(target);
       const isInMenu = menuRef.current?.contains(target);
 
       if (!isInTrigger && !isInMenu) {
-        setOpen(false);
-        setMenuPosition(null);
-        setActiveIndex(-1);
-        setQuery("");
+        closeDropdownMenu();
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    window.addEventListener("action-dropdown-open", closeDropdownMenu);
+    window.addEventListener("modal-open", closeDropdownMenu);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("action-dropdown-open", closeDropdownMenu);
+      window.removeEventListener("modal-open", closeDropdownMenu);
+    };
   }, []);
 
   useEffect(() => {
