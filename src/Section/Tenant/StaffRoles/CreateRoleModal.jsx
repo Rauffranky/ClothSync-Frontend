@@ -255,7 +255,7 @@ const CreateRoleModal = ({
 
   return (
     <Modal
-      closeOnBackdrop={!formik.isSubmitting}
+      closeOnBackdrop={false}
       description={
         isEditing
           ? "Update role details and module permissions."
