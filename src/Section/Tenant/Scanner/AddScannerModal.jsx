@@ -233,7 +233,7 @@ const AddScannerModal = ({
       }
       onClose={handleClose}
       open={isOpen}
-      closeOnBackdrop={!formik.isSubmitting}
+      closeOnBackdrop={false}
       title={mode === "edit" ? "Edit Scanner" : "Add New Scanner"}
       width={720}
     >
