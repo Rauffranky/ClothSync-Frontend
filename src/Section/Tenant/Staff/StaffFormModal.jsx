@@ -173,7 +173,7 @@ const StaffFormModal = ({
 
   return (
     <Modal
-      closeOnBackdrop={!formik.isSubmitting}
+      closeOnBackdrop={false}
       footer={
         <>
           <Button
