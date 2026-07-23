@@ -32,7 +32,7 @@ const StaffStats = ({ loading = false, summary = null }) => {
 
         return (
           <Card key={item.key} padding="20px" rounded="12px">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col items-start gap-3">
               <IconWrapper
                 icon={Icon}
                 iconSize={20}
@@ -44,7 +44,7 @@ const StaffStats = ({ loading = false, summary = null }) => {
                 <p className="m-0 text-3xl font-black leading-none text-(--theme-text-primary)">
                   {getDisplayValue(summary?.[item.key])}
                 </p>
-                <p className="m-0 mt-1 text-sm font-semibold text-(--theme-text-muted)">
+                <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-muted)">
                   {item.label}
                 </p>
               </div>
