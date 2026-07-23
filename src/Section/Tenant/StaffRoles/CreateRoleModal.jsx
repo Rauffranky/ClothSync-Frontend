@@ -242,9 +242,33 @@ const CreateRoleModal = ({
   };
 
   const setPermission = (sectionIndex, permissionKey, selected) => {
+    const nextPermissions = formik.values.permissions.map(
+      (permission, index) => {
+        if (index !== sectionIndex) return permission;
+
+        if (permissionKey === "canView" && !selected) {
+          return permissionActions.reduce(
+            (nextPermission, action) => ({
+              ...nextPermission,
+              [action.key]: false,
+            }),
+            permission,
+          );
+        }
+
+        return {
+          ...permission,
+          [permissionKey]: selected,
+          ...(selected && permissionKey !== "canView"
+            ? { canView: true }
+            : {}),
+        };
+      },
+    );
+
     formik.setFieldValue(
-      `permissions.${sectionIndex}.${permissionKey}`,
-      selected,
+      "permissions",
+      nextPermissions,
       true,
     );
   };
