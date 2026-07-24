@@ -49,7 +49,10 @@ React.StrictMode
         App
 ```
 
-`src/App.jsx` applies the stored theme and renders `AppRoutes`.
+`src/App.jsx` applies the stored theme, renders `AppRoutes`, and shows the shared
+ClothSync startup splash as a fixed overlay once per browser-tab session. A
+session-storage marker prevents it from replaying on refresh or route changes;
+the splash exits after its short intro while routes remain mounted underneath.
 `src/Routes/index.jsx` declares routes and lazy-loads route pages.
 
 Consequences:
