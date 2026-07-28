@@ -42,7 +42,9 @@ const DetailField = ({ label, value, mono = false }) => (
   </div>
 );
 
-const ScannerDetailsIndex = () => {
+const ScannerDetailsIndex = ({
+  getScannerDetails = getTenantScannerDetails,
+}) => {
   const { id } = useParams();
   const [scanner, setScanner] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +54,7 @@ const ScannerDetailsIndex = () => {
   useEffect(() => {
     let isActive = true;
 
-    getTenantScannerDetails(id)
+    getScannerDetails(id)
       .then((response) => {
         if (!isActive) return;
         const payload = response?.data ?? response ?? {};
@@ -74,7 +76,7 @@ const ScannerDetailsIndex = () => {
     return () => {
       isActive = false;
     };
-  }, [id, retryKey]);
+  }, [id, retryKey, getScannerDetails]);
 
   const retryLoad = () => {
     setIsLoading(true);

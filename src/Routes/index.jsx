@@ -30,6 +30,9 @@ const LaundryStaffPage = lazy(() => import("../Page/Dashboard/Laundry/StaffPage"
 const LaundryStaffRolesPage = lazy(() => import("../Page/Dashboard/Laundry/StaffRolesPage"));
 const LaundrySettingsPage = lazy(() => import("../Page/Dashboard/Laundry/SettingsPage"));
 const LaundryReportAnalyticsPage = lazy(() => import("../Page/Dashboard/Laundry/ReportAnalyticsPage"));
+const LaundryScannersPage = lazy(() => import("../Page/Dashboard/Laundry/ScannersPage"));
+const LaundryScannerWarningsPage = lazy(() => import("../Page/Dashboard/Laundry/ScannerWarningsPage"));
+const LaundryScannerDetailsPage = lazy(() => import("../Page/Dashboard/Laundry/ScannerDetailsPage"));
 
 //Tenant 
 const AssetsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetsPage"));
@@ -156,6 +159,30 @@ const AppRoutes = () => {
             element={
               <PermissionRoute permissionKey="reports">
                 <LaundryReportAnalyticsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/laundry/scanners"
+            element={
+              <PermissionRoute permissionKey="scanners">
+                <LaundryScannersPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/laundry/scanners/warnings"
+            element={
+              <PermissionRoute permissionKey="scanners">
+                <LaundryScannerWarningsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/laundry/scanners/:id"
+            element={
+              <PermissionRoute permissionKey="scanners">
+                <LaundryScannerDetailsPage />
               </PermissionRoute>
             }
           />

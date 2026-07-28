@@ -36,7 +36,10 @@ const getWarningReason = (scanner) => {
   return "Scanner requires attention";
 };
 
-const ScannerWarnings = ({ refreshKey = 0 }) => {
+const ScannerWarnings = ({ 
+  refreshKey = 0,
+  getScannerWarnings = getTenantScannerWarnings,
+}) => {
   const [warnings, setWarnings] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
@@ -48,7 +51,7 @@ const ScannerWarnings = ({ refreshKey = 0 }) => {
   useEffect(() => {
     let isActive = true;
 
-    getTenantScannerWarnings({
+    getScannerWarnings({
       page: currentPage + 1,
       limit: ITEMS_PER_PAGE,
     })
@@ -79,7 +82,7 @@ const ScannerWarnings = ({ refreshKey = 0 }) => {
     return () => {
       isActive = false;
     };
-  }, [currentPage, refreshKey, retryKey]);
+  }, [currentPage, refreshKey, retryKey, getScannerWarnings]);
 
   const retryLoad = () => {
     setIsLoading(true);

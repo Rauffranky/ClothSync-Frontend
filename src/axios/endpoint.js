@@ -45,6 +45,15 @@ export const TENANT_SCANNER_ENDPOINTS = Object.freeze({
   UPDATE_STATUS: (id) => `/tenant-scanners/update-status/${id}`,
 });
 
+export const LAUNDRY_SCANNER_ENDPOINTS = Object.freeze({
+  CREATE: "/laundry-scanners/create",
+  LIST: "/laundry-scanners/show",
+  DETAILS: (id) => `/laundry-scanners/show/${id}`,
+  WARNINGS: "/laundry-scanners/warnings",
+  UPDATE: (id) => `/laundry-scanners/update/${id}`,
+  UPDATE_STATUS: (id) => `/laundry-scanners/update-status/${id}`,
+});
+
 export const TENANT_STAFF_ROLE_ENDPOINTS = Object.freeze({
   CREATE: "/tenant-staff-roles/create",
   LIST: "/tenant-staff-roles/show",

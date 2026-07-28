@@ -98,6 +98,7 @@ const AddScannerModal = ({
   onSubmit,
   mode = "add",
   initialValues = initialFormState,
+  getStaffMembers = getTenantStaff,
 }) => {
   const resolvedInitialValues = {
     ...initialFormState,
@@ -143,7 +144,7 @@ const AddScannerModal = ({
 
     let isActive = true;
 
-    getTenantStaff({ page: 1, limit: 100, status: "active" })
+    getStaffMembers({ page: 1, limit: 100, status: "active" })
       .then((response) => {
         if (!isActive) return;
 
@@ -173,7 +174,7 @@ const AddScannerModal = ({
     return () => {
       isActive = false;
     };
-  }, [isOpen, staffLoadKey]);
+  }, [isOpen, staffLoadKey, getStaffMembers]);
 
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) {

@@ -55,6 +55,11 @@ const ScannerTable = ({
   onCollectionStateChange,
   onScannerUpdated,
   refreshKey = 0,
+  detailRoutePrefix = "/business/scanners",
+  getScanners = getTenantScanners,
+  updateScanner = updateTenantScanner,
+  updateScannerStatus = updateTenantScannerStatus,
+  getStaffMembers = getTenantStaff,
 }) => {
   const navigate = useNavigate();
   const [scannerRows, setScannerRows] = useState([]);
@@ -90,7 +95,7 @@ const ScannerTable = ({
   useEffect(() => {
     let isActive = true;
 
-    getTenantStaff({ page: 1, limit: 100, status: "active" })
+    getStaffMembers({ page: 1, limit: 100, status: "active" })
       .then((response) => {
         if (!isActive) return;
 
@@ -124,14 +129,14 @@ const ScannerTable = ({
     return () => {
       isActive = false;
     };
-  }, [operatorLoadKey]);
+  }, [operatorLoadKey, getStaffMembers]);
 
   useEffect(() => {
     let isActive = true;
 
     onCollectionStateChange?.({ status: "loading" });
 
-    getTenantScanners({
+    getScanners({
       page: currentPage + 1,
       limit: ITEMS_PER_PAGE,
       ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
@@ -183,6 +188,7 @@ const ScannerTable = ({
     refreshKey,
     statusFilter,
     typeFilter,
+    getScanners,
   ]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
@@ -241,7 +247,7 @@ const ScannerTable = ({
 
     try {
       setIsStatusSubmitting(true);
-      const response = await updateTenantScannerStatus(
+      const response = await updateScannerStatus(
         scanner.apiId,
         nextStatus,
       );
@@ -315,7 +321,7 @@ const ScannerTable = ({
     };
 
     try {
-      const response = await updateTenantScanner(
+      const response = await updateScanner(
         editScannerState.scanner.apiId,
         payload,
       );
@@ -472,7 +478,7 @@ const ScannerTable = ({
             {
               label: "View Details",
               icon: Eye,
-              onClick: () => navigate(`/business/scanners/${row.apiId}`),
+              onClick: () => navigate(`${detailRoutePrefix}/${row.apiId}`),
             },
             {
               label: "Edit Scanner",

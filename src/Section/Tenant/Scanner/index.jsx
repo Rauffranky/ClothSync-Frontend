@@ -4,11 +4,19 @@ import Button from "../../../Components/UI/Button";
 import ScannerStats from "./ScannerStats";
 import ScannerTable from "./ScannerTable";
 import AddScannerModal from "./AddScannerModal";
-import { createTenantScanner } from "../../../axios/scanners/tenantScanners";
+import { createTenantScanner, getTenantScanners, updateTenantScanner, updateTenantScannerStatus } from "../../../axios/scanners/tenantScanners";
+import { getTenantStaff } from "../../../axios/staff/tenantStaff";
 import { getApiErrorMessage } from "../../../axios/api";
 import { toast } from "../../../Utils/toast";
 
-const ScannerManagementIndex = () => {
+const ScannerManagementIndex = ({
+  createScanner = createTenantScanner,
+  getScanners = getTenantScanners,
+  updateScanner = updateTenantScanner,
+  updateScannerStatus = updateTenantScannerStatus,
+  getStaffMembers = getTenantStaff,
+  detailRoutePrefix = "/business/scanners",
+}) => {
   const [isAddScannerOpen, setIsAddScannerOpen] = useState(false);
   const [scannerRefreshKey, setScannerRefreshKey] = useState(0);
   const [summaryState, setSummaryState] = useState({
@@ -71,7 +79,7 @@ const ScannerManagementIndex = () => {
     };
 
     try {
-      const response = await createTenantScanner(payload);
+      const response = await createScanner(payload);
       toast.success(response?.message || "Scanner created successfully");
       refreshScanners();
       return response;
@@ -107,12 +115,18 @@ const ScannerManagementIndex = () => {
         onCollectionStateChange={handleCollectionStateChange}
         onScannerUpdated={refreshScanners}
         refreshKey={scannerRefreshKey}
+        detailRoutePrefix={detailRoutePrefix}
+        getScanners={getScanners}
+        updateScanner={updateScanner}
+        updateScannerStatus={updateScannerStatus}
+        getStaffMembers={getStaffMembers}
       />
 
       <AddScannerModal
         isOpen={isAddScannerOpen}
         onClose={() => setIsAddScannerOpen(false)}
         onSubmit={handleCreateScanner}
+        getStaffMembers={getStaffMembers}
       />
     </div>
   );
