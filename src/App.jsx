@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import AppRoutes from "./Routes";
 import SplashScreen from "./Components/UI/SplashScreen";
 import { applyThemeMode, getThemeMode } from "./Utils/themeMode";
+import { startSocketConnection } from "./socket/client";
 
 const SPLASH_SESSION_KEY = "clothsync-splash-shown";
 
@@ -22,6 +23,8 @@ function App() {
   useLayoutEffect(() => {
     applyThemeMode(getThemeMode());
   }, []);
+
+  useEffect(() => startSocketConnection(), []);
 
   useEffect(() => {
     if (!shouldShowSplash) return undefined;

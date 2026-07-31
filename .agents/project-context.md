@@ -28,6 +28,20 @@ before changing it.
 - React Router DOM 7 with declarative `<Routes>` and `<Route>` APIs.
 - Tailwind CSS 4 via `@tailwindcss/vite` plus CSS custom properties.
 - Axios 1 through a shared client and convenience wrapper.
+- Socket.IO Client 4 uses the singleton in `src/socket/client.js`. The app starts
+  it only for an authenticated session, sends the current access token in the
+  Socket.IO auth payload as both `token` and `accessToken`, reconnects with
+  bounded backoff, and disconnects after logout or authenticated `401` cleanup.
+  Authentication writes emit `auth-session-changed` so the singleton syncs even
+  when a login response provides a token without a user object.
+  `VITE_SOCKET_URL` can set a dedicated socket origin; otherwise the client uses
+  the origin derived from `VITE_API_BASE_URL`. Feature listeners should use
+  `useSocketEvent` so event handlers are removed during cleanup. Backend event
+  names are centralized in `src/socket/events.js`, including socket connection,
+  scanner bulk reads, scan sessions/entries/bulk undo, dispatch batches/items,
+  and dispatch exceptions. `useSocketEvents` subscribes one stable handler to an
+  event group. Payload shapes and the related scan-session/dispatch feature APIs
+  are not yet documented or consumed.
 - Formik 2 and Yup 1 for established validated forms.
 - Lucide React is the primary icon package; React Icons is also installed.
 - `react-helmet-async` is provided, while pages usually call `usePageMeta`.

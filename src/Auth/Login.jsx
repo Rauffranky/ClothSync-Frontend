@@ -29,6 +29,8 @@ import { getApiErrorMessage } from "../axios/api";
 import { toast } from "../Utils/toast";
 import { NAV } from "../Components/Layout/Dashboard/nav";
 import { getFirstPermittedHref } from "../Utils/permissions";
+import { connectSocket, getSocket } from "../socket/client";
+import { SOCKET_EVENTS } from "../socket/events";
 
 const initialLoginValues = {
   email: "",
@@ -112,12 +114,38 @@ const Login = ({ portal }) => {
             email: values.email,
             password: values.password,
           });
+          const socket = getSocket();
+          const handleSocketAuthenticated = (data) => {
+            console.log("SOCKET AUTHENTICATED:", data);
+            socket.off("connect_error", handleSocketAuthError);
+          };
+          const handleSocketAuthError = (error) => {
+            console.error("SOCKET AUTH ERROR:", error.message);
+            socket.off(
+              SOCKET_EVENTS.CONNECTED,
+              handleSocketAuthenticated,
+            );
+          };
+
+          socket.once(
+            SOCKET_EVENTS.CONNECTED,
+            handleSocketAuthenticated,
+          );
+          socket.once("connect_error", handleSocketAuthError);
+
           const accessToken = storeAuthSessionFromResponse(response);
 
           if (!accessToken) {
+            socket.off(
+              SOCKET_EVENTS.CONNECTED,
+              handleSocketAuthenticated,
+            );
+            socket.off("connect_error", handleSocketAuthError);
             clearAuthSession();
             throw new Error("Login succeeded, but no access token was returned");
           }
+
+          connectSocket();
 
           toast.success(response?.message || "Login successful");
           navigate(

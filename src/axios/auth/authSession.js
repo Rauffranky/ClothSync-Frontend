@@ -5,6 +5,13 @@ const AUTH_SESSION_KEYS = Object.freeze({
 });
 
 export const AUTH_SESSION_USER_UPDATED_EVENT = "auth-session-user-updated";
+export const AUTH_SESSION_CHANGED_EVENT = "auth-session-changed";
+
+const notifyAuthSessionChanged = () => {
+  if (typeof window === "undefined") return;
+
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT));
+};
 
 const notifyAuthSessionUserUpdated = (user) => {
   if (typeof window === "undefined") return;
@@ -66,6 +73,8 @@ export const storeAuthSessionFromResponse = (response) => {
     authData?.superAdmin;
   if (user) setAuthSessionUser(user);
 
+  notifyAuthSessionChanged();
+
   return accessToken || null;
 };
 
@@ -73,4 +82,5 @@ export const clearAuthSession = () => {
   Object.values(AUTH_SESSION_KEYS).forEach((key) => sessionStorage.removeItem(key));
   clearLegacyAuthLocalStorage();
   notifyAuthSessionUserUpdated(null);
+  notifyAuthSessionChanged();
 };
