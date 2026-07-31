@@ -1,6 +1,7 @@
 export const SOCKET_EVENTS = Object.freeze({
   CONNECTED: "socket.connected",
   SCANNER_SCAN_BULK: "scanner.scan.bulk",
+  SCAN_SESSION_JOIN: "scan-session.join",
 
   SCAN_SESSION_STARTED: "scan.session.started",
   SCAN_SESSION_UPDATED: "scan.session.updated",

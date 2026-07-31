@@ -8,6 +8,7 @@ import InventoryAlerts from "./InventoryAlerts";
 import LinkedLaundriesPanel from "./LinkedLaundriesPanel";
 import ScannerActivityPanel from "./ScannerActivityPanel";
 import StatsGrid from "./StatsGrid";
+import TestScannerScanButton from "./TestScannerScanButton";
 
 const Dashboard = () => {
   const { period, customRange, selectPeriod, setCustomFrom, setCustomTo } =
@@ -23,6 +24,8 @@ const Dashboard = () => {
         onFromChange={setCustomFrom}
         onToChange={setCustomTo}
       />
+
+      <TestScannerScanButton />
 
       {/* Row 1 — 8 stat cards */}
       <StatsGrid />

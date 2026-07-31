@@ -278,6 +278,29 @@ Confirmed API-backed areas:
   Scanner Warnings and uses the `Scanners / Warnings` header. Activate/deactivate actions use
   `PUT /tenant-scanners/update-status/:id`. Mock scan logs are no longer shown
   on the live detail screen because no scanner-log API contract is integrated.
+- The Business dashboard currently includes a temporary Test Scanner Scan button
+  that posts the fixed test payload `{ scannerId:
+  "7cd8b2d0-1299-4717-8ef3-242581519715", epcs: ["TEST-EPC-008"] }` to
+  `POST /tenant-bulk-scan/test-scanner-scan`. While the dashboard is mounted it
+  emits `scan-session.join` with the returned `data.session.id` and logs received
+  `scanner.scan.bulk`, `scan.session.updated`, and `scan.bulk-added` payloads
+  for temporary integration testing.
+  A second temporary Test Bulk Add button posts `{ assetName: "Test Towels",
+  categoryId: "c4a46dde-04fd-4858-b827-82456a756361", zoneName: "Test Zone",
+  washLimit: 100, description: "Socket testing asset" }` to
+  `POST /tenant-bulk-scan/sessions/:sessionId/bulk-add`, using the session ID
+  returned by the current dashboard's successful Test Scanner Scan request. The
+  bulk-add test remains disabled until that request creates a session.
+  After a successful test bulk add, a two-minute Undo Bulk Add countdown enables
+  the temporary request
+  `POST /tenant-bulk-scan/sessions/:sessionId/bulk-add/:undoId/undo`, using the
+  current Test Scanner Scan session ID and exact `data.undo.id` returned by the
+  Bulk Add response. Its availability and countdown use `data.undo.canUndo`,
+  `data.undo.expiresAt`, and `data.undo.windowSeconds`; no static undo ID is used.
+  The dashboard logs `scan.bulk-add.undone` payloads while mounted.
+  Its temporary Clear Session button sends
+  `PUT /tenant-bulk-scan/sessions/:sessionId/clear` for the current test session,
+  resets the local test controls after success, and logs `scan.session.cleared`.
 - Tenant linked laundries, pending invitations, and closed invitations use
   separate paginated GET services. Pending records remain in Pending Requests,
   accepted invitations are represented by the linked-laundries service, and

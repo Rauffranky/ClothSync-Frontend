@@ -45,6 +45,16 @@ export const TENANT_SCANNER_ENDPOINTS = Object.freeze({
   UPDATE_STATUS: (id) => `/tenant-scanners/update-status/${id}`,
 });
 
+export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
+  TEST_SCANNER_SCAN: "/tenant-bulk-scan/test-scanner-scan",
+  BULK_ADD: (sessionId) =>
+    `/tenant-bulk-scan/sessions/${sessionId}/bulk-add`,
+  UNDO_BULK_ADD: (sessionId, undoId) =>
+    `/tenant-bulk-scan/sessions/${sessionId}/bulk-add/${undoId}/undo`,
+  CLEAR_SESSION: (sessionId) =>
+    `/tenant-bulk-scan/sessions/${sessionId}/clear`,
+});
+
 export const LAUNDRY_SCANNER_ENDPOINTS = Object.freeze({
   CREATE: "/laundry-scanners/create",
   LIST: "/laundry-scanners/show",
