@@ -229,8 +229,8 @@ export const NAV = {
     },
     {
       id: 110,
-      label: "Exceptions",
-      href: "/business/exceptions",
+      label: "Bulk Scanning",
+      href: "/business/bulk-scanning",
       Icon: ShieldAlert,
     },
     {

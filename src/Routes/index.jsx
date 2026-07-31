@@ -46,7 +46,7 @@ const TagsPage = lazy(() => import("../Page/Dashboard/Tenant/TagsPage"));
 const TagDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/TagDetailsPage"));
 const SettingsPage = lazy(() => import("../Page/Dashboard/Tenant/SettingsPage"));
 const ReportAnalyticsPage = lazy(() => import("../Page/Dashboard/Tenant/Report&AnalyticsPage"));
-
+const BulkScanningPage = lazy(() => import("../Page/Dashboard/Tenant/BulkScanningPage"));
 // ============================================================================
 // ROUTE CONFIGURATION
 // ============================================================================
@@ -103,6 +103,7 @@ const AppRoutes = () => {
           <Route path="/business/tags/:id" element={<TagDetailsPage />} />
           <Route path="/business/settings" element={<SettingsPage />} />
           <Route path="/business/reports-analytics" element={<ReportAnalyticsPage />} />
+          <Route path="/business/bulk-scanning" element={<BulkScanningPage />} />
 
           {/* Laundry Portal */}
           <Route path="/laundry" element={<Navigate to="/laundry/dashboard" replace />} />

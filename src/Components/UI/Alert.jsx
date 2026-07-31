@@ -78,7 +78,7 @@ const Alert = ({
       {...rest}
     >
       {leftIcon && <span className="mt-0.5 shrink-0">{leftIcon}</span>}
-      <div className="min-w-0">{children}</div>
+      <div className="flex-1 min-w-0 w-full">{children}</div>
     </div>
   );
 };
