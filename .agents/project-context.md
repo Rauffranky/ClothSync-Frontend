@@ -311,6 +311,21 @@ Confirmed API-backed areas:
   Backend status identifiers are formatted for display through the shared
   `formatStatusLabel` utility, so values such as `in_business` render as
   `In Business` without changing the API value used by filters or mutations.
+- Tenant Tags at `/business/tags` lists live server-paginated records through
+  `GET /tenant-tags/show`. The asset-status dropdown sends the exact optional
+  `assetStatus` query using `in_business`, `sent_to_laundry`, `at_laundry`,
+  `washed`, `returned`, `delayed`, `missing`, `retired`, or `inactive`; selecting
+  All omits the parameter. The table normalizes tag/asset/category fields and
+  consumes response counts when supplied instead of rendering mock rows/cards.
+  Its five-control toolbar sends debounced `keywords`, `mappingStatus`,
+  `categoryId`, `assetStatus`, and `tagStatus` server filters; All values omit
+  their parameter, and active category options load from Tenant Categories.
+- Tenant Assets at `/business/assets` lists live server-paginated records through
+  `GET /tenant-assets/show` with `limit: 20` and optional exact `keywords`,
+  `categoryId`, `zoneName`, `laundryLinkId`, and `status` filters. Category and
+  linked-laundry options load from their domain APIs; zone options consume the
+  asset response's filter metadata when supplied and otherwise derive from
+  returned rows. Asset rows/cards normalize the live response instead of mock data.
 - The Business dashboard currently includes a temporary Test Scanner Scan button
   that posts the fixed test payload `{ scannerId:
   "7cd8b2d0-1299-4717-8ef3-242581519715", epcs: ["TEST-EPC-025",

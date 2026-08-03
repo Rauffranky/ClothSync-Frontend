@@ -45,6 +45,14 @@ export const TENANT_SCANNER_ENDPOINTS = Object.freeze({
   UPDATE_STATUS: (id) => `/tenant-scanners/update-status/${id}`,
 });
 
+export const TENANT_TAG_ENDPOINTS = Object.freeze({
+  LIST: "/tenant-tags/show",
+});
+
+export const TENANT_ASSET_ENDPOINTS = Object.freeze({
+  LIST: "/tenant-assets/show",
+});
+
 export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
   TEST_SCANNER_SCAN: "/tenant-bulk-scan/test-scanner-scan",
   BULK_ADD: (sessionId) =>

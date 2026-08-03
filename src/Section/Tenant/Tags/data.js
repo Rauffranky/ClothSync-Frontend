@@ -125,27 +125,123 @@ export const tagsData = [
 
 export const allTagsOptions = [
     { label: "All Tags", value: "all" },
-    { label: "Linked", value: "Linked" },
-    { label: "Unlinked", value: "Unlinked" },
-];
-
-export const categoryOptions = [
-    { label: "Categories", value: "all" },
-    { label: "Bed Linen", value: "Bed Linen" },
-    { label: "Bath Towels", value: "Bath Towels" },
-    { label: "Staff Uniforms", value: "Staff Uniforms" },
+    { label: "Linked", value: "linked" },
+    { label: "Unlinked", value: "unlinked" },
 ];
 
 export const assetStatusOptions = [
-    { label: "Asset Status", value: "all" },
-    { label: "In Laundry", value: "In Laundry" },
-    { label: "Sent to Laundry", value: "Sent to Laundry" },
-    { label: "In Business", value: "In Business" },
-    { label: "Delayed", value: "Delayed" },
+    { label: "All Asset Statuses", value: "all" },
+    { label: "In Business", value: "in_business" },
+    { label: "Sent to Laundry", value: "sent_to_laundry" },
+    { label: "In Laundry", value: "at_laundry" },
+    { label: "Washed", value: "washed" },
+    { label: "Returned", value: "returned" },
+    { label: "Delayed", value: "delayed" },
+    { label: "Missing", value: "missing" },
+    { label: "Retired", value: "retired" },
+    { label: "Inactive", value: "inactive" },
 ];
 
 export const statusOptions = [
-    { label: "Status", value: "all" },
-    { label: "Active", value: "Active" },
+    { label: "All Tag Statuses", value: "all" },
+    { label: "Active", value: "active" },
     { label: "Inactive", value: "inactive" },
 ];
+
+const getName = (record, keys, fallback = "—") => {
+    if (!record) return fallback;
+    const translation = record?.translations?.en || {};
+    return keys.map((key) => record?.[key] ?? translation?.[key]).find(Boolean) || fallback;
+};
+
+export const getAssetStatusVariant = (status) => ({
+    in_business: "ready",
+    sent_to_laundry: "pending",
+    at_laundry: "purple",
+    washed: "success",
+    returned: "info",
+    delayed: "overdue",
+    missing: "danger",
+    retired: "neutral",
+    inactive: "danger",
+}[status] || "neutral");
+
+export const normalizeTenantTag = (tag = {}) => {
+    const asset = tag.asset || null;
+    const category = tag.category || asset?.category || null;
+    const assetStatusValue = tag.assetStatus || tag.currentStatus || asset?.status || null;
+    const mappingStatus = tag.mappingStatus || tag.mapping || "unlinked";
+    const tagStatus = tag.tagStatus || tag.status || "inactive";
+
+    return {
+        ...tag,
+        apiId: tag.id || tag._id,
+        id: tag.tagCode || tag.code || tag.id || tag._id || tag.epc,
+        epc: tag.epc || "—",
+        mapping: formatStatusLabel(mappingStatus),
+        assignedAsset: getName(asset, ["assetName", "name"], "Not mapped"),
+        assetId: asset?.assetCode || asset?.code || asset?.id || tag.assetId || "",
+        category: getName(category, ["title", "categoryName", "name"]),
+        assetStatusValue,
+        assetStatus: assetStatusValue ? formatStatusLabel(assetStatusValue) : "—",
+        assetStatusVariant: getAssetStatusVariant(assetStatusValue),
+        tagStatus: formatStatusLabel(tagStatus),
+        lastScanTime: tag.lastScannedAt ? formatDateTime(tag.lastScannedAt, true, true) : "Never",
+        location: tag.lastScannedLocation || tag.location || "",
+        createdAt: formatDateWithUserPreferences(tag.createdAt),
+        hasAlert: ["delayed", "missing"].includes(assetStatusValue),
+    };
+};
+
+const getCount = (value, fallback = 0) => {
+    const count = Number(value);
+    return Number.isFinite(count) ? count : fallback;
+};
+
+export const normalizeTenantTagCounts = (counts, totalItems = null) => {
+    const source = Array.isArray(counts)
+        ? Object.fromEntries(
+            counts.filter((item) => item?.key).map((item) => [item.key, item.count]),
+        )
+        : counts || {};
+    const optionalCount = (value) => {
+        if (value === null || value === undefined) return null;
+        const count = Number(value);
+        return Number.isFinite(count) ? count : null;
+    };
+
+    return {
+        totalTags: optionalCount(source.totalTags ?? source.total ?? totalItems),
+        mappedTags: optionalCount(source.mappedTags ?? source.linkedTags ?? source.mapped),
+        unmappedTags: optionalCount(source.unmappedTags ?? source.unlinkedTags ?? source.unmapped),
+        activeTags: optionalCount(source.activeTags ?? source.active),
+        unlinkedTags: optionalCount(source.unlinkedTags ?? source.detachedTags ?? source.detached),
+    };
+};
+
+export const getTenantTagCollection = (response, limit = 10) => {
+    const payload = response?.data ?? response ?? {};
+    const items = Array.isArray(payload)
+        ? payload
+        : payload.items || payload.tags || payload.docs || payload.results || [];
+    const pagination = payload.pagination || payload.meta || {};
+    const totalItems = getCount(
+        pagination.totalItems ?? pagination.totalDocs ?? pagination.total ?? items.length,
+    );
+
+    return {
+        rows: Array.isArray(items) ? items.map(normalizeTenantTag) : [],
+        pagination: {
+            totalItems,
+            totalPages: getCount(
+                pagination.totalPages ?? pagination.pages ?? Math.ceil(totalItems / limit),
+            ),
+        },
+        counts: normalizeTenantTagCounts(
+            payload.counts || payload.summary,
+            totalItems,
+        ),
+    };
+};
+import { formatDateTime, formatDateWithUserPreferences } from "../../../Utils/date";
+import { formatStatusLabel } from "../../../Utils/status";

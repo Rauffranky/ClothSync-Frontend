@@ -11,58 +11,58 @@ import {
 import Card from "../../../Components/UI/Card";
 import IconWrapper from "../../../Components/UI/IconWrapper";
 
-const stats = [
+const getStats = (counts) => [
     {
-        value: "8",
+        value: counts?.totalAssets,
         label: "Total Assets",
         helper: "all registered",
         icon: Cuboid,
         variant: "info",
     },
     {
-        value: "2",
+        value: counts?.inBusiness,
         label: "In Business",
         helper: "on-premise",
         icon: Building2,
         variant: "business",
     },
     {
-        value: "1",
+        value: counts?.sentToLaundry,
         label: "Sent to Laundry",
         helper: "dispatched",
         icon: Truck,
         variant: "sent",
     },
     {
-        value: "1",
+        value: counts?.atLaundry,
         label: "In Laundry",
         helper: "processing",
         icon: WashingMachine,
         variant: "laundry",
     },
     {
-        value: "1",
+        value: counts?.washed,
         label: "Washed",
         helper: "ready to return",
         icon: ShieldCheck,
         variant: "washed",
     },
     {
-        value: "0",
+        value: counts?.returned,
         label: "Returned",
         helper: "back this week",
         icon: RotateCcw,
         variant: "returned",
     },
     {
-        value: "1",
+        value: counts?.delayed,
         label: "Delayed",
         helper: "past expected return",
         icon: Clock3,
         variant: "delayed",
     },
     {
-        value: "1",
+        value: counts?.missing,
         label: "Missing / Lost",
         helper: "flagged",
         icon: AlertCircle,
@@ -70,7 +70,9 @@ const stats = [
     },
 ];
 
-const AssetStats = () => {
+const AssetStats = ({ counts }) => {
+    const stats = getStats(counts);
+
     return (
         <section className="grid gap-2 grid-cols-2 sm:grid-cols-4 2xl:grid-cols-8">
             {stats.map((item, index) => {
@@ -91,7 +93,7 @@ const AssetStats = () => {
                         />
 
                         <p className="m-0 mt-2 text-xl font-black leading-none text-(--theme-text-primary)">
-                            {item.value}
+                            {item.value ?? "—"}
                         </p>
                         <p className="m-0 mt-1 text-xs font-bold leading-4 text-(--theme-text-primary)">
                             {item.label}

@@ -1,4 +1,5 @@
-import { Shirt } from "lucide-react";
+import { formatDateTime } from "../../../Utils/date";
+import { formatStatusLabel } from "../../../Utils/status";
 
 export const assetsData = [
     {
@@ -165,3 +166,124 @@ export const laundryFilterOptions = [
     { label: "PureWash Industrial", value: "PureWash Industrial" },
     { label: "Metro Linen Service", value: "Metro Linen Service" },
 ];
+
+export const assetStatusOptions = [
+    { label: "All Statuses", value: "all" },
+    { label: "In Business", value: "in_business" },
+    { label: "Sent to Laundry", value: "sent_to_laundry" },
+    { label: "In Laundry", value: "at_laundry" },
+    { label: "Washed", value: "washed" },
+    { label: "Returned", value: "returned" },
+    { label: "Delayed", value: "delayed" },
+    { label: "Missing", value: "missing" },
+    { label: "Retired", value: "retired" },
+    { label: "Inactive", value: "inactive" },
+];
+
+const getName = (record, keys, fallback = "—") => {
+    const translation = record?.translations?.en || {};
+    return keys.map((key) => record?.[key] ?? translation?.[key]).find(Boolean) || fallback;
+};
+
+const statusVariants = {
+    in_business: "success",
+    sent_to_laundry: "warning",
+    at_laundry: "purple",
+    washed: "info",
+    returned: "info",
+    delayed: "danger",
+    missing: "danger",
+    retired: "neutral",
+    inactive: "danger",
+};
+
+export const normalizeTenantAsset = (asset = {}) => {
+    const statusValue = asset.status || asset.currentStatus || "inactive";
+    const category = asset.category || null;
+    const laundryLink = asset.assignedLaundryLink || asset.laundryLink || null;
+    const tags = Array.isArray(asset.tags) ? asset.tags : [];
+    const firstTag = tags[0] || asset.tag || null;
+
+    return {
+        ...asset,
+        apiId: asset.id || asset._id,
+        id: asset.assetCode || asset.code || asset.id || asset._id,
+        name: getName(asset, ["assetName", "name"], "Unnamed Asset"),
+        tag: firstTag?.tagCode || firstTag?.epc || asset.tagCode || "No Tag",
+        category: getName(category, ["title", "categoryName", "name"]),
+        categoryId: asset.categoryId || category?.id || category?._id,
+        zoneName: asset.zoneName || asset.location || "—",
+        location: asset.lastScanLocation || asset.zoneName || "—",
+        lastScanTime: asset.lastScannedAt
+            ? formatDateTime(asset.lastScannedAt, true, true)
+            : "Never",
+        statusValue,
+        status: formatStatusLabel(statusValue),
+        statusVariant: statusVariants[statusValue] || "neutral",
+        washCount: Number(asset.washCount) || 0,
+        maxWash: Number(asset.washLimit) || 0,
+        assignedLaundry:
+            getName(laundryLink?.laundry || laundryLink, ["businessName", "companyName", "name"], "—"),
+        laundryLinkId: asset.assignedLaundryLinkId || laundryLink?.id || laundryLink?._id,
+    };
+};
+
+const getCount = (value, fallback = 0) => {
+    const count = Number(value);
+    return Number.isFinite(count) ? count : fallback;
+};
+
+export const normalizeTenantAssetCounts = (counts, totalItems = null) => {
+    const source = Array.isArray(counts)
+        ? Object.fromEntries(
+            counts.filter((item) => item?.key).map((item) => [item.key, item.count]),
+        )
+        : counts || {};
+    const optionalCount = (value) => {
+        if (value === null || value === undefined) return null;
+        const count = Number(value);
+        return Number.isFinite(count) ? count : null;
+    };
+
+    return {
+        totalAssets: optionalCount(source.totalAssets ?? source.total ?? totalItems),
+        inBusiness: optionalCount(source.inBusiness ?? source.in_business),
+        sentToLaundry: optionalCount(source.sentToLaundry ?? source.sent_to_laundry),
+        atLaundry: optionalCount(source.atLaundry ?? source.inLaundry ?? source.at_laundry),
+        washed: optionalCount(source.washed),
+        returned: optionalCount(source.returned),
+        delayed: optionalCount(source.delayed),
+        missing: optionalCount(source.missing ?? source.missingLost),
+    };
+};
+
+export const getTenantAssetCollection = (response, limit = 20) => {
+    const payload = response?.data ?? response ?? {};
+    const items = Array.isArray(payload)
+        ? payload
+        : payload.items || payload.assets || payload.docs || payload.results || [];
+    const rows = Array.isArray(items) ? items.map(normalizeTenantAsset) : [];
+    const pagination = payload.pagination || payload.meta || {};
+    const totalItems = getCount(
+        pagination.totalItems ?? pagination.totalDocs ?? pagination.total ?? rows.length,
+    );
+    const filterSource = payload.filters || payload.filterOptions || {};
+    const zones = filterSource.zoneNames || filterSource.zones || payload.zoneNames || [];
+
+    return {
+        rows,
+        pagination: {
+            totalItems,
+            totalPages: getCount(
+                pagination.totalPages ?? pagination.pages ?? Math.ceil(totalItems / limit),
+            ),
+        },
+        counts: normalizeTenantAssetCounts(
+            payload.counts || payload.summary,
+            totalItems,
+        ),
+        zones: Array.isArray(zones)
+            ? zones.map((zone) => typeof zone === "string" ? zone : zone?.value || zone?.zoneName).filter(Boolean)
+            : [],
+    };
+};

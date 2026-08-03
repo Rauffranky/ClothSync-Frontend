@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Search,
@@ -11,7 +11,10 @@ import {
   Eye,
   Edit,
   Archive,
+  RefreshCw,
 } from "lucide-react";
+import Alert from "../../../Components/UI/Alert";
+import Button from "../../../Components/UI/Button";
 import IconWrapper from "../../../Components/UI/IconWrapper";
 import Badge from "../../../Components/UI/Badge";
 import ProgressBar from "../../../Components/UI/ProgressBar";
@@ -23,23 +26,44 @@ import Pagination from "../../../Components/UI/Pagination";
 import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import {
-  assetsData,
-  categoryOptions,
-  zoneOptions,
-  laundryFilterOptions,
+  assetStatusOptions,
+  getTenantAssetCollection,
 } from "./data";
+import { getApiErrorMessage } from "../../../axios/api";
+import { getTenantAssets } from "../../../axios/assets/tenantAssets";
+import { getTenantCategories } from "../../../axios/categories/tenantCategories";
+import { getTenantLaundries } from "../../../axios/laundries/tenantLaundries";
 import EditAssetModal from "./EditAssetModal";
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 20;
 
-const statusFilterOptions = [
-  { label: "All Statuses", value: "all" },
-  { label: "In Laundry", value: "In Laundry" },
-  { label: "Sent to Laundry", value: "Sent to Laundry" },
-  { label: "In Business", value: "In Business" },
-  { label: "Delayed", value: "Delayed" },
-  { label: "Washed", value: "Washed" },
-  { label: "Retired", value: "Retired" },
+const getItems = (response, keys) => {
+  const payload = response?.data ?? response ?? {};
+  return keys.map((key) => payload?.[key]).find(Array.isArray) || [];
+};
+
+const getCategoryOptions = (response) => [
+  { label: "All Categories", value: "all" },
+  ...getItems(response, ["items", "categories", "docs"]).map((category) => ({
+    label: category.title || category.name || category.translations?.en?.title || "Unnamed Category",
+    value: category.id || category._id,
+  })).filter((option) => option.value),
+];
+
+const getLaundryOptions = (response) => [
+  { label: "All Laundries", value: "all" },
+  ...getItems(response, ["items", "laundries", "docs"]).map((link) => {
+    const laundry = link.laundry || link.laundryId || link;
+    return {
+      label:
+        laundry.businessName ||
+        laundry.companyName ||
+        laundry.name ||
+        laundry.translations?.en?.name ||
+        "Unnamed Laundry",
+      value: link.id || link._id,
+    };
+  }).filter((option) => option.value),
 ];
 
 const categoryIcons = {
@@ -50,7 +74,7 @@ const categoryIcons = {
   "Pool Towels": Waves,
 };
 
-const AssetsTable = () => {
+const AssetsTable = ({ onCountsChange }) => {
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebouncedSearch(searchValue);
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -58,46 +82,96 @@ const AssetsTable = () => {
   const [laundryFilter, setLaundryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(0);
+  const [rows, setRows] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [pageCount, setPageCount] = useState(0);
+  const [categoryOptions, setCategoryOptions] = useState([{ label: "All Categories", value: "all" }]);
+  const [zoneOptions, setZoneOptions] = useState([{ label: "All Zones", value: "all" }]);
+  const [laundryOptions, setLaundryOptions] = useState([{ label: "All Laundries", value: "all" }]);
+  const [isLoadingFilters, setIsLoadingFilters] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [retryKey, setRetryKey] = useState(0);
   const [editAssetModalOpen, setEditAssetModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState(null);
+  const requestIdRef = useRef(0);
   const navigate = useNavigate();
 
-  const filteredAssets = useMemo(() => {
-    return assetsData.filter((asset) => {
-      const search = debouncedSearch.toLowerCase();
-      const matchesSearch =
-        !search ||
-        [asset.name, asset.id, asset.tag]
-          .join(" ")
-          .toLowerCase()
-          .includes(search);
-      const matchesCategory =
-        categoryFilter === "all" || asset.category === categoryFilter;
-      const matchesZone =
-        zoneFilter === "all" || asset.location.includes(zoneFilter);
-      const matchesLaundry =
-        laundryFilter === "all" || asset.assignedLaundry === laundryFilter;
-      const matchesStatus =
-        statusFilter === "all" || asset.status === statusFilter;
+  useEffect(() => {
+    let isActive = true;
+    Promise.all([
+      getTenantCategories({ page: 1, limit: 100, status: "active" }),
+      getTenantLaundries({ page: 1, limit: 100 }),
+    ])
+      .then(([categoriesResponse, laundriesResponse]) => {
+        if (!isActive) return;
+        setCategoryOptions(getCategoryOptions(categoriesResponse));
+        setLaundryOptions(getLaundryOptions(laundriesResponse));
+      })
+      .catch(() => {
+        if (!isActive) return;
+        setCategoryOptions([{ label: "All Categories", value: "all" }]);
+        setLaundryOptions([{ label: "All Laundries", value: "all" }]);
+      })
+      .finally(() => {
+        if (isActive) setIsLoadingFilters(false);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
-      return (
-        matchesSearch &&
-        matchesCategory &&
-        matchesZone &&
-        matchesLaundry &&
-        matchesStatus
-      );
-    });
-  }, [debouncedSearch, categoryFilter, zoneFilter, laundryFilter, statusFilter]);
+  useEffect(() => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    // Loading synchronizes this table with the external server collection.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsLoading(true);
+
+    getTenantAssets({
+      page: currentPage + 1,
+      limit: ITEMS_PER_PAGE,
+      ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
+      ...(categoryFilter !== "all" ? { categoryId: categoryFilter } : {}),
+      ...(zoneFilter !== "all" ? { zoneName: zoneFilter } : {}),
+      ...(laundryFilter !== "all" ? { laundryLinkId: laundryFilter } : {}),
+      ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    })
+      .then((response) => {
+        if (requestId !== requestIdRef.current) return;
+        const collection = getTenantAssetCollection(response, ITEMS_PER_PAGE);
+        setRows(collection.rows);
+        setTotalItems(collection.pagination.totalItems);
+        setPageCount(collection.pagination.totalPages);
+        onCountsChange?.(collection.counts);
+        const zones = collection.zones.length
+          ? collection.zones
+          : collection.rows.map((asset) => asset.zoneName).filter((zone) => zone && zone !== "—");
+        setZoneOptions([
+          { label: "All Zones", value: "all" },
+          ...[...new Set(zones)].map((zone) => ({ label: zone, value: zone })),
+        ]);
+        setLoadError("");
+      })
+      .catch((error) => {
+        if (requestId !== requestIdRef.current) return;
+        setRows([]);
+        setTotalItems(0);
+        setPageCount(0);
+        setLoadError(getApiErrorMessage(error, "Unable to load assets"));
+      })
+      .finally(() => {
+        if (requestId === requestIdRef.current) setIsLoading(false);
+      });
+
+    return () => {
+      requestIdRef.current += 1;
+    };
+  }, [categoryFilter, currentPage, debouncedSearch, laundryFilter, onCountsChange, retryKey, statusFilter, zoneFilter]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
-    useSortableTableData(filteredAssets);
-  const pageCount = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
+    useSortableTableData(rows);
   const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
-  const paginatedAssets = useMemo(() => {
-    const startIndex = activePage * ITEMS_PER_PAGE;
-    return sortedData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [activePage, sortedData]);
 
   const resetCurrentPage = () => setCurrentPage(0);
 
@@ -282,6 +356,7 @@ const AssetsTable = () => {
         </div>
         <div>
           <Dropdown
+            disabled={isLoadingFilters}
             onChange={(val) => {
               setCategoryFilter(val);
               resetCurrentPage();
@@ -302,11 +377,12 @@ const AssetsTable = () => {
         </div>
         <div>
           <Dropdown
+            disabled={isLoadingFilters}
             onChange={(val) => {
               setLaundryFilter(val);
               resetCurrentPage();
             }}
-            options={laundryFilterOptions}
+            options={laundryOptions}
             value={laundryFilter}
           />
         </div>
@@ -319,17 +395,33 @@ const AssetsTable = () => {
               setStatusFilter(val);
               resetCurrentPage();
             }}
-            options={statusFilterOptions}
+            options={assetStatusOptions}
             value={statusFilter}
           />
         </div>
       </div>
 
       <div className="px-4 pb-4">
+        {loadError && (
+          <Alert className="mb-4" variant="danger">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{loadError}</span>
+              <Button
+                leftIcon={<RefreshCw size={15} />}
+                onClick={() => setRetryKey((current) => current + 1)}
+                size="sm"
+                variant="outline"
+              >
+                Try Again
+              </Button>
+            </div>
+          </Alert>
+        )}
         <Table
           columns={columns}
-          data={paginatedAssets}
+          data={sortedData}
           emptyText="No assets found"
+          loading={isLoading}
           onSort={handleTableSort}
           onRowClick={(row) => navigate(`/business/assets/${row.id}`)}
           rowKey="id"
@@ -341,7 +433,7 @@ const AssetsTable = () => {
           itemsPerPage={ITEMS_PER_PAGE}
           onPageChange={({ selected }) => setCurrentPage(selected)}
           pageCount={pageCount}
-          totalItems={sortedData.length}
+          totalItems={totalItems}
         />
       </div>
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Link,
@@ -8,82 +8,150 @@ import {
   Eye,
   History,
   Ban,
+  RefreshCw,
 } from "lucide-react";
 
 import {
-  tagsData,
   allTagsOptions,
-  categoryOptions,
   assetStatusOptions,
+  getTenantTagCollection,
   statusOptions,
 } from "./data";
+import Alert from "../../../Components/UI/Alert";
+import Button from "../../../Components/UI/Button";
 import IconWrapper from "../../../Components/UI/IconWrapper";
-import Badge from "../../../Components/UI/Badge";
 import Input from "../../../Components/UI/Input";
+import Badge from "../../../Components/UI/Badge";
 import Dropdown from "../../../Components/UI/Dropdown";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Table from "../../../Components/UI/Table";
 import Pagination from "../../../Components/UI/Pagination";
-import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
+import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
+import { getApiErrorMessage } from "../../../axios/api";
+import { getTenantCategories } from "../../../axios/categories/tenantCategories";
+import { getTenantTags } from "../../../axios/tags/tenantTags";
 import InactiveTagModal from "./InactiveTagModal";
 
 const ITEMS_PER_PAGE = 10;
 
-const TagsTable = () => {
+const getCategoryOptions = (response) => {
+  const payload = response?.data ?? response ?? {};
+  const items = payload.items ?? payload.categories ?? payload.docs ?? [];
+  return [
+    { label: "All Categories", value: "all" },
+    ...(Array.isArray(items) ? items : []).map((category) => ({
+      label:
+        category.title ??
+        category.name ??
+        category.translations?.en?.title ??
+        "Unnamed Category",
+      value: category.id ?? category._id,
+    })).filter((option) => option.value),
+  ];
+};
+
+const TagsTable = ({ onCountsChange }) => {
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebouncedSearch(searchValue);
   const [mappingFilter, setMappingFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [assetStatusFilter, setAssetStatusFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [tagStatusFilter, setTagStatusFilter] = useState("all");
+  const [categoryOptions, setCategoryOptions] = useState([
+    { label: "All Categories", value: "all" },
+  ]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
+  const [rows, setRows] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [pageCount, setPageCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [retryKey, setRetryKey] = useState(0);
   const [inactiveTagModalOpen, setInactiveTagModalOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState(null);
+  const requestIdRef = useRef(0);
   const navigate = useNavigate();
 
-  const filteredTags = useMemo(() => {
-    return tagsData.filter((tag) => {
-      const search = debouncedSearch.toLowerCase();
-      const matchesSearch =
-        !search ||
-        [tag.id, tag.epc, tag.assignedAsset]
-          .join(" ")
-          .toLowerCase()
-          .includes(search);
-      const matchesMapping =
-        mappingFilter === "all" || tag.mapping === mappingFilter;
-      const matchesCategory =
-        categoryFilter === "all" || tag.category === categoryFilter;
-      const matchesAssetStatus =
-        assetStatusFilter === "all" || tag.assetStatus === assetStatusFilter;
-      const matchesStatus =
-        statusFilter === "all" || tag.tagStatus === statusFilter;
+  useEffect(() => {
+    let isActive = true;
 
-      return (
-        matchesSearch &&
-        matchesMapping &&
-        matchesCategory &&
-        matchesAssetStatus &&
-        matchesStatus
-      );
-    });
+    getTenantCategories({ page: 1, limit: 100, status: "active" })
+      .then((response) => {
+        if (isActive) setCategoryOptions(getCategoryOptions(response));
+      })
+      .catch(() => {
+        if (isActive) {
+          setCategoryOptions([{ label: "All Categories", value: "all" }]);
+        }
+      })
+      .finally(() => {
+        if (isActive) setIsLoadingCategories(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    // Loading synchronizes this table with the external server collection.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsLoading(true);
+
+    const params = {
+      page: currentPage + 1,
+      limit: ITEMS_PER_PAGE,
+      ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
+      ...(mappingFilter !== "all" ? { mappingStatus: mappingFilter } : {}),
+      ...(categoryFilter !== "all" ? { categoryId: categoryFilter } : {}),
+      ...(assetStatusFilter !== "all"
+        ? { assetStatus: assetStatusFilter }
+        : {}),
+      ...(tagStatusFilter !== "all" ? { tagStatus: tagStatusFilter } : {}),
+    };
+
+    getTenantTags(params)
+      .then((response) => {
+        if (requestId !== requestIdRef.current) return;
+        const collection = getTenantTagCollection(response, ITEMS_PER_PAGE);
+        setRows(collection.rows);
+        setTotalItems(collection.pagination.totalItems);
+        setPageCount(collection.pagination.totalPages);
+        onCountsChange?.(collection.counts);
+        setLoadError("");
+      })
+      .catch((error) => {
+        if (requestId !== requestIdRef.current) return;
+        setRows([]);
+        setTotalItems(0);
+        setPageCount(0);
+        setLoadError(getApiErrorMessage(error, "Unable to load tags"));
+      })
+      .finally(() => {
+        if (requestId === requestIdRef.current) setIsLoading(false);
+      });
+
+    return () => {
+      requestIdRef.current += 1;
+    };
   }, [
+    assetStatusFilter,
+    categoryFilter,
+    currentPage,
     debouncedSearch,
     mappingFilter,
-    categoryFilter,
-    assetStatusFilter,
-    statusFilter,
+    onCountsChange,
+    retryKey,
+    tagStatusFilter,
   ]);
 
   const { handleSort, sortedData, sortBy, sortDirection } =
-    useSortableTableData(filteredTags);
-  const pageCount = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
+    useSortableTableData(rows);
   const activePage = pageCount > 0 ? Math.min(currentPage, pageCount - 1) : 0;
-  const paginatedTags = useMemo(() => {
-    const startIndex = activePage * ITEMS_PER_PAGE;
-    return sortedData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [activePage, sortedData]);
 
   const resetCurrentPage = () => setCurrentPage(0);
 
@@ -95,11 +163,6 @@ const TagsTable = () => {
   const closeInactiveTagModal = () => {
     setInactiveTagModalOpen(false);
     setSelectedTag(null);
-  };
-
-  const handleSearchChange = (value) => {
-    setSearchValue(value);
-    resetCurrentPage();
   };
 
   const handleTableSort = (nextSortBy, nextSortDirection) => {
@@ -199,14 +262,8 @@ const TagsTable = () => {
         if (row.assetStatus === "—")
           return <span className="text-(--theme-text-muted)">—</span>;
 
-        let variant = "neutral";
-        if (row.assetStatus === "In Laundry") variant = "purple";
-        else if (row.assetStatus === "Sent to Laundry") variant = "pending";
-        else if (row.assetStatus === "In Business") variant = "ready";
-        else if (row.assetStatus === "Delayed") variant = "overdue";
-
         return (
-          <Badge variant={variant} size="sm">
+          <Badge variant={row.assetStatusVariant} size="sm">
             {row.assetStatus}
           </Badge>
         );
@@ -289,37 +346,37 @@ const TagsTable = () => {
 
   return (
     <div className="">
-      <div className=" grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-        <div>
-          <Input
-            leftIcon={<Search size={16} />}
-            onChange={handleSearchChange}
-            placeholder="Search by EPC, Tag ID, asset..."
-            value={searchValue}
-          />
-        </div>
-        <div>
-          <Dropdown
-            leftIcon={<Link size={14} className="text-(--theme-text-muted)" />}
-            onChange={(val) => {
-              setMappingFilter(val);
-              resetCurrentPage();
-            }}
-            options={allTagsOptions}
-            value={mappingFilter}
-          />
-        </div>
-        <div>
-          <Dropdown
-            leftIcon={<Tag size={14} className="text-(--theme-text-muted)" />}
-            onChange={(val) => {
-              setCategoryFilter(val);
-              resetCurrentPage();
-            }}
-            options={categoryOptions}
-            value={categoryFilter}
-          />
-        </div>
+      <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <Input
+          leftIcon={<Search size={16} />}
+          onChange={(value) => {
+            setSearchValue(value);
+            resetCurrentPage();
+          }}
+          placeholder="Search by EPC, Tag ID, asset..."
+          value={searchValue}
+        />
+        <Dropdown
+          leftIcon={<Link size={14} className="text-(--theme-text-muted)" />}
+          onChange={(value) => {
+            setMappingFilter(value);
+            resetCurrentPage();
+          }}
+          options={allTagsOptions}
+          value={mappingFilter}
+        />
+        <Dropdown
+          disabled={isLoadingCategories}
+          leftIcon={<Tag size={14} className="text-(--theme-text-muted)" />}
+          onChange={(value) => {
+            setCategoryFilter(value);
+            resetCurrentPage();
+          }}
+          options={categoryOptions}
+          placeholder={isLoadingCategories ? "Loading categories..." : "Categories"}
+          search
+          value={categoryFilter}
+        />
         <div>
           <Dropdown
             leftIcon={
@@ -333,24 +390,41 @@ const TagsTable = () => {
             value={assetStatusFilter}
           />
         </div>
-        <div>
-          <Dropdown
-            leftIcon={<Tag size={14} className="text-(--theme-text-muted)" />}
-            onChange={(val) => {
-              setStatusFilter(val);
-              resetCurrentPage();
-            }}
-            options={statusOptions}
-            value={statusFilter}
-          />
-        </div>
+        <Dropdown
+          leftIcon={<Tag size={14} className="text-(--theme-text-muted)" />}
+          onChange={(value) => {
+            setTagStatusFilter(value);
+            resetCurrentPage();
+          }}
+          options={statusOptions}
+          value={tagStatusFilter}
+        />
       </div>
 
       <div className="px-4 pb-4">
+        {loadError && (
+          <Alert className="mb-4" variant="danger">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{loadError}</span>
+              <Button
+                leftIcon={<RefreshCw size={15} />}
+                onClick={() => {
+                  setIsLoading(true);
+                  setRetryKey((current) => current + 1);
+                }}
+                size="sm"
+                variant="outline"
+              >
+                Try Again
+              </Button>
+            </div>
+          </Alert>
+        )}
         <Table
           columns={columns}
-          data={paginatedTags}
+          data={sortedData}
           emptyText="No tags found"
+          loading={isLoading}
           onSort={handleTableSort}
           rowKey="id"
           sortBy={sortBy}
@@ -361,7 +435,7 @@ const TagsTable = () => {
           itemsPerPage={ITEMS_PER_PAGE}
           onPageChange={({ selected }) => setCurrentPage(selected)}
           pageCount={pageCount}
-          totalItems={sortedData.length}
+          totalItems={totalItems}
         />
       </div>
 
