@@ -55,7 +55,13 @@ const ScanningTable = () => {
     return (
         <Card padding="0" rounded="18px" className="overflow-hidden">
             <div className="border-b border-(--theme-border) px-4 pt-3 bg-(--theme-surface)">
-                <Tabs items={tabs} value={activeTab} onChange={setActiveTab} />
+                <Tabs
+                    className="w-fit max-w-full"
+                    equalWidth={false}
+                    items={tabs}
+                    value={activeTab}
+                    onChange={setActiveTab}
+                />
             </div>
 
             <div className="px-4 pb-4 mt-4">

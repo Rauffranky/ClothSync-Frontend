@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Eraser, Plus, Radio, Undo2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Button from "../../../Components/UI/Button";
 import useSocketEvent from "../../../Hooks/useSocketEvent";
 import { getApiErrorMessage } from "../../../axios/api";
@@ -12,10 +13,16 @@ import {
 import { SOCKET_EVENTS } from "../../../socket/events";
 import { getSocket } from "../../../socket/client";
 import { toast } from "../../../Utils/toast";
+import { setActiveBulkScanSessionId } from "../../../Utils/bulkScanSession";
 
 const TEST_SCAN_PAYLOAD = Object.freeze({
   scannerId: "7cd8b2d0-1299-4717-8ef3-242581519715",
-  epcs: Object.freeze(["TEST-EPC-008"]),
+  epcs: Object.freeze([
+    "TEST-EPC-009",
+    "TEST-EPC-010",
+    "TEST-EPC-011",
+    "TEST-EPC-012",
+  ]),
 });
 
 const TEST_BULK_ADD_PAYLOAD = Object.freeze({
@@ -29,6 +36,7 @@ const TEST_BULK_ADD_PAYLOAD = Object.freeze({
 const UNDO_WINDOW_SECONDS = 120;
 
 const TestScannerScanButton = () => {
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isBulkAdding, setIsBulkAdding] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
@@ -99,8 +107,10 @@ const TestScannerScanButton = () => {
       }
 
       setSessionId(sessionId);
+      setActiveBulkScanSessionId(sessionId);
       getSocket().emit(SOCKET_EVENTS.SCAN_SESSION_JOIN, { sessionId });
       toast.success(response?.message || "Test scanner scan sent successfully");
+      navigate("/business/bulk-scanning");
     } catch (error) {
       toast.error(
         getApiErrorMessage(error, "Unable to send the test scanner scan"),
@@ -165,6 +175,7 @@ const TestScannerScanButton = () => {
     try {
       const response = await clearTenantBulkScanSession(sessionId);
       setSessionId(null);
+      setActiveBulkScanSessionId(null);
       setUndoId(null);
       setUndoSecondsRemaining(0);
       toast.success(response?.message || "Test scan session cleared successfully");

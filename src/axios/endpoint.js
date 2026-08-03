@@ -53,6 +53,8 @@ export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
     `/tenant-bulk-scan/sessions/${sessionId}/bulk-add/${undoId}/undo`,
   CLEAR_SESSION: (sessionId) =>
     `/tenant-bulk-scan/sessions/${sessionId}/clear`,
+  ENTRIES: (sessionId) =>
+    `/tenant-bulk-scan/sessions/${sessionId}/entries`,
 });
 
 export const LAUNDRY_SCANNER_ENDPOINTS = Object.freeze({

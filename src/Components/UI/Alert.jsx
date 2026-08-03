@@ -7,11 +7,9 @@ const alertVariants = {
       "color-mix(in srgb, var(--color-sky-blue) 38%, var(--theme-border))",
   },
   success: {
-    color: "var(--color-fresh-mint)",
-    background:
-      "color-mix(in srgb, var(--color-fresh-mint) 10%, var(--theme-surface))",
-    borderColor:
-      "color-mix(in srgb, var(--color-fresh-mint) 38%, var(--theme-border))",
+    color: "var(--badge-ready-text)",
+    background: "var(--badge-ready-bg)",
+    borderColor: "var(--badge-ready-border)",
   },
   warning: {
     color: "var(--color-sunlit-gold)",

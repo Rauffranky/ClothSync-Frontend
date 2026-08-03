@@ -7,6 +7,8 @@ import Dropdown from '../../../../../Components/UI/Dropdown';
 import Modal from '../../../../../Components/UI/Modal';
 import Badge from '../../../../../Components/UI/Badge';
 import { CheckCircle2, X, RotateCcw, AlertTriangle, Tag, Shirt, Layers } from 'lucide-react';
+import SelectionCheckbox from '../SelectionCheckbox';
+import useTagSelection from '../useTagSelection';
 
 const mockData = [
     { id: 1, epc: "000209A3F1B010..", previousAsset: "Table Cloth 60x90", previousCategory: "Linens", location: "North Branch", time: "10:42:28 AM" },
@@ -23,14 +25,28 @@ const DetachedTags = () => {
     const [retagType, setRetagType] = useState("tag"); // "category" | "tag"
     const [tagWashLimit, setTagWashLimit] = useState("");
     const [reason, setReason] = useState("");
+    const { allSelected, selectedIds, someSelected, toggleAll, toggleRow } = useTagSelection(mockData);
 
     const columns = [
         {
             key: "checkbox",
-            label: <input type="checkbox" className="rounded border-gray-300" />,
+            label: (
+                <SelectionCheckbox
+                    checked={allSelected}
+                    indeterminate={someSelected}
+                    label="Select all detached tags"
+                    onChange={toggleAll}
+                />
+            ),
             sortable: false,
             width: 48,
-            render: () => <input type="checkbox" className="rounded border-gray-300" />
+            render: (_, row) => (
+                <SelectionCheckbox
+                    checked={selectedIds.has(row.id)}
+                    label={`Select tag ${row.epc}`}
+                    onChange={(checked) => toggleRow(row.id, checked)}
+                />
+            )
         },
         {
             key: "epc",

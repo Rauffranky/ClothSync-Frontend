@@ -7,6 +7,8 @@ import Dropdown from '../../../../../Components/UI/Dropdown';
 import Badge from '../../../../../Components/UI/Badge';
 import ActionDropdown from '../../../../../Components/UI/ActionDropdown';
 import { CheckCircle2, X, Search } from 'lucide-react';
+import SelectionCheckbox from '../SelectionCheckbox';
+import useTagSelection from '../useTagSelection';
 
 const mockData = [
     { id: 1, epc: "000209A3F1B010..", name: "Table Cloth 60x90", assetId: "AST-9901", category: "Linens", status: "In Business", location: "North Branch", time: "10:42:28 AM" },
@@ -36,6 +38,7 @@ const ExistingLinkedTags = () => {
     const [currentAction, setCurrentAction] = useState("check-in"); // "check-in" | "check-out"
     const [searchQuery, setSearchQuery] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("all");
+    const { allSelected, selectedIds, someSelected, toggleAll, toggleRow } = useTagSelection(mockData);
 
     const handleUndo = () => {
         setUndoState("undone");
@@ -50,10 +53,23 @@ const ExistingLinkedTags = () => {
     const columns = [
         {
             key: "checkbox",
-            label: <input type="checkbox" className="rounded border-gray-300" />,
+            label: (
+                <SelectionCheckbox
+                    checked={allSelected}
+                    indeterminate={someSelected}
+                    label="Select all existing linked tags"
+                    onChange={toggleAll}
+                />
+            ),
             sortable: false,
             width: 48,
-            render: () => <input type="checkbox" className="rounded border-gray-300" />
+            render: (_, row) => (
+                <SelectionCheckbox
+                    checked={selectedIds.has(row.id)}
+                    label={`Select tag ${row.epc}`}
+                    onChange={(checked) => toggleRow(row.id, checked)}
+                />
+            )
         },
         {
             key: "epc",

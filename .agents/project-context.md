@@ -141,7 +141,8 @@ Dashboard routes:
   `/business/categories`, `/business/categories/:id`, `/business/assets`,
   `/business/assets/:id`, `/business/scanners`, `/business/scanners/:id`,
   `/business/scanners/warnings`, `/business/staff`, `/business/staff-roles`,
-  `/business/tags`, `/business/tags/:id`, and `/business/settings`.
+  `/business/tags`, `/business/tags/:id`, `/business/bulk-scanning`, and
+  `/business/settings`.
   Reports & Analytics is available at `/business/reports-analytics`.
 - Laundry: `/laundry/dashboard`, `/laundry/linked-businesses`, connected
   business details at `/laundry/linked-businesses/:id`, `/laundry/staff`, and
@@ -278,13 +279,38 @@ Confirmed API-backed areas:
   Scanner Warnings and uses the `Scanners / Warnings` header. Activate/deactivate actions use
   `PUT /tenant-scanners/update-status/:id`. Mock scan logs are no longer shown
   on the live detail screen because no scanner-log API contract is integrated.
+- Tenant Bulk Scanning at `/business/bulk-scanning` loads the authenticated
+  active session's selected group through
+  `GET /tenant-bulk-scan/sessions/:sessionId/entries` with exact `scanGroup`
+  values `new_unlinked`, `existing_linked`, or `detached`, one-based `page`, and
+  default `limit: 50`. The response supplies session/scanner details, counters,
+  tabs, `entries.items`, and `entries.pagination`; the screen renders only Total
+  Tags, Existing Linked, New Unlinked, and Detached counters. Detached rows show
+  `previousAssignment` asset/category plus `linkedAt` and `detachedAt`.
+  The current tenant session ID is stored in same-tab session storage after a
+  successful test scan and refreshed from scan-session socket events. Tab and
+  page changes, initial load, socket/browser reconnect, `scan.entries.updated`,
+  bulk add/undo/expiry refetch entries. `scanner.scan.bulk` instead incrementally
+  upserts the active first page without an entries request. Reconnect rejoins the
+  session room before refetching. Session updated/finished/cleared events update
+  counters/status or clear table state, and all listeners use matching cleanup
+  handlers to prevent duplicates.
+  When the New Unlinked group has rows, the screen shows a readiness alert and
+  an Add Bulk to System action. Its non-backdrop-dismissible Formik/Yup modal
+  loads active categories, validates asset name/category/zone/wash limit, and
+  sends the exact bulk-add payload before refetching entries and exposing the
+  returned undo state.
 - The Business dashboard currently includes a temporary Test Scanner Scan button
   that posts the fixed test payload `{ scannerId:
-  "7cd8b2d0-1299-4717-8ef3-242581519715", epcs: ["TEST-EPC-008"] }` to
+  "7cd8b2d0-1299-4717-8ef3-242581519715", epcs: ["TEST-EPC-009",
+  "TEST-EPC-010", "TEST-EPC-011", "TEST-EPC-012"] }` to
   `POST /tenant-bulk-scan/test-scanner-scan`. While the dashboard is mounted it
   emits `scan-session.join` with the returned `data.session.id` and logs received
   `scanner.scan.bulk`, `scan.session.updated`, and `scan.bulk-added` payloads
   for temporary integration testing.
+  A successful Test Scanner Scan persists/joins the returned session and
+  immediately navigates to `/business/bulk-scanning`, where entries load from
+  that session ID.
   A second temporary Test Bulk Add button posts `{ assetName: "Test Towels",
   categoryId: "c4a46dde-04fd-4858-b827-82456a756361", zoneName: "Test Zone",
   washLimit: 100, description: "Socket testing asset" }` to

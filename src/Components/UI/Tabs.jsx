@@ -7,6 +7,7 @@ const Tabs = ({
     className = "",
     itemClassName = "",
     rounded = "14px",
+    equalWidth = true,
 }) => {
     return (
         <Card
@@ -17,17 +18,17 @@ const Tabs = ({
             {/* Mobile: horizontal scrollable flex — Desktop: equal-width grid */}
             <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <div
-                    className="flex gap-1.5 md:grid"
-                    style={{
+                    className={equalWidth ? "flex gap-1.5 md:grid" : "flex gap-1.5"}
+                    style={equalWidth ? {
                         gridTemplateColumns: `repeat(${items.length || 1}, minmax(0, 1fr))`,
-                    }}
+                    } : undefined}
                 >
                     {items.map((item) => {
                         const isActive = item.value === value;
 
                         return (
                             <button
-                                className={`flex shrink-0 min-h-11 items-center justify-center gap-2 px-3 text-sm font-bold transition-all duration-200 md:shrink ${itemClassName}`}
+                                className={`flex shrink-0 min-h-11 items-center justify-center gap-2 px-3 text-sm font-bold transition-all duration-200 ${equalWidth ? "md:shrink" : ""} ${itemClassName}`}
                                 disabled={item.disabled}
                                 key={item.value}
                                 onClick={() => onChange?.(item.value)}
@@ -77,4 +78,3 @@ const Tabs = ({
 };
 
 export default Tabs;
-

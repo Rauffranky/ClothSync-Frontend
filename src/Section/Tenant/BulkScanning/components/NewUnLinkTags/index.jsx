@@ -6,6 +6,8 @@ import Input from '../../../../../Components/UI/Input';
 import Dropdown from '../../../../../Components/UI/Dropdown';
 import Modal from '../../../../../Components/UI/Modal';
 import { CheckCircle2, X, Info, Shirt, Layers, Tag, MapPin } from 'lucide-react';
+import SelectionCheckbox from '../SelectionCheckbox';
+import useTagSelection from '../useTagSelection';
 
 const mockData = [
     { id: 1, epc: "111310B4G2C008...", time: "10:42:22 AM", location: "West Side Depot" },
@@ -35,14 +37,28 @@ const NewUnLinkTags = () => {
     const [categoryWashLimit, setCategoryWashLimit] = useState("");
     const [zone, setZone] = useState("");
     const [description, setDescription] = useState("");
+    const { allSelected, selectedIds, someSelected, toggleAll, toggleRow } = useTagSelection(mockData);
 
     const columns = [
         {
             key: "checkbox",
-            label: <input type="checkbox" className="rounded border-gray-300" />,
+            label: (
+                <SelectionCheckbox
+                    checked={allSelected}
+                    indeterminate={someSelected}
+                    label="Select all new unlinked tags"
+                    onChange={toggleAll}
+                />
+            ),
             sortable: false,
             width: 48,
-            render: () => <input type="checkbox" className="rounded border-gray-300" />
+            render: (_, row) => (
+                <SelectionCheckbox
+                    checked={selectedIds.has(row.id)}
+                    label={`Select tag ${row.epc}`}
+                    onChange={(checked) => toggleRow(row.id, checked)}
+                />
+            )
         },
         {
             key: "epc",

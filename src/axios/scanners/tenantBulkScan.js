@@ -20,3 +20,9 @@ export const clearTenantBulkScanSession = (sessionId) =>
   api.put(TENANT_BULK_SCAN_ENDPOINTS.CLEAR_SESSION(sessionId), undefined, {
     timeout: 15_000,
   });
+
+export const getTenantBulkScanEntries = (sessionId, params) =>
+  api.get(TENANT_BULK_SCAN_ENDPOINTS.ENTRIES(sessionId), {
+    params,
+    timeout: 15_000,
+  });
