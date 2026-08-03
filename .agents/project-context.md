@@ -145,8 +145,8 @@ Dashboard routes:
   `/business/categories`, `/business/categories/:id`, `/business/assets`,
   `/business/assets/:id`, `/business/scanners`, `/business/scanners/:id`,
   `/business/scanners/warnings`, `/business/staff`, `/business/staff-roles`,
-  `/business/tags`, `/business/tags/:id`, `/business/bulk-scanning`, and
-  `/business/settings`.
+  `/business/tags`, `/business/tags/:id`, `/business/bulk-scanning`,
+  `/business/dispatch-batches`, `/business/dispatch-batches/:id`, and `/business/settings`.
   Reports & Analytics is available at `/business/reports-analytics`.
 - Laundry: `/laundry/dashboard`, `/laundry/linked-businesses`, connected
   business details at `/laundry/linked-businesses/:id`, `/laundry/staff`, and
