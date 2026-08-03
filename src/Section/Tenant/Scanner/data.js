@@ -1,5 +1,6 @@
 import { Radio, Wifi, WifiOff, MapPin, Smartphone, AlertTriangle } from "lucide-react";
 import { formatDateTime } from "../../../Utils/date";
+import { formatStatusLabel } from "../../../Utils/status";
 
 const titleCase = (value) =>
     String(value || "")
@@ -59,7 +60,7 @@ export const normalizeScanner = (scanner, index = 0) => {
             assignedOperator?.id ||
             assignedOperator?._id ||
             "",
-        status: titleCase(scanner?.status),
+        status: formatStatusLabel(scanner?.status, ""),
         signalStatus: scanner?.signalStatus || "online",
         firmwareVersion: scanner?.firmwareVersion || "",
         batteryLevel: scanner?.batteryLevel ?? 100,

@@ -1,12 +1,8 @@
 import { Hash, MapPin, RadioTower, Settings, Tag, Timer, Zap } from "lucide-react";
 import Badge from "../../../Components/UI/Badge";
 import Card from "../../../Components/UI/Card";
-
-const formatTime = (value) => {
-  if (!value) return "-";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleTimeString();
-};
+import { formatTimeWithUserPreferences } from "../../../Utils/date";
+import { formatStatusLabel } from "../../../Utils/status";
 
 const getScannerName = (scanner) =>
   scanner?.name ??
@@ -25,9 +21,13 @@ const ScannerStatusCard = ({ session, scanner, lastEpc }) => {
       label: "Location",
       value: scanner?.location ?? scanner?.zoneName ?? "-",
     },
-    { icon: Zap, label: "Status", value: session?.status ?? "-" },
-    { icon: Settings, label: "Mode", value: scanner?.scannerMode ?? "-" },
-    { icon: Timer, label: "Scan Start", value: formatTime(session?.startedAt) },
+    { icon: Zap, label: "Status", value: formatStatusLabel(session?.status) },
+    { icon: Settings, label: "Mode", value: formatStatusLabel(scanner?.scannerMode) },
+    {
+      icon: Timer,
+      label: "Scan Start",
+      value: formatTimeWithUserPreferences(session?.startedAt, true),
+    },
     { icon: Tag, label: "Last EPC", value: lastEpc ?? "-", badge: true },
   ];
 

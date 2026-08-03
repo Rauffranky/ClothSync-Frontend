@@ -180,7 +180,7 @@ export const normalizeLaundryTenant = (record) => {
       ? "Connected"
       : isSuspended
         ? "Suspended"
-        : titleCase(rawStatus) || "Unknown",
+        : formatStatusLabel(rawStatus, "Unknown"),
     statusVariant: isActive ? "success" : isSuspended ? "warning" : "neutral",
     activeBatches: getNumber(
       record?.activeBatchesCount,
@@ -344,8 +344,9 @@ export const normalizePendingTenantRequest = (record) => {
       null,
     requestType: titleCase(record?.requestType || "new_connection"),
     statusValue: rawStatus,
-    status: canRespond ? "Pending Review" : titleCase(rawStatus),
+    status: canRespond ? "Pending Review" : formatStatusLabel(rawStatus, ""),
     statusVariant: canRespond ? "warning" : "neutral",
     canRespond,
   };
 };
+import { formatStatusLabel } from "../../../Utils/status";

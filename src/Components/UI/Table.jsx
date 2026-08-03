@@ -144,6 +144,23 @@ const Table = ({
                     const direction = getSortDirection(column);
                     const alignClass = alignClasses[column.align || "left"];
                     const sortable = isColumnSortable(column);
+                    const headerContent = (
+                      <>
+                        <span className="whitespace-nowrap">{column.label}</span>
+                        {sortable && (
+                          <span className={direction ? "text-(--color-aurora-teal)" : ""}>
+                            {renderSortIcon(direction)}
+                          </span>
+                        )}
+                      </>
+                    );
+                    const headerControlClasses = [
+                      "flex w-full min-w-0 items-center gap-2 bg-transparent p-0 font-inherit text-inherit",
+                      alignClass,
+                      sortable
+                        ? "cursor-pointer hover:text-(--theme-text-primary)"
+                        : "cursor-default",
+                    ].join(" ");
 
                     return (
                       <th
@@ -152,25 +169,18 @@ const Table = ({
                         className="border-b border-(--theme-border) px-4 py-3 text-xs font-black uppercase tracking-wide whitespace-nowrap text-(--theme-text-muted)"
                         style={{ width: column.width }}
                       >
-                        <button
-                          type="button"
-                          disabled={!sortable}
-                          onClick={() => handleSort(column)}
-                          className={[
-                            "flex w-full min-w-0 items-center gap-2 bg-transparent p-0 font-inherit text-inherit",
-                            alignClass,
-                            sortable
-                              ? "cursor-pointer hover:text-(--theme-text-primary)"
-                              : "cursor-default",
-                          ].join(" ")}
-                        >
-                          <span className="whitespace-nowrap">{column.label}</span>
-                          {sortable && (
-                            <span className={direction ? "text-(--color-aurora-teal)" : ""}>
-                              {renderSortIcon(direction)}
-                            </span>
-                          )}
-                        </button>
+                        {column.headerInteractive ? (
+                          <div className={headerControlClasses}>{headerContent}</div>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={!sortable}
+                            onClick={() => handleSort(column)}
+                            className={headerControlClasses}
+                          >
+                            {headerContent}
+                          </button>
+                        )}
                       </th>
                     );
                   })}

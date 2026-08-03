@@ -158,7 +158,9 @@ const Input = forwardRef(
         )}
 
         <div
-          className={`flex items-center gap-3 overflow-hidden px-4 transition-all duration-200 ${
+          className={`flex gap-3 overflow-hidden px-4 transition-all duration-200 ${
+            multiline ? "items-start" : "items-center"
+          } ${
             multiline ? "py-3" : ""
           } ${disabled ? "cursor-not-allowed opacity-60" : ""} ${className}`}
           style={fieldStyle}
@@ -168,7 +170,9 @@ const Input = forwardRef(
               type="button"
               onClick={onLeftIconClick}
               disabled={disabled || !onLeftIconClick}
-              className="flex shrink-0 items-center justify-center border-0 bg-transparent p-0"
+              className={`flex shrink-0 items-center justify-center border-0 bg-transparent p-0 ${
+                multiline ? "mt-0.5" : ""
+              }`}
               style={{
                 color: "var(--theme-text-muted)",
                 cursor: onLeftIconClick && !disabled ? "pointer" : "default",
@@ -206,7 +210,9 @@ const Input = forwardRef(
               type="button"
               onClick={handleRightIconClick}
               disabled={disabled}
-              className="flex shrink-0 items-center justify-center border-0 bg-transparent p-0 transition-colors"
+              className={`flex shrink-0 items-center justify-center border-0 bg-transparent p-0 transition-colors ${
+                multiline ? "mt-0.5" : ""
+              }`}
               style={{
                 color: "var(--theme-text-muted)",
                 cursor: disabled ? "not-allowed" : "pointer",

@@ -91,7 +91,7 @@ export const normalizeLinkedLaundry = (record) => {
     ? "Connected"
     : isSuspended
       ? "Suspend"
-      : titleCase(rawStatus) || "Unknown";
+      : formatStatusLabel(rawStatus, "Unknown");
   const city = profile?.city || laundry?.city || record?.city;
   const state = profile?.state || laundry?.state || record?.state;
   const locationParts = [city, state].filter(Boolean);
@@ -221,7 +221,7 @@ export const normalizeLinkedLaundryDetails = (response) => {
       state: laundry?.state || "-",
       postalCode: laundry?.postalCode || "-",
       avatar: laundry?.avatar || null,
-      status: titleCase(laundry?.status) || "-",
+      status: formatStatusLabel(laundry?.status),
       creationSource: titleCase(laundry?.creationSource) || "-",
       createdAt: laundry?.createdAt || null,
       updatedAt: laundry?.updatedAt || null,
@@ -231,7 +231,7 @@ export const normalizeLinkedLaundryDetails = (response) => {
       fullName: user?.fullName || "-",
       email: user?.email || "-",
       phone: user?.phone || "-",
-      status: titleCase(user?.status) || "-",
+      status: formatStatusLabel(user?.status),
       creationSource: titleCase(user?.creationSource) || "-",
     },
   };
@@ -280,7 +280,7 @@ export const normalizeClosedInvite = (invite) => {
 
   return {
     ...normalizedInvite,
-    status: titleCase(statusValue),
+    status: formatStatusLabel(statusValue),
     statusVariant:
       statusValue === "rejected"
         ? "danger"
@@ -296,3 +296,4 @@ export const normalizeClosedInvite = (invite) => {
     reason: invite?.rejectionReason || "-",
   };
 };
+import { formatStatusLabel } from "../../../Utils/status";

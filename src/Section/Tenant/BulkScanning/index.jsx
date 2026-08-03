@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, Info, RefreshCw, ScanLine, TriangleAlert } from "lucide-react";
+import { CheckCircle2, RefreshCw, ScanLine, Timer, TriangleAlert } from "lucide-react";
 import Alert from "../../../Components/UI/Alert";
+import Badge from "../../../Components/UI/Badge";
 import Button from "../../../Components/UI/Button";
 import Card from "../../../Components/UI/Card";
 import Tabs from "../../../Components/UI/Tabs";
@@ -13,7 +14,9 @@ import {
 import { getSocket } from "../../../socket/client";
 import { SOCKET_EVENTS } from "../../../socket/events";
 import {
+  getActiveBulkScanGroup,
   getActiveBulkScanSessionId,
+  setActiveBulkScanGroup,
   setActiveBulkScanSessionId,
 } from "../../../Utils/bulkScanSession";
 import { toast } from "../../../Utils/toast";
@@ -50,8 +53,21 @@ const getEventSession = (payload) =>
 
 const getEventUndo = (payload) => payload?.data?.undo ?? payload?.undo ?? null;
 
+const getInitialActiveTab = () => {
+  const savedGroup = getActiveBulkScanGroup();
+  return BULK_SCAN_TABS.some((tab) => tab.value === savedGroup)
+    ? savedGroup
+    : BULK_SCAN_GROUPS.NEW_UNLINKED;
+};
+
+const formatCountdown = (totalSeconds) => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
 const BulkScanningIndex = () => {
-  const [activeTab, setActiveTab] = useState(BULK_SCAN_GROUPS.NEW_UNLINKED);
+  const [activeTab, setActiveTab] = useState(getInitialActiveTab);
   const [currentPage, setCurrentPage] = useState(0);
   const [sessionId, setSessionId] = useState(getActiveBulkScanSessionId);
   const [session, setSession] = useState(null);
@@ -61,6 +77,7 @@ const BulkScanningIndex = () => {
   const [pagination, setPagination] = useState(emptyPagination);
   const [lastEpc, setLastEpc] = useState(null);
   const [undoState, setUndoState] = useState(null);
+  const [undoSecondsRemaining, setUndoSecondsRemaining] = useState(0);
   const [isLoading, setIsLoading] = useState(Boolean(sessionId));
   const [isClearing, setIsClearing] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
@@ -110,6 +127,28 @@ const BulkScanningIndex = () => {
       requestIdRef.current += 1;
     };
   }, [fetchEntries, sessionId]);
+
+  useEffect(() => {
+    if (!undoState?.canUndo) return undefined;
+
+    const parsedExpiry = Date.parse(undoState.expiresAt);
+    const expiresAt = Number.isNaN(parsedExpiry)
+      ? Date.now() + (undoState.windowSeconds ?? 120) * 1000
+      : parsedExpiry;
+
+    const updateCountdown = () => {
+      const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      setUndoSecondsRemaining(remaining);
+      if (remaining === 0) setUndoState(null);
+    };
+
+    const initialCountdown = window.setTimeout(updateCountdown, 0);
+    const countdownInterval = window.setInterval(updateCountdown, 1000);
+    return () => {
+      window.clearTimeout(initialCountdown);
+      window.clearInterval(countdownInterval);
+    };
+  }, [undoState]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -230,6 +269,9 @@ const BulkScanningIndex = () => {
   }));
 
   const handleTabChange = (nextTab) => {
+    if (nextTab === activeTab) return;
+
+    setActiveBulkScanGroup(nextTab);
     setIsLoading(Boolean(sessionId));
     setRows([]);
     setCurrentPage(0);
@@ -284,15 +326,11 @@ const BulkScanningIndex = () => {
             <ScanLine className="text-blue-600" size={24} />
             <h1 className="m-0 text-2xl font-black">Bulk Scan Tags</h1>
           </div>
-          <p className="m-0 text-sm font-medium text-(--theme-text-secondary)">
-            Scan RFID tags in bulk, review existing assets, and assign categories to newly detected tags.
-          </p>
         </div>
         <Button
           disabled={!sessionId}
           loading={isClearing}
           onClick={handleClearSession}
-          rightIcon={<Info size={16} />}
           variant="primary"
         >
           Clear All Entries
@@ -324,17 +362,6 @@ const BulkScanningIndex = () => {
         </Alert>
       )}
 
-      {undoState?.canUndo && (
-        <Alert variant="warning">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span>Bulk add can be undone before {undoState.expiresAt ? new Date(undoState.expiresAt).toLocaleTimeString() : "the undo window expires"}.</span>
-            <Button loading={isUndoing} onClick={handleUndo} size="sm" variant="danger">
-              Undo Bulk Add
-            </Button>
-          </div>
-        </Alert>
-      )}
-
       <ScannerStatusCard lastEpc={lastEpc} scanner={scanner} session={session} />
       <SummaryCards counts={counts} loading={isLoading} />
 
@@ -348,6 +375,30 @@ const BulkScanningIndex = () => {
             value={activeTab}
           />
         </div>
+        {undoState?.canUndo && undoSecondsRemaining > 0 && (
+          <div className="px-4 pt-4">
+            <Alert size="sm" variant="danger">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="flex flex-wrap items-center gap-2">
+                  <Timer aria-hidden="true" className="shrink-0" size={18} />
+                  <span>Bulk add undo window closes in</span>
+                  <Badge className="font-mono text-sm" size="md" variant="danger">
+                    {formatCountdown(undoSecondsRemaining)}
+                  </Badge>
+                </span>
+                <Button
+                  className="cursor-pointer disabled:cursor-not-allowed"
+                  loading={isUndoing}
+                  onClick={handleUndo}
+                  size="sm"
+                  variant="danger"
+                >
+                  Undo Bulk Add
+                </Button>
+              </div>
+            </Alert>
+          </div>
+        )}
         {activeTab === BULK_SCAN_GROUPS.NEW_UNLINKED &&
           (counts?.newUnlinked ?? 0) > 0 && (
             <div className="flex flex-col gap-3 px-4 pt-4 lg:flex-row lg:items-center">
@@ -373,6 +424,7 @@ const BulkScanningIndex = () => {
           }}
           pagination={pagination}
           rows={rows}
+          scannerMode={scanner?.scannerMode ?? scanner?.mode}
         />
       </Card>
 

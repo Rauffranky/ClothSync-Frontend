@@ -153,4 +153,33 @@ export const formatDateTime = (
   return `${formattedDate}, ${formattedTime}`;
 };
 
+export const formatTimeWithUserPreferences = (
+  value,
+  includeSeconds = false,
+  fallback = "-",
+) => {
+  const date = getValidDate(value);
+  if (!date) return value ? String(value) : fallback;
+
+  const { timezone } = getUserDatePreferences();
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    ...(includeSeconds ? { second: "2-digit" } : {}),
+    timeZone: getSafeTimezone(timezone),
+  }).format(date);
+};
+
+export const formatDateKeyWithUserPreferences = (value, fallback = "") => {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return value ? String(value) : fallback;
+
+  const [, year, month, day] = match;
+  const date = new Date(`${year}-${month}-${day}T12:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  const { dateFormat } = getUserDatePreferences();
+  return formatConfiguredDate(date, "UTC", dateFormat);
+};
+
 export default formatDate;

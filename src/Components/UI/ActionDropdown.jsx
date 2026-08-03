@@ -6,9 +6,11 @@ import Button from "./Button";
 const ActionDropdown = ({
   items = [],
   triggerIcon = <MoreHorizontal size={16} />,
+  triggerLabel,
   triggerAriaLabel = "Open actions",
   width = 200,
   align = "left",
+  placement = "side",
   disabled = false,
 }) => {
   const menuId = useId();
@@ -48,15 +50,22 @@ const ActionDropdown = ({
     );
 
     const rect = event.currentTarget.getBoundingClientRect();
-    const hasLeftSpace = rect.left > width + 20;
     const estimatedMenuHeight = 50 + items.length * 45;
-    const preferredTop = rect.top - 8;
+    const hasLeftSpace = rect.left > width + 20;
+    const preferredTop = placement === "bottom" ? rect.bottom + 8 : rect.top - 8;
     const hasBottomSpace = preferredTop + estimatedMenuHeight <= window.innerHeight - 12;
-    const preferredLeft =
-      align === "right" || hasLeftSpace ? rect.left - width - 12 : rect.right + 12;
+    const preferredLeft = placement === "bottom"
+      ? align === "right"
+        ? rect.right - width
+        : rect.left
+      : align === "right" || hasLeftSpace
+        ? rect.left - width - 12
+        : rect.right + 12;
     const top = hasBottomSpace
       ? preferredTop
-      : Math.max(12, rect.bottom - estimatedMenuHeight + 8);
+      : Math.max(12, placement === "bottom"
+        ? rect.top - estimatedMenuHeight - 8
+        : rect.bottom - estimatedMenuHeight + 8);
 
     setMenuPosition((current) =>
       current
@@ -89,7 +98,9 @@ const ActionDropdown = ({
             : "none",
         }}
         variant="outline"
-      />
+      >
+        {triggerLabel}
+      </Button>
 
       {menuPosition &&
         createPortal(

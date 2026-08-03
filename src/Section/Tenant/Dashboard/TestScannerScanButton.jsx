@@ -18,10 +18,12 @@ import { setActiveBulkScanSessionId } from "../../../Utils/bulkScanSession";
 const TEST_SCAN_PAYLOAD = Object.freeze({
   scannerId: "7cd8b2d0-1299-4717-8ef3-242581519715",
   epcs: Object.freeze([
-    "TEST-EPC-009",
-    "TEST-EPC-010",
-    "TEST-EPC-011",
-    "TEST-EPC-012",
+    "TEST-EPC-025",
+    "TEST-EPC-026",
+    "TEST-EPC-027",
+    "TEST-EPC-028",
+    "TEST-EPC-029",
+    "TEST-EPC-030",
   ]),
 });
 

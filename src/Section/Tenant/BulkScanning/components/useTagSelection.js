@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 const useTagSelection = (rows) => {
     const [selectedIds, setSelectedIds] = useState(() => new Set());
-    const allSelected = rows.length > 0 && selectedIds.size === rows.length;
-    const someSelected = selectedIds.size > 0 && !allSelected;
+    const rowIds = useMemo(() => new Set(rows.map((row) => row.id)), [rows]);
+    const selectedRowCount = [...selectedIds].filter((id) => rowIds.has(id)).length;
+    const allSelected = rows.length > 0 && selectedRowCount === rows.length;
+    const someSelected = selectedRowCount > 0 && !allSelected;
 
     const toggleAll = (checked) => {
         setSelectedIds(checked ? new Set(rows.map((row) => row.id)) : new Set());

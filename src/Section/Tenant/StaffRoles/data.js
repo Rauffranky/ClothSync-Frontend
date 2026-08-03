@@ -233,7 +233,7 @@ export const getStaffRolePaginatedCollection = (response, limit, page = 1) => {
 
 export const normalizeStaffRole = (role) => {
   const rawStatus = String(role?.status || "inactive").toLowerCase();
-  const status = titleCase(rawStatus) || "Inactive";
+  const status = formatStatusLabel(rawStatus, "Inactive");
   const accessLevel = titleCase(
     role?.accessLevel || role?.permissionLevel || role?.permission || "view_only",
   );
@@ -336,3 +336,4 @@ export const accessLevelApiValues = {
   "Limited Access": "limited_access",
   "View Only": "view_only",
 };
+import { formatStatusLabel } from "../../../Utils/status";

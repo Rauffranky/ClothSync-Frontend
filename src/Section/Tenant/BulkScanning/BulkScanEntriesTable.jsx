@@ -1,16 +1,21 @@
-import { Folder, MapPin } from "lucide-react";
+import {
+  Archive,
+  ChevronDown,
+  Folder,
+  LogIn,
+  LogOut,
+  MapPin,
+  RotateCcw,
+} from "lucide-react";
+import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Badge from "../../../Components/UI/Badge";
 import Pagination from "../../../Components/UI/Pagination";
 import Table from "../../../Components/UI/Table";
+import { formatDateTime } from "../../../Utils/date";
+import { formatStatusLabel } from "../../../Utils/status";
 import SelectionCheckbox from "./components/SelectionCheckbox";
 import useTagSelection from "./components/useTagSelection";
 import { BULK_SCAN_GROUPS, BULK_SCAN_PAGE_LIMIT } from "./data";
-
-const formatDateTime = (value) => {
-  if (!value) return "-";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
-};
 
 const getName = (value, fallback = "-") =>
   value?.assetName ??
@@ -20,12 +25,28 @@ const getName = (value, fallback = "-") =>
   value?.translations?.en?.title ??
   fallback;
 
+const EXISTING_TAG_ACTIONS = Object.freeze([
+  { icon: LogIn, label: "Check In" },
+  { icon: LogOut, label: "Check Out" },
+  { icon: RotateCcw, label: "Re-Tag" },
+  { danger: true, icon: Archive, label: "Retire" },
+]);
+
+const isAutomaticMode = (mode) =>
+  ["auto", "automatic"].includes(
+    String(mode || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[_-]+/g, " "),
+  );
+
 const BulkScanEntriesTable = ({
   group,
   loading,
   onPageChange,
   pagination,
   rows,
+  scannerMode,
 }) => {
   const { allSelected, selectedIds, someSelected, toggleAll, toggleRow } =
     useTagSelection(rows);
@@ -40,6 +61,7 @@ const BulkScanEntriesTable = ({
         onChange={toggleAll}
       />
     ),
+    headerInteractive: true,
     sortable: false,
     width: 48,
     render: (_, row) => (
@@ -103,11 +125,7 @@ const BulkScanEntriesTable = ({
       key: "category",
       label: "Category",
       sortable: false,
-      render: (_, row) => (
-        <Badge size="sm" variant="neutral">
-          <Folder aria-hidden="true" size={13} /> {getName(row.category)}
-        </Badge>
-      ),
+      render: (_, row) => <span>{getName(row.category)}</span>,
     },
     {
       key: "status",
@@ -115,7 +133,9 @@ const BulkScanEntriesTable = ({
       sortable: false,
       render: (_, row) => (
         <Badge size="sm" variant="info">
-          {row.asset?.statusLabel ?? row.asset?.status ?? row.tagStatus ?? "-"}
+          {formatStatusLabel(
+            row.asset?.statusLabel ?? row.asset?.status ?? row.tagStatus,
+          )}
         </Badge>
       ),
     },
@@ -176,9 +196,24 @@ const BulkScanEntriesTable = ({
         ? existingLinkedColumns
         : newUnlinkedColumns;
   const activePage = Math.max((pagination?.page ?? 1) - 1, 0);
+  const showExistingTagActions =
+    group === BULK_SCAN_GROUPS.EXISTING_LINKED && !isAutomaticMode(scannerMode);
 
   return (
     <div className="px-4 pb-4 pt-4">
+      {showExistingTagActions && (
+        <div className="mb-3 flex justify-end">
+          <ActionDropdown
+            align="right"
+            items={EXISTING_TAG_ACTIONS}
+            placement="bottom"
+            triggerAriaLabel="Open existing linked tag actions"
+            triggerIcon={<ChevronDown aria-hidden="true" size={16} />}
+            triggerLabel="Action"
+            width={220}
+          />
+        </div>
+      )}
       <Table
         columns={columns}
         data={rows}

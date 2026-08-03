@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarRange, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { formatDateKeyWithUserPreferences } from "../../Utils/date";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const MONTHS = [
@@ -18,7 +19,6 @@ const parseKey = (key) => {
 };
 
 const isBefore = (a, b) => a && b && parseKey(a) < parseKey(b);
-const isAfter = (a, b) => a && b && parseKey(a) > parseKey(b);
 
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDay = (year, month) => new Date(year, month, 1).getDay();
@@ -29,9 +29,7 @@ const getTodayKey = () => {
 };
 
 const formatDisplay = (key) => {
-  if (!key) return "";
-  const d = parseKey(key);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return formatDateKeyWithUserPreferences(key);
 };
 
 // ─── Single Calendar Month ─────────────────────────────────────────────────────

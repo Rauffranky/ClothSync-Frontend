@@ -3,6 +3,7 @@ import AppRoutes from "./Routes";
 import SplashScreen from "./Components/UI/SplashScreen";
 import { applyThemeMode, getThemeMode } from "./Utils/themeMode";
 import { startSocketConnection } from "./socket/client";
+import useUserDatePreferences from "./Hooks/useUserDatePreferences";
 
 const SPLASH_SESSION_KEY = "clothsync-splash-shown";
 
@@ -17,6 +18,7 @@ const getInitialSplashState = () => {
 };
 
 function App() {
+  useUserDatePreferences();
   const [splashState, setSplashState] = useState(getInitialSplashState);
   const shouldShowSplash = splashState !== "hidden";
 

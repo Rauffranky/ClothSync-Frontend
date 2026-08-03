@@ -43,6 +43,10 @@ before changing it.
   event group. Payload shapes and the related scan-session/dispatch feature APIs
   are not yet documented or consumed.
 - Formik 2 and Yup 1 for established validated forms.
+- Saved user `timezone` and `dateFormat` preferences are read by the shared date
+  utilities in `src/Utils/date.js`. Updating the authenticated settings profile
+  emits a session-user event that rerenders the application, so timestamps and
+  date-range labels immediately adopt the new preferences across mounted screens.
 - Lucide React is the primary icon package; React Icons is also installed.
 - `react-helmet-async` is provided, while pages usually call `usePageMeta`.
 - ESLint 10 with JavaScript, React Hooks, and Vite refresh rules.
@@ -287,8 +291,12 @@ Confirmed API-backed areas:
   tabs, `entries.items`, and `entries.pagination`; the screen renders only Total
   Tags, Existing Linked, New Unlinked, and Detached counters. Detached rows show
   `previousAssignment` asset/category plus `linkedAt` and `detachedAt`.
-  The current tenant session ID is stored in same-tab session storage after a
-  successful test scan and refreshed from scan-session socket events. Tab and
+  Existing Linked exposes the Check In, Check Out, Re-Tag, and Retire action
+  menu only for non-automatic scanner modes; `auto` and `automatic` scanners
+  suppress the manual-action control.
+  The current tenant session ID and selected scan-group tab are stored in
+  same-tab session storage, so refresh restores the active tab after a successful
+  test scan. The session ID is refreshed from scan-session socket events. Tab and
   page changes, initial load, socket/browser reconnect, `scan.entries.updated`,
   bulk add/undo/expiry refetch entries. `scanner.scan.bulk` instead incrementally
   upserts the active first page without an entries request. Reconnect rejoins the
@@ -300,10 +308,14 @@ Confirmed API-backed areas:
   loads active categories, validates asset name/category/zone/wash limit, and
   sends the exact bulk-add payload before refetching entries and exposing the
   returned undo state.
+  Backend status identifiers are formatted for display through the shared
+  `formatStatusLabel` utility, so values such as `in_business` render as
+  `In Business` without changing the API value used by filters or mutations.
 - The Business dashboard currently includes a temporary Test Scanner Scan button
   that posts the fixed test payload `{ scannerId:
-  "7cd8b2d0-1299-4717-8ef3-242581519715", epcs: ["TEST-EPC-009",
-  "TEST-EPC-010", "TEST-EPC-011", "TEST-EPC-012"] }` to
+  "7cd8b2d0-1299-4717-8ef3-242581519715", epcs: ["TEST-EPC-025",
+  "TEST-EPC-026", "TEST-EPC-027", "TEST-EPC-028", "TEST-EPC-029",
+  "TEST-EPC-030"] }` to
   `POST /tenant-bulk-scan/test-scanner-scan`. While the dashboard is mounted it
   emits `scan-session.join` with the returned `data.session.id` and logs received
   `scanner.scan.bulk`, `scan.session.updated`, and `scan.bulk-added` payloads

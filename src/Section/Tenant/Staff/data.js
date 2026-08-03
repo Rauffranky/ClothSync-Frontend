@@ -1,4 +1,5 @@
 import { formatDateTime } from "../../../Utils/date";
+import { formatStatusLabel } from "../../../Utils/status";
 
 const titleCase = (value) =>
   String(value || "")
@@ -84,7 +85,7 @@ export const normalizeStaffMember = (staff, index = 0) => {
   const rawName =
     staff?.fullName || staff?.name || user?.fullName || user?.name || "Unnamed Staff";
   const rawStatus = String(staff?.status || user?.status || "inactive").toLowerCase();
-  const status = titleCase(rawStatus);
+  const status = formatStatusLabel(rawStatus, "");
   const permission = titleCase(
     role?.accessLevel ||
       staff?.accessLevel ||
