@@ -23,9 +23,7 @@ const DashboardHeader = ({
         >
           Dashboard
         </h1>
-        <p className="mt-1 text-sm" style={{ color: "var(--theme-text-muted)" }}>
-          Monitor linen movement, inventory status, scanner activity, and laundry operations.
-        </p>
+        
       </div>
 
       {/* Controls */}
@@ -62,7 +60,7 @@ const DashboardHeader = ({
           }}
           placeholder="Date Range"
           disableFuture
-          className="h-[36px]!"
+          className="h-9!"
         />
       </div>
     </div>

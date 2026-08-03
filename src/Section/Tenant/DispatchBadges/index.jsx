@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getApiErrorMessage } from "../../../axios/api";
+import { getTenantDispatchBatches } from "../../../axios/dispatchBatches/tenantDispatchBatches";
 import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
 import { toast } from "../../../Utils/toast";
 import DispatchFilters from "./components/DispatchFilters";
@@ -6,20 +8,67 @@ import DispatchStats from "./components/DispatchStats";
 import DispatchTable from "./components/DispatchTable";
 import {
   DISPATCH_BATCH_ITEMS_PER_PAGE,
-  INITIAL_DISPATCH_BATCHES,
-  getDispatchSummaryCounts,
-  laundryOptions,
+  getTenantDispatchBatchCollection,
   statusOptions,
 } from "./data";
 
 const DispatchBadges = () => {
-  const [batches] = useState(INITIAL_DISPATCH_BATCHES);
+  const [batches, setBatches] = useState([]);
+  const [summaryCounts, setSummaryCounts] = useState({
+    totalBatches: 0,
+    sentToLaundry: 0,
+    inLaundry: 0,
+    returned: 0,
+    delayed: 0,
+  });
+  const [totalItems, setTotalItems] = useState(0);
+  const [pageCount, setPageCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const requestIdRef = useRef(0);
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebouncedSearch(searchValue);
   const [laundryFilter, setLaundryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
   const [currentPage, setCurrentPage] = useState(0);
+
+  useEffect(() => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    // Loading synchronizes this screen with the external server collection.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+
+    getTenantDispatchBatches({
+      page: currentPage + 1,
+      limit: DISPATCH_BATCH_ITEMS_PER_PAGE,
+    })
+      .then((response) => {
+        if (requestId !== requestIdRef.current) return;
+        const collection = getTenantDispatchBatchCollection(
+          response,
+          DISPATCH_BATCH_ITEMS_PER_PAGE,
+        );
+        setBatches(collection.rows);
+        setSummaryCounts(collection.counts);
+        setTotalItems(collection.pagination.totalItems);
+        setPageCount(collection.pagination.totalPages);
+      })
+      .catch((error) => {
+        if (requestId !== requestIdRef.current) return;
+        setBatches([]);
+        setTotalItems(0);
+        setPageCount(0);
+        toast.error(getApiErrorMessage(error, "Unable to load dispatch batches"));
+      })
+      .finally(() => {
+        if (requestId === requestIdRef.current) setLoading(false);
+      });
+
+    return () => {
+      requestIdRef.current += 1;
+    };
+  }, [currentPage]);
 
   // Filtered dataset
   const filteredBatches = useMemo(() => {
@@ -59,19 +108,11 @@ const DispatchBadges = () => {
     });
   }, [batches, dateRange, debouncedSearch, laundryFilter, statusFilter]);
 
-  // Overall summary counts
-  const summaryCounts = useMemo(() => {
-    return getDispatchSummaryCounts(batches);
-  }, [batches]);
-
-  // Pagination calculation
-  const totalItems = filteredBatches.length;
-  const pageCount = Math.ceil(totalItems / DISPATCH_BATCH_ITEMS_PER_PAGE);
-
-  const paginatedData = useMemo(() => {
-    const start = currentPage * DISPATCH_BATCH_ITEMS_PER_PAGE;
-    return filteredBatches.slice(start, start + DISPATCH_BATCH_ITEMS_PER_PAGE);
-  }, [currentPage, filteredBatches]);
+  const laundryOptions = useMemo(() => [
+    { label: "Laundries", value: "all" },
+    ...[...new Set(batches.map((batch) => batch.laundryName).filter((name) => name && name !== "—"))]
+      .map((name) => ({ label: name, value: name })),
+  ], [batches]);
 
   const handlePageChange = ({ selected }) => {
     setCurrentPage(selected);
@@ -136,7 +177,8 @@ const DispatchBadges = () => {
 
       {/* Batches Table */}
       <DispatchTable
-        data={paginatedData}
+        data={filteredBatches}
+        loading={loading}
         totalItems={totalItems}
         pageCount={pageCount}
         currentPage={currentPage}

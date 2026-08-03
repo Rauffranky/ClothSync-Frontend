@@ -13,7 +13,7 @@ const DispatchStats = ({ summary = {} }) => {
     {
       id: "total",
       label: "Total Batches",
-      value: summary.totalBatches ?? 10,
+      value: summary.totalBatches ?? 0,
       icon: Layers,
       color: "var(--theme-text-primary)",
       iconVariant: "neutral",
@@ -21,7 +21,7 @@ const DispatchStats = ({ summary = {} }) => {
     {
       id: "sent",
       label: "Sent to laundry",
-      value: summary.sentToLaundry ?? 2,
+      value: summary.sentToLaundry ?? 0,
       icon: Truck,
       color: "var(--color-aurora-teal)",
       iconVariant: "teal",
@@ -29,7 +29,7 @@ const DispatchStats = ({ summary = {} }) => {
     {
       id: "in_laundry",
       label: "In Laundry",
-      value: summary.inLaundry ?? 1,
+      value: summary.inLaundry ?? 0,
       icon: Building2,
       color: "var(--color-purple-accent, #9333ea)",
       iconVariant: "purple",
@@ -37,7 +37,7 @@ const DispatchStats = ({ summary = {} }) => {
     {
       id: "returned",
       label: "Returned",
-      value: summary.returned ?? 2,
+      value: summary.returned ?? 0,
       icon: PackageCheck,
       color: "var(--color-ready)",
       iconVariant: "success",
@@ -45,7 +45,7 @@ const DispatchStats = ({ summary = {} }) => {
     {
       id: "delayed",
       label: "Delayed",
-      value: summary.delayed ?? 4,
+      value: summary.delayed ?? 0,
       icon: AlertCircle,
       color: "var(--color-overdue)",
       iconVariant: "danger",

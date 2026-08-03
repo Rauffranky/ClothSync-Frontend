@@ -53,6 +53,15 @@ export const TENANT_ASSET_ENDPOINTS = Object.freeze({
   LIST: "/tenant-assets/show",
 });
 
+export const TENANT_DISPATCH_BATCH_ENDPOINTS = Object.freeze({
+  LIST: "/tenant-dispatch-batches/show",
+  ACTIVITY_LOGS: (batchId) =>
+    `/tenant-dispatch-batches/show/${batchId}/activity-logs`,
+  UPDATE_ITEMS_STATUS: (batchId) =>
+    `/tenant-dispatch-batches/items-status/${batchId}`,
+  RETURN: (batchId) => `/tenant-dispatch-batches/return/${batchId}`,
+});
+
 export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
   TEST_SCANNER_SCAN: "/tenant-bulk-scan/test-scanner-scan",
   BULK_ADD: (sessionId) =>

@@ -54,7 +54,7 @@ const DispatchDetails = () => {
         {activeTab === "overview" && <OverviewTab details={details} />}
         {activeTab === "items" && <BatchItemsTab items={details.items} />}
         {activeTab === "activity" && (
-          <ActivityLogTab logs={details.fullActivityLog} batchId={details.id} />
+          <ActivityLogTab batchId={id} />
         )}
       </div>
     </div>

@@ -69,6 +69,7 @@ const AppRoutes = () => {
         <Route path="/laundry/staff/verify-email" element={<LaundryStaffEmailVerificationPage />} />
         <Route path="/laundry/invite" element={<LaundryInvitationPage />} />
         <Route path="/laundry/handle-invite" element={<LaundryInvitationPage />} />
+        <Route path="/laundry-invite/accept" element={<LaundryInvitationPage />} />
 
         {/* Landing Routes */}
         <Route element={<LandingLayout />} path="/">

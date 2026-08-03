@@ -168,3 +168,55 @@ export const getDispatchSummaryCounts = (batches = []) => {
     delayed: batches.filter((b) => b.status === "Delayed").length,
   };
 };
+
+const countValue = (counts, keys, fallback = 0) => {
+  if (Array.isArray(counts)) {
+    const match = counts.find((item) => keys.includes(item?.key));
+    return Number(match?.count ?? match?.value ?? fallback);
+  }
+  const key = keys.find((item) => counts?.[item] != null);
+  return Number(key ? counts[key] : fallback);
+};
+
+export const getTenantDispatchBatchCollection = (response, limit = 20) => {
+  const payload = response?.data ?? response ?? {};
+  const items = [payload.items, payload.batches, payload.docs].find(Array.isArray) ?? [];
+  const pagination = payload.pagination ?? payload.meta ?? {};
+  const totalItems = Number(pagination.totalItems ?? pagination.total ?? payload.total ?? items.length);
+  const totalPages = Number(pagination.totalPages ?? pagination.pages ?? Math.ceil(totalItems / limit));
+  const counts = payload.counts ?? payload.summary ?? {};
+
+  const rows = items.map((batch) => {
+    const laundry = batch.laundry ?? batch.linkedLaundry?.laundry ?? {};
+    const creator = batch.createdByUser ?? batch.creator ?? batch.createdBy ?? {};
+    const backendId = batch.id ?? batch._id;
+    const rawStatus = batch.status ?? batch.batchStatus ?? "";
+    return {
+      ...batch,
+      apiId: backendId,
+      id: batch.batchCode ?? batch.batchId ?? batch.code ?? backendId ?? "—",
+      laundryName: batch.laundryName ?? laundry.companyName ?? laundry.businessName ?? laundry.name ?? "—",
+      dispatchLocation: batch.dispatchLocation ?? batch.locationName ?? batch.location ?? "—",
+      created: formatDateTime(batch.createdAt ?? batch.dispatchDateTime ?? batch.created),
+      items: Number(batch.totalItems ?? batch.itemsCount ?? batch.totalItemsCount ?? batch.items?.length ?? 0),
+      status: formatStatusLabel(rawStatus),
+      rawStatus,
+      createdBy: (typeof creator === "string" ? creator : creator.fullName ?? creator.name) ?? "—",
+    };
+  });
+  const localCounts = getDispatchSummaryCounts(rows);
+
+  return {
+    rows,
+    pagination: { totalItems, totalPages },
+    counts: {
+      totalBatches: countValue(counts, ["totalBatches", "total"], totalItems),
+      sentToLaundry: countValue(counts, ["sentToLaundry", "sent_to_laundry"], localCounts.sentToLaundry),
+      inLaundry: countValue(counts, ["inLaundry", "at_laundry", "in_laundry"], localCounts.inLaundry),
+      returned: countValue(counts, ["returned", "sentToBusiness", "sent_to_business"], localCounts.returned),
+      delayed: countValue(counts, ["delayed"], localCounts.delayed),
+    },
+  };
+};
+import { formatDateTime } from "../../../Utils/date";
+import { formatStatusLabel } from "../../../Utils/status";

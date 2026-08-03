@@ -8,22 +8,21 @@ import {
   clearTenantBulkScanSession,
   testTenantBulkAdd,
   testTenantBulkAddUndo,
-  testTenantScannerScan,
 } from "../../../axios/scanners/tenantBulkScan";
+import { getTenantScannerDetails } from "../../../axios/scanners/tenantScanners";
 import { SOCKET_EVENTS } from "../../../socket/events";
-import { getSocket } from "../../../socket/client";
 import { toast } from "../../../Utils/toast";
 import { setActiveBulkScanSessionId } from "../../../Utils/bulkScanSession";
 
 const TEST_SCAN_PAYLOAD = Object.freeze({
-  scannerId: "7cd8b2d0-1299-4717-8ef3-242581519715",
+  scannerId: "5432b45a-c1cb-4031-a53f-00b8bf7c8436",
   epcs: Object.freeze([
-    "TEST-EPC-025",
-    "TEST-EPC-026",
-    "TEST-EPC-027",
-    "TEST-EPC-028",
-    "TEST-EPC-029",
-    "TEST-EPC-030",
+    "TEST-EPC-71",
+    "TEST-EPC-70",
+    // "TEST-EPC-52",
+    // "TEST-EPC-53",
+    // "TEST-EPC-54",
+    // "TEST-EPC-55",
   ]),
 });
 
@@ -39,7 +38,7 @@ const UNDO_WINDOW_SECONDS = 120;
 
 const TestScannerScanButton = () => {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResolvingScannerMode, setIsResolvingScannerMode] = useState(false);
   const [isBulkAdding, setIsBulkAdding] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -95,30 +94,38 @@ const TestScannerScanButton = () => {
   );
 
   const handleTestScan = async () => {
-    if (isSubmitting) return;
+    if (isResolvingScannerMode) return;
 
-    setIsSubmitting(true);
+    setIsResolvingScannerMode(true);
     try {
-      const response = await testTenantScannerScan(TEST_SCAN_PAYLOAD);
-      const sessionId = response?.data?.session?.id;
+      const response = await getTenantScannerDetails(TEST_SCAN_PAYLOAD.scannerId);
+      const payload = response?.data ?? response ?? {};
+      const scanner = payload.item ?? payload.scanner ?? payload;
+      const scannerMode = String(scanner.scannerMode ?? scanner.mode ?? "").toLowerCase();
+      const scanPayload = {
+        ...TEST_SCAN_PAYLOAD,
+        epcs: [...TEST_SCAN_PAYLOAD.epcs],
+      };
 
-      if (!sessionId) {
-        throw new Error(
-          "Test scan succeeded, but the response did not include data.session.id",
-        );
-      }
-
-      setSessionId(sessionId);
-      setActiveBulkScanSessionId(sessionId);
-      getSocket().emit(SOCKET_EVENTS.SCAN_SESSION_JOIN, { sessionId });
-      toast.success(response?.message || "Test scanner scan sent successfully");
-      navigate("/business/bulk-scanning");
+      navigate("/business/bulk-scanning", {
+        state: scannerMode === "manual"
+          ? { manualTestScan: scanPayload }
+          : {
+              automaticTestScan: {
+                payload: scanPayload,
+                scanAction:
+                  scannerMode === "entry"
+                    ? "check_in"
+                    : scannerMode === "exit"
+                      ? "check_out"
+                      : undefined,
+              },
+            },
+      });
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Unable to send the test scanner scan"),
-      );
+      toast.error(getApiErrorMessage(error, "Unable to determine scanner mode"));
     } finally {
-      setIsSubmitting(false);
+      setIsResolvingScannerMode(false);
     }
   };
 
@@ -195,7 +202,7 @@ const TestScannerScanButton = () => {
     <div className="flex flex-wrap justify-end gap-2">
       <Button
         leftIcon={<Radio size={16} />}
-        loading={isSubmitting}
+        loading={isResolvingScannerMode}
         onClick={handleTestScan}
         size="sm"
         variant="warning"

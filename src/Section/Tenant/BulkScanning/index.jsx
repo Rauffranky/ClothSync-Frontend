@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, RefreshCw, ScanLine, Timer, TriangleAlert } from "lucide-react";
+import { CheckCircle2, LogIn, LogOut, RefreshCw, ScanLine, Timer, TriangleAlert } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Alert from "../../../Components/UI/Alert";
 import Badge from "../../../Components/UI/Badge";
 import Button from "../../../Components/UI/Button";
 import Card from "../../../Components/UI/Card";
+import Modal from "../../../Components/UI/Modal";
 import Tabs from "../../../Components/UI/Tabs";
 import { getApiErrorMessage } from "../../../axios/api";
 import {
   clearTenantBulkScanSession,
   getTenantBulkScanEntries,
   testTenantBulkAddUndo,
+  testTenantScannerScan,
 } from "../../../axios/scanners/tenantBulkScan";
 import { getSocket } from "../../../socket/client";
 import { SOCKET_EVENTS } from "../../../socket/events";
@@ -67,6 +70,16 @@ const formatCountdown = (totalSeconds) => {
 };
 
 const BulkScanningIndex = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [pendingManualScan, setPendingManualScan] = useState(
+    () => location.state?.manualTestScan ?? null,
+  );
+  const [pendingAutomaticScan, setPendingAutomaticScan] = useState(
+    () => location.state?.automaticTestScan ?? null,
+  );
+  const [isManualScanSubmitting, setIsManualScanSubmitting] = useState(false);
+  const automaticScanStartedRef = useRef(false);
   const [activeTab, setActiveTab] = useState(getInitialActiveTab);
   const [currentPage, setCurrentPage] = useState(0);
   const [sessionId, setSessionId] = useState(getActiveBulkScanSessionId);
@@ -84,6 +97,76 @@ const BulkScanningIndex = () => {
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [loadError, setLoadError] = useState("");
   const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    if (!location.state?.manualTestScan && !location.state?.automaticTestScan) return;
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
+
+  const submitTestScan = async (scanPayload, scanAction) => {
+    if (!scanPayload || isManualScanSubmitting) return;
+
+    setIsManualScanSubmitting(true);
+    try {
+      const response = await testTenantScannerScan({
+        ...scanPayload,
+        ...(scanAction ? { scanAction } : {}),
+      });
+      const nextSessionId = response?.data?.session?.id;
+      if (!nextSessionId) {
+        throw new Error("Test scan succeeded, but data.session.id was not returned");
+      }
+
+      setActiveBulkScanSessionId(nextSessionId);
+      setSessionId(nextSessionId);
+      setCurrentPage(0);
+      setIsLoading(true);
+      getSocket().emit(SOCKET_EVENTS.SCAN_SESSION_JOIN, { sessionId: nextSessionId });
+      setPendingManualScan(null);
+      setPendingAutomaticScan(null);
+
+      try {
+        const entriesResponse = await getTenantBulkScanEntries(nextSessionId, {
+          scanGroup: activeTab,
+          page: 1,
+          limit: BULK_SCAN_PAGE_LIMIT,
+        });
+        const collection = normalizeBulkScanEntriesResponse(entriesResponse);
+        setSession(collection.session);
+        setScanner(collection.scanner);
+        setCounts(collection.counts);
+        setRows(collection.rows);
+        setPagination(collection.pagination);
+        setLastEpc(collection.rows[0]?.epc ?? null);
+        setLoadError("");
+      } catch (entriesError) {
+        setLoadError(
+          getApiErrorMessage(entriesError, "Unable to load the scanned entries"),
+        );
+      } finally {
+        setIsLoading(false);
+      }
+
+      toast.success(response?.message || "Test scanner scan sent successfully");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to send the manual test scan"));
+    } finally {
+      setIsManualScanSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!pendingAutomaticScan || automaticScanStartedRef.current) return;
+    automaticScanStartedRef.current = true;
+    submitTestScan(
+      pendingAutomaticScan.payload ?? pendingAutomaticScan,
+      pendingAutomaticScan.scanAction,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAutomaticScan]);
+
+  const handleManualScanAction = (scanAction) =>
+    submitTestScan(pendingManualScan, scanAction);
 
   const fetchEntries = useCallback(async () => {
     if (!sessionId) return;
@@ -434,6 +517,43 @@ const BulkScanningIndex = () => {
         open={isBulkAddOpen}
         sessionId={sessionId}
       />
+
+      <Modal
+        closeOnBackdrop={false}
+        description="Choose how these RFID tags should be processed before starting the manual scan."
+        footer={(
+          <>
+            <Button
+              disabled={isManualScanSubmitting}
+              leftIcon={<LogOut size={16} />}
+              loading={isManualScanSubmitting}
+              onClick={() => handleManualScanAction("check_out")}
+              variant="secondary"
+            >
+              Check Out
+            </Button>
+            <Button
+              disabled={isManualScanSubmitting}
+              leftIcon={<LogIn size={16} />}
+              loading={isManualScanSubmitting}
+              onClick={() => handleManualScanAction("check_in")}
+              variant="primary"
+            >
+              Check In
+            </Button>
+          </>
+        )}
+        onClose={() => {
+          if (!isManualScanSubmitting) setPendingManualScan(null);
+        }}
+        open={Boolean(pendingManualScan)}
+        title="Select Scan Action"
+        width={520}
+      >
+        <Alert variant="info">
+          The selected action will be sent with {pendingManualScan?.epcs?.length ?? 0} test EPC tags.
+        </Alert>
+      </Modal>
     </div>
   );
 };

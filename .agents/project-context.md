@@ -134,7 +134,8 @@ Authentication and landing:
   email outside the dashboard shell and redirects successful verification to
   the Laundry login.
 - `/laundry/invite?token=...` handles a public laundry invitation outside the
-  dashboard shell; `/laundry/handle-invite` is a compatible alias.
+  dashboard shell; `/laundry/handle-invite` and the backend email path
+  `/laundry-invite/accept` are compatible aliases.
 - `/` -> landing home through `LandingLayout`.
 - `/404`; unmatched routes redirect there.
 
@@ -327,17 +328,20 @@ Confirmed API-backed areas:
   asset response's filter metadata when supplied and otherwise derive from
   returned rows. Asset rows/cards normalize the live response instead of mock data.
 - The Business dashboard currently includes a temporary Test Scanner Scan button
-  that posts the fixed test payload `{ scannerId:
+  using the fixed test payload `{ scannerId:
   "7cd8b2d0-1299-4717-8ef3-242581519715", epcs: ["TEST-EPC-025",
   "TEST-EPC-026", "TEST-EPC-027", "TEST-EPC-028", "TEST-EPC-029",
   "TEST-EPC-030"] }` to
-  `POST /tenant-bulk-scan/test-scanner-scan`. While the dashboard is mounted it
-  emits `scan-session.join` with the returned `data.session.id` and logs received
-  `scanner.scan.bulk`, `scan.session.updated`, and `scan.bulk-added` payloads
-  for temporary integration testing.
-  A successful Test Scanner Scan persists/joins the returned session and
-  immediately navigates to `/business/bulk-scanning`, where entries load from
-  that session ID.
+  `POST /tenant-bulk-scan/test-scanner-scan`. The button first navigates to
+  `/business/bulk-scanning` after loading that scanner's live details. Manual
+  scanners show a non-backdrop-dismissible modal requiring Check In or Check Out
+  and send the chosen `scanAction` as `check_in` or `check_out`. Entry scanners
+  skip the modal and send `scanAction: check_in`, Exit scanners skip it and send
+  `scanAction: check_out`, while `auto`/`automatic` scanners skip the modal and
+  send the fixed scan payload without a forced action.
+  A successful request
+  persists and joins `data.session.id`, then the Bulk Scanning screen loads its
+  entries and can continue into the normal Add Bulk to System flow.
   A second temporary Test Bulk Add button posts `{ assetName: "Test Towels",
   categoryId: "c4a46dde-04fd-4858-b827-82456a756361", zoneName: "Test Zone",
   washLimit: 100, description: "Socket testing asset" }` to
@@ -595,6 +599,14 @@ Current endpoints:
   linked tab shares its list response with the summary cards, and a minimal list
   request is made only when a pending/rejected tab is opened directly without
   an already loaded summary.
+- Business Dispatch Batches uses `GET /tenant-dispatch-batches/show` for its
+  live list, summary counts, and backend `page`/`limit` pagination. A row keeps
+  the backend batch UUID for detail navigation while displaying its batch code.
+  `GET /tenant-dispatch-batches/show/:batchId/activity-logs` powers the detail
+  Activity Log tab with server pagination at a limit of 20. The shared service
+  also exposes `PUT /tenant-dispatch-batches/items-status/:batchId` and
+  `PUT /tenant-dispatch-batches/return/:batchId`; UI mutations require their
+  exact request-body contracts before they can be safely invoked.
 - `PUT /tenant-laundries/unlink/:id`, where `id` is the linked-laundry
   relationship UUID preserved as `apiId` by the list normalizer.
 - Category services send `x-language`, defaulting to `en`.

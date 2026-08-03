@@ -29,7 +29,7 @@ const DispatchTable = ({
   const navigate = useNavigate();
 
   const handleRowDetails = (row) => {
-    navigate(`/business/dispatch-batches/${row.id}`);
+    navigate(`/business/dispatch-batches/${row.apiId || row.id}`);
   };
 
   const columns = [
