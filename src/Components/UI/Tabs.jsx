@@ -13,7 +13,7 @@ const Tabs = ({
         <Card
             shadow="none"
             padding="10px"
-            className={`${className}`}
+            className={`${equalWidth ? "w-full" : "w-fit"} ${className}`}
         >
             {/* Mobile: horizontal scrollable flex — Desktop: equal-width grid */}
             <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

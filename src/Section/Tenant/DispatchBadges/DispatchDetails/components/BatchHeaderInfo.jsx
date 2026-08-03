@@ -1,19 +1,15 @@
 import {
   AlertCircle,
-  ArrowLeft,
   Building2,
   Package,
   PackageCheck,
   Tag,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import Badge from "../../../../../Components/UI/Badge";
-import Button from "../../../../../Components/UI/Button";
 import Card from "../../../../../Components/UI/Card";
 import IconWrapper from "../../../../../Components/UI/IconWrapper";
 
 const BatchHeaderInfo = ({ details }) => {
-  const navigate = useNavigate();
   const summary = details?.summary || {};
 
   const statsCards = [
@@ -63,7 +59,7 @@ const BatchHeaderInfo = ({ details }) => {
     <div className="space-y-5">
       {/* Back button & Page Title */}
       <div>
-        <Button
+        {/* <Button
           variant="outline"
           leftIcon={<ArrowLeft size={16} />}
           onClick={() => navigate("/business/dispatch-batches")}
@@ -71,7 +67,7 @@ const BatchHeaderInfo = ({ details }) => {
           className="rounded-xl border-(--theme-border) text-xs font-semibold mb-3 text-(--theme-text-secondary) hover:text-(--theme-text-primary)"
         >
           Back to Dispatch Batches
-        </Button>
+        </Button> */}
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -165,7 +161,7 @@ const BatchHeaderInfo = ({ details }) => {
       </Card>
 
       {/* 5 Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {statsCards.map((item) => (
           <Card key={item.id} padding="18px 20px" rounded="18px">
             <div className="flex flex-col gap-3">

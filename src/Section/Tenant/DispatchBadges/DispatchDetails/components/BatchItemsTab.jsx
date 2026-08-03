@@ -117,11 +117,14 @@ const BatchItemsTab = ({ items = [] }) => {
     {
       label: "CURRENT STATUS",
       accessor: "currentStatus",
-      render: (val) => (
-        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-          {val}
-        </span>
-      ),
+      render: (val) => {
+        const variant = PROGRESS_BADGE_VARIANTS[val] || "neutral";
+        return (
+          <Badge variant={variant} size="md">
+            {val}
+          </Badge>
+        );
+      },
     },
     {
       label: "LAST SCAN",
