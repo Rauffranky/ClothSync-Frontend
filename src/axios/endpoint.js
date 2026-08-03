@@ -47,6 +47,9 @@ export const TENANT_SCANNER_ENDPOINTS = Object.freeze({
 
 export const TENANT_TAG_ENDPOINTS = Object.freeze({
   LIST: "/tenant-tags/show",
+  DETAILS: (id) => `/tenant-tags/show/${id}`,
+  SCAN_LOGS: (id) => `/tenant-tags/show/${id}/scan-logs`,
+  MAPPING_HISTORY: (id) => `/tenant-tags/show/${id}/mapping-history`,
 });
 
 export const TENANT_ASSET_ENDPOINTS = Object.freeze({
