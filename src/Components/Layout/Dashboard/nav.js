@@ -192,6 +192,12 @@ export const NAV = {
       ],
     },
     {
+      id: 110,
+      label: "Bulk Scanning",
+      href: "/business/bulk-scanning",
+      Icon: ShieldAlert,
+    },
+    {
       id: 112,
       label: "Staff",
       href: "/business/staff",
@@ -227,19 +233,13 @@ export const NAV = {
       href: "/business/reports-analytics",
       Icon: ChartNoAxesCombined,
     },
-    {
-      id: 110,
-      label: "Bulk Scanning",
-      href: "/business/bulk-scanning",
-      Icon: ShieldAlert,
-    },
+
     {
       id: 111,
       label: "Settings",
       href: "/business/settings",
       Icon: Settings,
     },
-
   ],
   laundry: [
     {
