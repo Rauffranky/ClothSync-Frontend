@@ -1,6 +1,4 @@
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
-import Button from "../../../Components/UI/Button";
 import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
 import { toast } from "../../../Utils/toast";
 import DispatchFilters from "./components/DispatchFilters";
@@ -100,22 +98,9 @@ const DispatchBadges = () => {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-(--theme-text-primary)">
             Dispatch Batches
           </h1>
-          <p className="mt-1 text-sm font-medium text-(--theme-text-secondary)">
-            Create, monitor, and track linen assets sent to linked laundry partners.
-          </p>
+          
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="primary"
-            leftIcon={<Plus size={18} />}
-            onClick={() => toast.info("Create new batch feature initialized")}
-            size={{ minHeight: 42, padding: "0 20px" }}
-            className="rounded-xl font-semibold shadow-xs"
-          >
-            Create Batch
-          </Button>
-        </div>
       </div>
 
       {/* Summary Cards */}
