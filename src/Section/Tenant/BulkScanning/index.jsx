@@ -287,6 +287,12 @@ const BulkScanningIndex = () => {
   }, [fetchEntries, sessionId]);
 
   useEffect(() => {
+    const handleGlobalUndoSuccess = () => fetchEntries();
+    window.addEventListener("bulk-scan-undo-success", handleGlobalUndoSuccess);
+    return () => window.removeEventListener("bulk-scan-undo-success", handleGlobalUndoSuccess);
+  }, [fetchEntries]);
+
+  useEffect(() => {
     const socket = getSocket();
 
     const applySession = (nextSession) => {

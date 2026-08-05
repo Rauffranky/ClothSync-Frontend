@@ -14,24 +14,13 @@ import { setActiveBulkScanSessionId } from "../../../Utils/bulkScanSession";
 import useGlobalUndoNotices, { mergeUndoNotices } from "../../../Hooks/useGlobalUndoNotices";
 
 const TEST_SCAN_PAYLOAD = Object.freeze({
-  scannerId: "b6eea2cb-5492-4683-b82e-925ee9c4da1c",
+  scannerId: "ad27d052-f553-4ecf-ab4c-54a878ae2cc9",
   epcs: Object.freeze([
-  "TEST-EPC-630",
-  "TEST-EPC-631",
-  "TEST-EPC-632",
-  "TEST-EPC-633",
-  "TEST-EPC-634",
-  "TEST-EPC-635",
-  "TEST-EPC-636",
-  "TEST-EPC-637",
-  "TEST-EPC-638",
-  "TEST-EPC-639",
-  "TEST-EPC-640",
-  "TEST-EPC-641",
-  "TEST-EPC-642",
-  "TEST-EPC-643",
-  "TEST-EPC-644",
-  "TEST-EPC-645",
+  "TEST-EPC-1",
+  "TEST-EPC-2",
+  "TEST-EPC-3",
+  "TEST-EPC-4",
+  "TEST-EPC-5",
   ]),
 });
 

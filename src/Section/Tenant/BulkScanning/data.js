@@ -181,6 +181,15 @@ export const normalizeActionUndoNotices = (response, defaults = {}) => {
     ? data.automaticActions
     : [];
 
+  const getLaundryName = (item) => {
+    if (item.laundry?.name) return item.laundry.name;
+    if (Array.isArray(item.laundries) && item.laundries.length > 0) {
+      const names = item.laundries.map((l) => l.name).filter(Boolean);
+      return names.length > 0 ? names.join(", ") : "original laundries";
+    }
+    return null;
+  };
+
   if (automaticActions.length > 0) {
     return automaticActions
       .filter((item) => item?.undo?.id && item?.undo?.expiresAt)
@@ -189,8 +198,10 @@ export const normalizeActionUndoNotices = (response, defaults = {}) => {
         ...item.undo,
         action: item.action ?? null,
         batchCode: item.batch?.batchCode ?? null,
-        laundryName: item.laundry?.name ?? null,
+        laundryName: getLaundryName(item),
+        businessName: item.business?.name ?? null,
         processedCount: item.processedCount ?? 0,
+        processedTagCount: item.processedTagCount ?? item.processedCount ?? 0,
       }));
   }
 
@@ -202,6 +213,9 @@ export const normalizeActionUndoNotices = (response, defaults = {}) => {
         ...common,
         ...undo,
         action: undo.action ?? data.action ?? null,
+        laundryName: getLaundryName(data),
+        businessName: data.business?.name ?? null,
+        processedTagCount: data.processedTagCount ?? data.processedCount ?? 0,
       }));
   }
 
@@ -211,8 +225,10 @@ export const normalizeActionUndoNotices = (response, defaults = {}) => {
     ...data.undo,
     action: data.action ?? defaults.action ?? null,
     batchCode: data.batch?.batchCode ?? null,
-    laundryName: data.laundry?.name ?? null,
+    laundryName: getLaundryName(data),
+    businessName: data.business?.name ?? null,
     processedCount: data.processedCount ?? data.processedTagCount ?? 0,
+    processedTagCount: data.processedTagCount ?? data.processedCount ?? 0,
   }];
 };
 
