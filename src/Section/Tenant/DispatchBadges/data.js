@@ -187,8 +187,17 @@ export const getTenantDispatchBatchCollection = (response, limit = 20) => {
   const counts = payload.counts ?? payload.summary ?? {};
 
   const rows = items.map((batch) => {
-    const laundry = batch.laundry ?? batch.linkedLaundry?.laundry ?? {};
-    const creator = batch.createdByUser ?? batch.creator ?? batch.createdBy ?? {};
+    const laundry =
+      batch.laundry ??
+      batch.laundryLink?.laundry ??
+      batch.linkedLaundry?.laundry ??
+      {};
+    const creator =
+      batch.dispatcher ??
+      batch.createdByUser ??
+      batch.creator ??
+      batch.createdBy ??
+      {};
     const backendId = batch.id ?? batch._id;
     const rawStatus = batch.status ?? batch.batchStatus ?? "";
     return {
@@ -198,7 +207,14 @@ export const getTenantDispatchBatchCollection = (response, limit = 20) => {
       laundryName: batch.laundryName ?? laundry.companyName ?? laundry.businessName ?? laundry.name ?? "—",
       dispatchLocation: batch.dispatchLocation ?? batch.locationName ?? batch.location ?? "—",
       created: formatDateTime(batch.createdAt ?? batch.dispatchDateTime ?? batch.created),
-      items: Number(batch.totalItems ?? batch.itemsCount ?? batch.totalItemsCount ?? batch.items?.length ?? 0),
+      items: Number(
+        batch.totalTagsCount ??
+          batch.totalItems ??
+          batch.itemsCount ??
+          batch.totalItemsCount ??
+          batch.items?.length ??
+          0,
+      ),
       status: formatStatusLabel(rawStatus),
       rawStatus,
       createdBy: (typeof creator === "string" ? creator : creator.fullName ?? creator.name) ?? "—",

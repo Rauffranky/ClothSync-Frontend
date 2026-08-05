@@ -64,6 +64,7 @@ export const TENANT_DISPATCH_BATCH_ENDPOINTS = Object.freeze({
 
 export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
   TEST_SCANNER_SCAN: "/tenant-bulk-scan/test-scanner-scan",
+  SCAN: (sessionId) => `/tenant-bulk-scan/sessions/${sessionId}/scan`,
   BULK_ADD: (sessionId) =>
     `/tenant-bulk-scan/sessions/${sessionId}/bulk-add`,
   UNDO_BULK_ADD: (sessionId, undoId) =>
@@ -72,6 +73,12 @@ export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
     `/tenant-bulk-scan/sessions/${sessionId}/clear`,
   ENTRIES: (sessionId) =>
     `/tenant-bulk-scan/sessions/${sessionId}/entries`,
+  ACTION_PREVIEW: (sessionId) =>
+    `/tenant-bulk-scan/sessions/${sessionId}/actions/preview`,
+  ACTION_CONFIRM: (sessionId) =>
+    `/tenant-bulk-scan/sessions/${sessionId}/actions/confirm`,
+  ACTION_UNDO: (sessionId, undoId) =>
+    `/tenant-bulk-scan/sessions/${sessionId}/actions/${undoId}/undo`,
 });
 
 export const LAUNDRY_SCANNER_ENDPOINTS = Object.freeze({

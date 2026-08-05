@@ -289,18 +289,31 @@ Confirmed API-backed areas:
   `GET /tenant-bulk-scan/sessions/:sessionId/entries` with exact `scanGroup`
   values `new_unlinked`, `existing_linked`, or `detached`, one-based `page`, and
   default `limit: 50`. The response supplies session/scanner details, counters,
-  tabs, `entries.items`, and `entries.pagination`; the screen renders only Total
+  tabs, direct `items`/`pagination` (with nested `entries.items` compatibility),
+  and the screen renders only Total
   Tags, Existing Linked, New Unlinked, and Detached counters. Detached rows show
   `previousAssignment` asset/category plus `linkedAt` and `detachedAt`.
   Existing Linked exposes the Check In, Check Out, Re-Tag, and Retire action
-  menu only for non-automatic scanner modes; `auto` and `automatic` scanners
-  suppress the manual-action control.
+  menu for pending rows. The scan and test-scan responses are backend-authoritative:
+  entry/exit scanners can immediately perform Check In/Out, auto mode can return
+  mixed automatic actions, and manual/unresolved results remain staged. Automatic
+  results show exact backend feedback, readable skipped details, and one or more
+  independently expiring Undo actions; processed rows are refetched out of the
+  pending table. Manual Check In and Check Out send selected temporary entry IDs to
+  `POST /tenant-bulk-scan/sessions/:sessionId/actions/preview`, then require
+  confirmation through the matching `/actions/confirm` endpoint. Check Out
+  selects from the backend's linked-laundry options and sends `laundryLinkId`;
+  Check In relies on the original backend batch/laundry. Successful movements
+  expose backend-expiry-based undo through
+  `POST /tenant-bulk-scan/sessions/:sessionId/actions/:undoId/undo` and refetch
+  the active entry collection after confirmation or undo.
   The current tenant session ID and selected scan-group tab are stored in
   same-tab session storage, so refresh restores the active tab after a successful
   test scan. The session ID is refreshed from scan-session socket events. Tab and
   page changes, initial load, socket/browser reconnect, `scan.entries.updated`,
-  bulk add/undo/expiry refetch entries. `scanner.scan.bulk` instead incrementally
-  upserts the active first page without an entries request. Reconnect rejoins the
+  bulk add/undo/expiry refetch entries. `scanner.scan.bulk` incrementally upserts
+  pending first-page rows, but refetches instead when it reports an automatic
+  movement so processed rows are not reinserted. Reconnect rejoins the
   session room before refetching. Session updated/finished/cleared events update
   counters/status or clear table state, and all listeners use matching cleanup
   handlers to prevent duplicates.
@@ -328,17 +341,13 @@ Confirmed API-backed areas:
   asset response's filter metadata when supplied and otherwise derive from
   returned rows. Asset rows/cards normalize the live response instead of mock data.
 - The Business dashboard currently includes a temporary Test Scanner Scan button
-  using the fixed test payload `{ scannerId:
-  "7cd8b2d0-1299-4717-8ef3-242581519715", epcs: ["TEST-EPC-025",
-  "TEST-EPC-026", "TEST-EPC-027", "TEST-EPC-028", "TEST-EPC-029",
-  "TEST-EPC-030"] }` to
-  `POST /tenant-bulk-scan/test-scanner-scan`. The button first navigates to
-  `/business/bulk-scanning` after loading that scanner's live details. Manual
-  scanners show a non-backdrop-dismissible modal requiring Check In or Check Out
-  and send the chosen `scanAction` as `check_in` or `check_out`. Entry scanners
-  skip the modal and send `scanAction: check_in`, Exit scanners skip it and send
-  `scanAction: check_out`, while `auto`/`automatic` scanners skip the modal and
-  send the fixed scan payload without a forced action.
+  that navigates to `/business/bulk-scanning` and sends its fixed scanner/EPC
+  payload to `POST /tenant-bulk-scan/test-scanner-scan`. It does not resolve the
+  scanner mode itself. The backend performs automatic entry/exit/auto movements;
+  when a deployed backend returns the manual-scanner `400`, the Bulk Scanning
+  screen opens Check In/Check Out selection and retries the same payload with the
+  selected `scanAction`. Results remain backend-authoritative and can include
+  skipped results and one or more Undo tokens.
   A successful request
   persists and joins `data.session.id`, then the Bulk Scanning screen loads its
   entries and can continue into the normal Add Bulk to System flow.

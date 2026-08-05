@@ -9,20 +9,24 @@ import {
   testTenantBulkAdd,
   testTenantBulkAddUndo,
 } from "../../../axios/scanners/tenantBulkScan";
-import { getTenantScannerDetails } from "../../../axios/scanners/tenantScanners";
 import { SOCKET_EVENTS } from "../../../socket/events";
 import { toast } from "../../../Utils/toast";
 import { setActiveBulkScanSessionId } from "../../../Utils/bulkScanSession";
 
 const TEST_SCAN_PAYLOAD = Object.freeze({
-  scannerId: "5432b45a-c1cb-4031-a53f-00b8bf7c8436",
+  scannerId: "b6eea2cb-5492-4683-b82e-925ee9c4da1c",
   epcs: Object.freeze([
-    "TEST-EPC-71",
-    "TEST-EPC-70",
-    // "TEST-EPC-52",
-    // "TEST-EPC-53",
-    // "TEST-EPC-54",
-    // "TEST-EPC-55",
+  "TEST-EPC-620",
+  "TEST-EPC-621",
+  "TEST-EPC-622",
+  "TEST-EPC-623",
+  "TEST-EPC-624",
+  "TEST-EPC-625",
+  "TEST-EPC-626",
+  "TEST-EPC-627",
+  "TEST-EPC-628",
+  "TEST-EPC-629",
+  //   "TEST-EPC-55",
   ]),
 });
 
@@ -98,29 +102,13 @@ const TestScannerScanButton = () => {
 
     setIsResolvingScannerMode(true);
     try {
-      const response = await getTenantScannerDetails(TEST_SCAN_PAYLOAD.scannerId);
-      const payload = response?.data ?? response ?? {};
-      const scanner = payload.item ?? payload.scanner ?? payload;
-      const scannerMode = String(scanner.scannerMode ?? scanner.mode ?? "").toLowerCase();
       const scanPayload = {
         ...TEST_SCAN_PAYLOAD,
         epcs: [...TEST_SCAN_PAYLOAD.epcs],
       };
 
       navigate("/business/bulk-scanning", {
-        state: scannerMode === "manual"
-          ? { manualTestScan: scanPayload }
-          : {
-              automaticTestScan: {
-                payload: scanPayload,
-                scanAction:
-                  scannerMode === "entry"
-                    ? "check_in"
-                    : scannerMode === "exit"
-                      ? "check_out"
-                      : undefined,
-              },
-            },
+        state: { automaticTestScan: { payload: scanPayload } },
       });
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Unable to determine scanner mode"));

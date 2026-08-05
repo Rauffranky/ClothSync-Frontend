@@ -10,9 +10,12 @@ import Tabs from "../../../Components/UI/Tabs";
 import { getApiErrorMessage } from "../../../axios/api";
 import {
   clearTenantBulkScanSession,
+  confirmBulkScanAction,
   getTenantBulkScanEntries,
+  previewBulkScanAction,
   testTenantBulkAddUndo,
   testTenantScannerScan,
+  undoBulkScanAction,
 } from "../../../axios/scanners/tenantBulkScan";
 import { getSocket } from "../../../socket/client";
 import { SOCKET_EVENTS } from "../../../socket/events";
@@ -25,6 +28,7 @@ import {
 import { toast } from "../../../Utils/toast";
 import BulkScanEntriesTable from "./BulkScanEntriesTable";
 import BulkAddModal from "./BulkAddModal";
+import ExistingTagActionModal from "./ExistingTagActionModal";
 import ScannerStatusCard from "./ScannerStatusCard";
 import SummaryCards from "./SummaryCards";
 import {
@@ -32,6 +36,8 @@ import {
   BULK_SCAN_PAGE_LIMIT,
   BULK_SCAN_TABS,
   getLiveScanGroup,
+  getSkippedReasonMessage,
+  normalizeActionUndoNotices,
   normalizeBulkScanCounts,
   normalizeBulkScanEntry,
   normalizeBulkScanEntriesResponse,
@@ -69,17 +75,20 @@ const formatCountdown = (totalSeconds) => {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 };
 
+const mergeUndoNotices = (current, incoming) => {
+  const byId = new Map(current.map((notice) => [notice.id, notice]));
+  incoming.forEach((notice) => byId.set(notice.id, notice));
+  return [...byId.values()];
+};
+
 const BulkScanningIndex = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [pendingManualScan, setPendingManualScan] = useState(
-    () => location.state?.manualTestScan ?? null,
-  );
   const [pendingAutomaticScan, setPendingAutomaticScan] = useState(
-    () => location.state?.automaticTestScan ?? null,
+    () => location.state?.automaticTestScan ?? location.state?.manualTestScan ?? null,
   );
+  const [pendingManualScan, setPendingManualScan] = useState(null);
   const [isManualScanSubmitting, setIsManualScanSubmitting] = useState(false);
-  const automaticScanStartedRef = useRef(false);
   const [activeTab, setActiveTab] = useState(getInitialActiveTab);
   const [currentPage, setCurrentPage] = useState(0);
   const [sessionId, setSessionId] = useState(getActiveBulkScanSessionId);
@@ -89,29 +98,73 @@ const BulkScanningIndex = () => {
   const [rows, setRows] = useState([]);
   const [pagination, setPagination] = useState(emptyPagination);
   const [lastEpc, setLastEpc] = useState(null);
-  const [undoState, setUndoState] = useState(null);
-  const [undoSecondsRemaining, setUndoSecondsRemaining] = useState(0);
+  const [undoNotices, setUndoNotices] = useState([]);
+  const [undoNow, setUndoNow] = useState(Date.now);
+  const [automaticResult, setAutomaticResult] = useState(null);
+  const [actionPreview, setActionPreview] = useState(null);
+  const [actionType, setActionType] = useState(null);
+  const [actionRows, setActionRows] = useState([]);
+  const [isPreviewingAction, setIsPreviewingAction] = useState(false);
+  const [isConfirmingAction, setIsConfirmingAction] = useState(false);
+  const [actionSelectionKey, setActionSelectionKey] = useState(0);
   const [isLoading, setIsLoading] = useState(Boolean(sessionId));
   const [isClearing, setIsClearing] = useState(false);
-  const [isUndoing, setIsUndoing] = useState(false);
+  const [undoingId, setUndoingId] = useState(null);
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [loadError, setLoadError] = useState("");
   const requestIdRef = useRef(0);
+  const actionRequestControllerRef = useRef(null);
+
+  useEffect(() => () => actionRequestControllerRef.current?.abort(), []);
 
   useEffect(() => {
     if (!location.state?.manualTestScan && !location.state?.automaticTestScan) return;
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
+  const applyScannerResponse = (response) => {
+    const result = response?.data ?? {};
+    const processedCount = Number(result.processedCount ?? 0);
+    const skippedCount = Number(result.skippedCount ?? 0);
+    const notices = normalizeActionUndoNotices(response, {
+      actionSource: result.actionSource,
+      kind: "action",
+      scannerMode: result.scannerMode,
+    });
+
+    if (notices.length > 0) {
+      setUndoNotices((current) => mergeUndoNotices(current, notices));
+      setUndoNow(Date.now());
+    }
+
+    setAutomaticResult(skippedCount > 0 ? {
+      action: result.action,
+      actionSource: result.actionSource,
+      message: response?.message,
+      processedCount,
+      skippedCount,
+      skippedItems: result.skippedItems ?? [],
+    } : null);
+
+    const message = response?.message || "Scanner scan completed successfully";
+    if (skippedCount > 0 && processedCount === 0) toast.warning(message);
+    else if (processedCount > 0) toast.success(message);
+    else toast.info(message);
+  };
+
   const submitTestScan = async (scanPayload, scanAction) => {
     if (!scanPayload || isManualScanSubmitting) return;
 
+    actionRequestControllerRef.current?.abort();
+    const controller = new AbortController();
+    actionRequestControllerRef.current = controller;
     setIsManualScanSubmitting(true);
     try {
       const response = await testTenantScannerScan({
         ...scanPayload,
         ...(scanAction ? { scanAction } : {}),
-      });
+      }, { signal: controller.signal });
+      applyScannerResponse(response);
       const nextSessionId = response?.data?.session?.id;
       if (!nextSessionId) {
         throw new Error("Test scan succeeded, but data.session.id was not returned");
@@ -119,11 +172,16 @@ const BulkScanningIndex = () => {
 
       setActiveBulkScanSessionId(nextSessionId);
       setSessionId(nextSessionId);
+      setSession(response?.data?.session ?? null);
+      setScanner(
+        response?.data?.scanner ?? response?.data?.session?.scanner ?? null,
+      );
+      setCounts(normalizeBulkScanCounts(response?.data ?? {}));
       setCurrentPage(0);
       setIsLoading(true);
       getSocket().emit(SOCKET_EVENTS.SCAN_SESSION_JOIN, { sessionId: nextSessionId });
-      setPendingManualScan(null);
       setPendingAutomaticScan(null);
+      setPendingManualScan(null);
 
       try {
         const entriesResponse = await getTenantBulkScanEntries(nextSessionId, {
@@ -132,8 +190,8 @@ const BulkScanningIndex = () => {
           limit: BULK_SCAN_PAGE_LIMIT,
         });
         const collection = normalizeBulkScanEntriesResponse(entriesResponse);
-        setSession(collection.session);
-        setScanner(collection.scanner);
+        if (collection.session) setSession(collection.session);
+        if (collection.scanner) setScanner(collection.scanner);
         setCounts(collection.counts);
         setRows(collection.rows);
         setPagination(collection.pagination);
@@ -147,26 +205,42 @@ const BulkScanningIndex = () => {
         setIsLoading(false);
       }
 
-      toast.success(response?.message || "Test scanner scan sent successfully");
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to send the manual test scan"));
+      if (error?.code !== "ERR_CANCELED") {
+        const message = getApiErrorMessage(error, "Unable to send the test scan");
+        const requiresManualAction =
+          !scanAction &&
+          error?.response?.status === 400 &&
+          /manual scanner|check in or check out/i.test(message);
+
+        if (requiresManualAction) {
+          setPendingAutomaticScan(null);
+          setPendingManualScan(scanPayload);
+        } else {
+          toast.error(message);
+        }
+      }
     } finally {
-      setIsManualScanSubmitting(false);
+      if (actionRequestControllerRef.current === controller) {
+        actionRequestControllerRef.current = null;
+        setIsManualScanSubmitting(false);
+      }
     }
   };
 
   useEffect(() => {
-    if (!pendingAutomaticScan || automaticScanStartedRef.current) return;
-    automaticScanStartedRef.current = true;
+    if (!pendingAutomaticScan) return;
+    // Submitting the navigation-provided scan is the external synchronization owned here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     submitTestScan(
       pendingAutomaticScan.payload ?? pendingAutomaticScan,
-      pendingAutomaticScan.scanAction,
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingAutomaticScan]);
 
-  const handleManualScanAction = (scanAction) =>
+  const handleManualScanAction = (scanAction) => {
     submitTestScan(pendingManualScan, scanAction);
+  };
 
   const fetchEntries = useCallback(async () => {
     if (!sessionId) return;
@@ -182,8 +256,8 @@ const BulkScanningIndex = () => {
       if (requestId !== requestIdRef.current) return;
 
       const collection = normalizeBulkScanEntriesResponse(response);
-      setSession(collection.session);
-      setScanner(collection.scanner);
+      if (collection.session) setSession(collection.session);
+      if (collection.scanner) setScanner(collection.scanner);
       setCounts(collection.counts);
       setRows(collection.rows);
       setPagination(collection.pagination);
@@ -192,6 +266,21 @@ const BulkScanningIndex = () => {
     } catch (error) {
       if (requestId !== requestIdRef.current) return;
       const message = getApiErrorMessage(error, "Unable to load bulk scan entries");
+      if (
+        error?.response?.status === 404 &&
+        /scan session/i.test(message)
+      ) {
+        setActiveBulkScanSessionId(null);
+        setSessionId(null);
+        setSession(null);
+        setScanner(null);
+        setCounts(emptyCounts);
+        setRows([]);
+        setPagination(emptyPagination);
+        setLastEpc(null);
+        setLoadError("");
+        return;
+      }
       setRows([]);
       setPagination(emptyPagination);
       setLoadError(message);
@@ -212,26 +301,10 @@ const BulkScanningIndex = () => {
   }, [fetchEntries, sessionId]);
 
   useEffect(() => {
-    if (!undoState?.canUndo) return undefined;
-
-    const parsedExpiry = Date.parse(undoState.expiresAt);
-    const expiresAt = Number.isNaN(parsedExpiry)
-      ? Date.now() + (undoState.windowSeconds ?? 120) * 1000
-      : parsedExpiry;
-
-    const updateCountdown = () => {
-      const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
-      setUndoSecondsRemaining(remaining);
-      if (remaining === 0) setUndoState(null);
-    };
-
-    const initialCountdown = window.setTimeout(updateCountdown, 0);
-    const countdownInterval = window.setInterval(updateCountdown, 1000);
-    return () => {
-      window.clearTimeout(initialCountdown);
-      window.clearInterval(countdownInterval);
-    };
-  }, [undoState]);
+    if (undoNotices.length === 0) return undefined;
+    const timer = window.setInterval(() => setUndoNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, [undoNotices.length]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -265,10 +338,24 @@ const BulkScanningIndex = () => {
       const nextSession = getEventSession(data);
       if (nextSession) applySession(nextSession);
 
+      const eventPayload = data?.data ?? data ?? {};
+      if (
+        Number(eventPayload.processedCount ?? 0) > 0 ||
+        eventPayload.actionSource === "scanner_mode" ||
+        eventPayload.actionSource === "automatic_resolution"
+      ) {
+        fetchEntries();
+        return;
+      }
+
       const results = data?.data?.results ?? data?.results ?? [];
       if (!Array.isArray(results) || currentPage !== 0) return;
 
       const matchingEntries = results
+        .filter((result) => {
+          const entry = result.scannedTag ?? result.entry ?? result;
+          return !entry.scanStatus || entry.scanStatus === "pending";
+        })
         .filter((result) => getLiveScanGroup(result) === activeTab)
         .map((result) => normalizeBulkScanEntry(result.scannedTag ?? result.entry ?? result));
       if (matchingEntries.length === 0) return;
@@ -289,15 +376,21 @@ const BulkScanningIndex = () => {
     const handleSessionUpdated = (data) => applySession(getEventSession(data));
     const handleEntriesUpdated = () => fetchEntries();
     const handleBulkAdded = (data) => {
-      setUndoState(getEventUndo(data));
+      const undo = getEventUndo(data);
+      if (undo?.id && undo?.expiresAt) {
+        setUndoNotices((current) => mergeUndoNotices(current, [{
+          ...undo,
+          kind: "bulk_add",
+        }]));
+      }
       fetchEntries();
     };
     const handleBulkAddUndone = () => {
-      setUndoState(null);
+      setUndoNotices((current) => current.filter((item) => item.kind !== "bulk_add"));
       fetchEntries();
     };
     const handleBulkAddExpired = () => {
-      setUndoState(null);
+      setUndoNotices((current) => current.filter((item) => item.kind !== "bulk_add"));
       fetchEntries();
     };
     const handleSessionCleared = (data) => {
@@ -307,7 +400,7 @@ const BulkScanningIndex = () => {
       setRows([]);
       setPagination(emptyPagination);
       setLastEpc(null);
-      setUndoState(null);
+      setUndoNotices([]);
     };
     const handleSessionFinished = (data) => {
       const finishedSession = getEventSession(data);
@@ -370,7 +463,7 @@ const BulkScanningIndex = () => {
       setCounts(emptyCounts);
       setPagination(emptyPagination);
       setLastEpc(null);
-      setUndoState(null);
+      setUndoNotices([]);
       toast.success(response?.message || "Scan session cleared successfully");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Unable to clear the scan session"));
@@ -379,26 +472,122 @@ const BulkScanningIndex = () => {
     }
   };
 
-  const handleUndo = async () => {
-    if (!sessionId || !undoState?.id || isUndoing) return;
-    setIsUndoing(true);
+  const handleUndo = async (undoNotice) => {
+    if (!sessionId || !undoNotice?.id || undoingId) return;
+    const controller = new AbortController();
+    actionRequestControllerRef.current = controller;
+    setUndoingId(undoNotice.id);
     try {
-      const response = await testTenantBulkAddUndo(sessionId, undoState.id);
-      setUndoState(null);
+      const response = undoNotice.kind === "action"
+        ? await undoBulkScanAction(sessionId, undoNotice.id, {
+            signal: controller.signal,
+          })
+        : await testTenantBulkAddUndo(sessionId, undoNotice.id);
+      setUndoNotices((current) => current.filter((item) => item.id !== undoNotice.id));
       await fetchEntries();
-      toast.success(response?.message || "Bulk add undone successfully");
+      toast.success(response?.message || "Undo completed successfully");
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to undo the bulk add"));
+      const status = error?.response?.status;
+      if (undoNotice.kind === "action" && [404, 409, 410, 422].includes(status)) {
+        setUndoNotices((current) => current.filter((item) => item.id !== undoNotice.id));
+      }
+      toast.error(getApiErrorMessage(error, "Unable to undo this action"));
     } finally {
-      setIsUndoing(false);
+      if (actionRequestControllerRef.current === controller) {
+        actionRequestControllerRef.current = null;
+      }
+      setUndoingId(null);
     }
   };
 
   const handleBulkAddSuccess = async (response) => {
     setIsBulkAddOpen(false);
-    setUndoState(response?.data?.undo ?? null);
+    const undo = response?.data?.undo;
+    if (undo?.id && undo?.expiresAt) {
+      setUndoNotices((current) => mergeUndoNotices(current, [{
+        ...undo,
+        kind: "bulk_add",
+      }]));
+      setUndoNow(Date.now());
+    }
     setCurrentPage(0);
     await fetchEntries();
+  };
+
+  const handleExistingAction = async (action, selectedRows) => {
+    if (!sessionId || selectedRows.length === 0 || isPreviewingAction) return;
+
+    actionRequestControllerRef.current?.abort();
+    const controller = new AbortController();
+    actionRequestControllerRef.current = controller;
+    setIsPreviewingAction(true);
+    try {
+      const response = await previewBulkScanAction(
+        sessionId,
+        { tempTagIds: selectedRows.map((row) => row.id), action },
+        { signal: controller.signal },
+      );
+      setActionType(action);
+      setActionRows(selectedRows);
+      setActionPreview(response?.data ?? {});
+    } catch (error) {
+      if (error?.code !== "ERR_CANCELED") {
+        toast.error(getApiErrorMessage(error, "Unable to preview the selected action"));
+      }
+    } finally {
+      if (actionRequestControllerRef.current === controller) {
+        actionRequestControllerRef.current = null;
+        setIsPreviewingAction(false);
+      }
+    }
+  };
+
+  const closeActionModal = () => {
+    if (isConfirmingAction) return;
+    setActionPreview(null);
+    setActionType(null);
+    setActionRows([]);
+  };
+
+  const handleConfirmAction = async (details) => {
+    if (!sessionId || !actionType || actionRows.length === 0 || isConfirmingAction) return;
+
+    const controller = new AbortController();
+    actionRequestControllerRef.current = controller;
+    setIsConfirmingAction(true);
+    try {
+      const payload = {
+        tempTagIds: actionRows.map((row) => row.id),
+        action: actionType,
+        ...(actionType === "check_out" ? details : {}),
+      };
+      const response = await confirmBulkScanAction(sessionId, payload, {
+        signal: controller.signal,
+      });
+      const notices = normalizeActionUndoNotices(response, {
+        action: actionType,
+        kind: "action",
+      });
+      if (notices.length > 0) {
+        setUndoNotices((current) => mergeUndoNotices(current, notices));
+        setUndoNow(Date.now());
+      }
+      setActionPreview(null);
+      setActionType(null);
+      setActionRows([]);
+      setActionSelectionKey((current) => current + 1);
+      await fetchEntries();
+      toast.success(response?.message || "Scan action completed successfully");
+    } catch (error) {
+      if (error?.code !== "ERR_CANCELED") {
+        toast.error(getApiErrorMessage(error, "Unable to confirm the selected action"));
+      }
+    } finally {
+      if (actionRequestControllerRef.current === controller) {
+        actionRequestControllerRef.current = null;
+      }
+      setIsConfirmingAction(false);
+    }
   };
 
   return (
@@ -458,30 +647,75 @@ const BulkScanningIndex = () => {
             value={activeTab}
           />
         </div>
-        {undoState?.canUndo && undoSecondsRemaining > 0 && (
+        {automaticResult && (
           <div className="px-4 pt-4">
-            <Alert size="sm" variant="danger">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="flex flex-wrap items-center gap-2">
-                  <Timer aria-hidden="true" className="shrink-0" size={18} />
-                  <span>Bulk add undo window closes in</span>
-                  <Badge className="font-mono text-sm" size="md" variant="danger">
-                    {formatCountdown(undoSecondsRemaining)}
-                  </Badge>
-                </span>
-                <Button
-                  className="cursor-pointer disabled:cursor-not-allowed"
-                  loading={isUndoing}
-                  onClick={handleUndo}
-                  size="sm"
-                  variant="danger"
-                >
-                  Undo Bulk Add
-                </Button>
+            <Alert size="sm" variant="warning">
+              <div className="space-y-2">
+                <div>{automaticResult.message}</div>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <Badge variant="success">Processed {automaticResult.processedCount}</Badge>
+                  <Badge variant="warning">Skipped {automaticResult.skippedCount}</Badge>
+                </div>
+                {automaticResult.skippedItems.length > 0 && (
+                  <details>
+                    <summary className="cursor-pointer">View skipped tag details</summary>
+                    <ul className="mb-0 mt-2 space-y-1 pl-5">
+                      {automaticResult.skippedItems.map((item) => (
+                        <li key={item.tempTagId ?? item.epc}>
+                          <span className="font-mono">{item.epc ?? "Unknown EPC"}</span>
+                          {" — "}{getSkippedReasonMessage(item.reason)}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
               </div>
             </Alert>
           </div>
         )}
+        {undoNotices.map((notice) => {
+          const expiry = Date.parse(notice.expiresAt);
+          const remainingSeconds = Number.isNaN(expiry)
+            ? 0
+            : Math.max(0, Math.ceil((expiry - undoNow) / 1_000));
+          const actionLabel = notice.action === "check_in"
+            ? "Check In"
+            : notice.action === "check_out"
+              ? "Check Out"
+              : null;
+
+          return (
+            <div className="px-4 pt-4" key={notice.id}>
+              <Alert size="sm" variant={remainingSeconds > 0 ? "danger" : "neutral"}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                    <Timer aria-hidden="true" className="shrink-0" size={18} />
+                    {notice.message && <span>{notice.message}</span>}
+                    {notice.laundryName && <Badge variant="info">{notice.laundryName}</Badge>}
+                    {notice.batchCode && <Badge variant="info">Batch {notice.batchCode}</Badge>}
+                    <span>{remainingSeconds > 0 ? "Undo available for" : "Undo expired"}</span>
+                    {remainingSeconds > 0 && (
+                      <Badge className="font-mono text-sm" size="md" variant="danger">
+                        {formatCountdown(remainingSeconds)}
+                      </Badge>
+                    )}
+                  </span>
+                  <Button
+                    disabled={remainingSeconds <= 0 || Boolean(undoingId)}
+                    loading={undoingId === notice.id}
+                    onClick={() => handleUndo(notice)}
+                    size="sm"
+                    variant="danger"
+                  >
+                    {notice.kind === "bulk_add"
+                      ? "Undo Bulk Add"
+                      : `Undo${actionLabel ? ` ${actionLabel}` : ""}`}
+                  </Button>
+                </div>
+              </Alert>
+            </div>
+          );
+        })}
         {activeTab === BULK_SCAN_GROUPS.NEW_UNLINKED &&
           (counts?.newUnlinked ?? 0) > 0 && (
             <div className="flex flex-col gap-3 px-4 pt-4 lg:flex-row lg:items-center">
@@ -498,16 +732,23 @@ const BulkScanningIndex = () => {
             </div>
           )}
         <BulkScanEntriesTable
-          key={activeTab}
+          key={`${activeTab}-${actionSelectionKey}`}
           group={activeTab}
           loading={isLoading}
+          onExistingAction={handleExistingAction}
           onPageChange={({ selected }) => {
             setIsLoading(true);
             setCurrentPage(selected);
           }}
           pagination={pagination}
           rows={rows}
-          scannerMode={scanner?.scannerMode ?? scanner?.mode}
+          scannerMode={
+            scanner?.scannerMode ??
+            scanner?.mode ??
+            session?.scannerMode ??
+            session?.mode
+          }
+          previewLoading={isPreviewingAction}
         />
       </Card>
 
@@ -518,9 +759,24 @@ const BulkScanningIndex = () => {
         sessionId={sessionId}
       />
 
+      {actionPreview && (
+        <ExistingTagActionModal
+          action={actionType}
+          busy={isConfirmingAction}
+          onClose={closeActionModal}
+          onConfirm={handleConfirmAction}
+          open
+          preview={actionPreview}
+          scannerLocation={
+            scanner?.location ?? scanner?.scannerLocation ?? session?.location ?? ""
+          }
+          selectedRows={actionRows}
+        />
+      )}
+
       <Modal
         closeOnBackdrop={false}
-        description="Choose how these RFID tags should be processed before starting the manual scan."
+        description="This manual scanner requires an action before its tags can be staged. You can still review and override pending rows from the Existing Linked Tags Action menu."
         footer={(
           <>
             <Button
@@ -551,9 +807,10 @@ const BulkScanningIndex = () => {
         width={520}
       >
         <Alert variant="info">
-          The selected action will be sent with {pendingManualScan?.epcs?.length ?? 0} test EPC tags.
+          Choose the intended direction for {pendingManualScan?.epcs?.length ?? 0} scanned tags.
         </Alert>
       </Modal>
+
     </div>
   );
 };

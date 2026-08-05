@@ -4,6 +4,7 @@ import {
   Folder,
   LogIn,
   LogOut,
+  LoaderCircle,
   MapPin,
   RotateCcw,
 } from "lucide-react";
@@ -15,7 +16,11 @@ import { formatDateTime } from "../../../Utils/date";
 import { formatStatusLabel } from "../../../Utils/status";
 import SelectionCheckbox from "./components/SelectionCheckbox";
 import useTagSelection from "./components/useTagSelection";
-import { BULK_SCAN_GROUPS, BULK_SCAN_PAGE_LIMIT } from "./data";
+import {
+  BULK_SCAN_GROUPS,
+  BULK_SCAN_PAGE_LIMIT,
+  getSuggestedScanAction,
+} from "./data";
 
 const getName = (value, fallback = "-") =>
   value?.assetName ??
@@ -25,30 +30,26 @@ const getName = (value, fallback = "-") =>
   value?.translations?.en?.title ??
   fallback;
 
-const EXISTING_TAG_ACTIONS = Object.freeze([
-  { icon: LogIn, label: "Check In" },
-  { icon: LogOut, label: "Check Out" },
-  { icon: RotateCcw, label: "Re-Tag" },
-  { danger: true, icon: Archive, label: "Retire" },
-]);
-
-const isAutomaticMode = (mode) =>
-  ["auto", "automatic"].includes(
-    String(mode || "")
-      .trim()
-      .toLowerCase()
-      .replace(/[_-]+/g, " "),
-  );
+const isAutoMode = (mode) =>
+  ["auto", "automatic"].includes(String(mode || "").trim().toLowerCase());
 
 const BulkScanEntriesTable = ({
   group,
   loading,
+  onExistingAction,
   onPageChange,
   pagination,
+  previewLoading,
   rows,
   scannerMode,
 }) => {
-  const { allSelected, selectedIds, someSelected, toggleAll, toggleRow } =
+  const {
+    allSelected,
+    selectedIds,
+    someSelected,
+    toggleAll,
+    toggleRow,
+  } =
     useTagSelection(rows);
 
   const selectionColumn = {
@@ -145,6 +146,21 @@ const BulkScanEntriesTable = ({
       sortable: false,
       render: (_, row) => <span>{formatDateTime(row.scannedAt)}</span>,
     },
+    ...(isAutoMode(scannerMode)
+      ? [{
+          key: "suggestedAction",
+          label: "Suggested Action",
+          sortable: false,
+          render: (_, row) => {
+            const suggestion = getSuggestedScanAction([row]);
+            return suggestion ? (
+              <Badge size="sm" variant="info">
+                {suggestion === "check_in" ? "Check In" : "Check Out"}
+              </Badge>
+            ) : <span>-</span>;
+          },
+        }]
+      : []),
   ];
 
   const detachedColumns = [
@@ -196,8 +212,26 @@ const BulkScanEntriesTable = ({
         ? existingLinkedColumns
         : newUnlinkedColumns;
   const activePage = Math.max((pagination?.page ?? 1) - 1, 0);
-  const showExistingTagActions =
-    group === BULK_SCAN_GROUPS.EXISTING_LINKED && !isAutomaticMode(scannerMode);
+  const selectedRows = rows.filter((row) => selectedIds.has(row.id));
+  const suggestedAction = getSuggestedScanAction(selectedRows.length ? selectedRows : rows);
+  const selectedCount = selectedRows.length;
+  const existingTagActions = [
+    {
+      disabled: selectedCount === 0 || previewLoading,
+      icon: LogIn,
+      label: `Check In${suggestedAction === "check_in" ? " — Suggested" : ""}`,
+      onClick: () => onExistingAction?.("check_in", selectedRows),
+    },
+    {
+      disabled: selectedCount === 0 || previewLoading,
+      icon: LogOut,
+      label: `Check Out${suggestedAction === "check_out" ? " — Suggested" : ""}`,
+      onClick: () => onExistingAction?.("check_out", selectedRows),
+    },
+    { icon: RotateCcw, label: "Re-Tag" },
+    { danger: true, icon: Archive, label: "Retire" },
+  ];
+  const showExistingTagActions = group === BULK_SCAN_GROUPS.EXISTING_LINKED;
 
   return (
     <div className="px-4 pb-4 pt-4">
@@ -205,11 +239,14 @@ const BulkScanEntriesTable = ({
         <div className="mb-3 flex justify-end">
           <ActionDropdown
             align="right"
-            items={EXISTING_TAG_ACTIONS}
+            disabled={previewLoading}
+            items={existingTagActions}
             placement="bottom"
             triggerAriaLabel="Open existing linked tag actions"
-            triggerIcon={<ChevronDown aria-hidden="true" size={16} />}
-            triggerLabel="Action"
+            triggerIcon={previewLoading
+              ? <LoaderCircle aria-hidden="true" className="animate-spin" size={16} />
+              : <ChevronDown aria-hidden="true" size={16} />}
+            triggerLabel={previewLoading ? "Previewing..." : `Action${selectedCount ? ` (${selectedCount})` : ""}`}
             width={220}
           />
         </div>

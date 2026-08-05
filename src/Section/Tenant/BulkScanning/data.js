@@ -94,9 +94,16 @@ export const normalizeBulkScanCounts = (source = {}) => {
 
 export const normalizeBulkScanEntriesResponse = (response) => {
   const payload = response?.data ?? response ?? {};
-  const entries = payload.entries ?? {};
-  const pagination = entries.pagination ?? {};
-  const items = Array.isArray(entries.items) ? entries.items : [];
+  // The entries endpoint currently returns its collection directly under
+  // `data.items`. Keep the nested `data.entries.items` shape compatible with
+  // older responses and socket-driven fixtures.
+  const entries = payload.entries ?? payload;
+  const pagination = entries.pagination ?? payload.pagination ?? {};
+  const items = Array.isArray(entries.items)
+    ? entries.items
+    : Array.isArray(payload.items)
+      ? payload.items
+      : [];
   const page = getNumber(pagination.page, pagination.currentPage, 1) || 1;
   const limit = getNumber(pagination.limit, pagination.perPage, BULK_SCAN_PAGE_LIMIT);
   const totalItems = getNumber(
@@ -133,4 +140,95 @@ export const getLiveScanGroup = (result = {}) => {
   const mappingStatus = entry.mappingStatus ?? result.mappingStatus;
   if (mappingStatus === "linked") return BULK_SCAN_GROUPS.EXISTING_LINKED;
   return BULK_SCAN_GROUPS.NEW_UNLINKED;
+};
+
+const SKIPPED_REASON_MESSAGES = Object.freeze({
+  default_laundry_required: "No active default laundry is configured.",
+  tag_or_asset_not_found: "The tag or linked asset could not be found.",
+  tag_not_linked: "The tag is not linked to an active asset.",
+  tag_inactive: "The tag is inactive.",
+  tag_lost: "The tag is marked as lost.",
+  tag_damaged: "The tag is damaged.",
+  tag_retired: "The tag has been retired.",
+  asset_retired: "The linked asset has been retired.",
+  asset_inactive: "The linked asset is inactive.",
+  already_in_active_laundry_batch:
+    "The tag is already in an active laundry batch.",
+  active_laundry_batch_required:
+    "The tag has no active laundry batch and cannot be checked in.",
+  asset_status_sent_to_laundry:
+    "The asset has already been sent to laundry.",
+  asset_status_at_laundry: "The asset is currently at the laundry.",
+  asset_status_washed: "The asset has already been washed.",
+  asset_status_delayed: "The asset is currently delayed.",
+});
+
+export const getSkippedReasonMessage = (reason) => {
+  if (SKIPPED_REASON_MESSAGES[reason]) return SKIPPED_REASON_MESSAGES[reason];
+  return "The selected action cannot be performed for this tag.";
+};
+
+export const normalizeActionUndoNotices = (response, defaults = {}) => {
+  const data = response?.data ?? response ?? {};
+  const message = response?.message ?? defaults.message ?? null;
+  const common = {
+    actionSource: data.actionSource ?? defaults.actionSource ?? null,
+    kind: defaults.kind ?? "action",
+    message,
+    scannerMode: data.scannerMode ?? defaults.scannerMode ?? null,
+  };
+  const automaticActions = Array.isArray(data.automaticActions)
+    ? data.automaticActions
+    : [];
+
+  if (automaticActions.length > 0) {
+    return automaticActions
+      .filter((item) => item?.undo?.id && item?.undo?.expiresAt)
+      .map((item) => ({
+        ...common,
+        ...item.undo,
+        action: item.action ?? null,
+        batchCode: item.batch?.batchCode ?? null,
+        laundryName: item.laundry?.name ?? null,
+        processedCount: item.processedCount ?? 0,
+      }));
+  }
+
+  const undos = Array.isArray(data.undos) ? data.undos : [];
+  if (undos.length > 0) {
+    return undos
+      .filter((undo) => undo?.id && undo?.expiresAt)
+      .map((undo) => ({
+        ...common,
+        ...undo,
+        action: undo.action ?? data.action ?? null,
+      }));
+  }
+
+  if (!data.undo?.id || !data.undo?.expiresAt) return [];
+  return [{
+    ...common,
+    ...data.undo,
+    action: data.action ?? defaults.action ?? null,
+    batchCode: data.batch?.batchCode ?? null,
+    laundryName: data.laundry?.name ?? null,
+    processedCount: data.processedCount ?? data.processedTagCount ?? 0,
+  }];
+};
+
+export const getSuggestedScanAction = (rows = []) => {
+  const suggestions = rows
+    .map((row) => {
+      if (["check_in", "check_out"].includes(row.scanAction)) {
+        return row.scanAction;
+      }
+      if (row.scanDirection === "going_to_laundry") return "check_out";
+      if (row.scanDirection === "returning_from_laundry") return "check_in";
+      return null;
+    })
+    .filter(Boolean);
+
+  return suggestions.length > 0 && suggestions.every((item) => item === suggestions[0])
+    ? suggestions[0]
+    : null;
 };
