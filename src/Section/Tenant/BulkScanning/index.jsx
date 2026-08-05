@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, LogIn, LogOut, RefreshCw, ScanLine, Timer, TriangleAlert } from "lucide-react";
+import { CheckCircle2, LogIn, LogOut, RefreshCw, ScanLine, TriangleAlert } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Alert from "../../../Components/UI/Alert";
 import Badge from "../../../Components/UI/Badge";
@@ -13,9 +13,7 @@ import {
   confirmBulkScanAction,
   getTenantBulkScanEntries,
   previewBulkScanAction,
-  testTenantBulkAddUndo,
   testTenantScannerScan,
-  undoBulkScanAction,
 } from "../../../axios/scanners/tenantBulkScan";
 import { getSocket } from "../../../socket/client";
 import { SOCKET_EVENTS } from "../../../socket/events";
@@ -25,6 +23,8 @@ import {
   setActiveBulkScanGroup,
   setActiveBulkScanSessionId,
 } from "../../../Utils/bulkScanSession";
+import GlobalUndoBanners from "../../../Components/Layout/Dashboard/GlobalUndoBanners";
+import useGlobalUndoNotices, { mergeUndoNotices } from "../../../Hooks/useGlobalUndoNotices";
 import { toast } from "../../../Utils/toast";
 import BulkScanEntriesTable from "./BulkScanEntriesTable";
 import BulkAddModal from "./BulkAddModal";
@@ -69,17 +69,6 @@ const getInitialActiveTab = () => {
     : BULK_SCAN_GROUPS.NEW_UNLINKED;
 };
 
-const formatCountdown = (totalSeconds) => {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-};
-
-const mergeUndoNotices = (current, incoming) => {
-  const byId = new Map(current.map((notice) => [notice.id, notice]));
-  incoming.forEach((notice) => byId.set(notice.id, notice));
-  return [...byId.values()];
-};
 
 const BulkScanningIndex = () => {
   const location = useLocation();
@@ -98,8 +87,7 @@ const BulkScanningIndex = () => {
   const [rows, setRows] = useState([]);
   const [pagination, setPagination] = useState(emptyPagination);
   const [lastEpc, setLastEpc] = useState(null);
-  const [undoNotices, setUndoNotices] = useState([]);
-  const [undoNow, setUndoNow] = useState(Date.now);
+  const [, setUndoNotices] = useGlobalUndoNotices();
   const [automaticResult, setAutomaticResult] = useState(null);
   const [actionPreview, setActionPreview] = useState(null);
   const [actionType, setActionType] = useState(null);
@@ -109,7 +97,6 @@ const BulkScanningIndex = () => {
   const [actionSelectionKey, setActionSelectionKey] = useState(0);
   const [isLoading, setIsLoading] = useState(Boolean(sessionId));
   const [isClearing, setIsClearing] = useState(false);
-  const [undoingId, setUndoingId] = useState(null);
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [loadError, setLoadError] = useState("");
   const requestIdRef = useRef(0);
@@ -134,7 +121,6 @@ const BulkScanningIndex = () => {
 
     if (notices.length > 0) {
       setUndoNotices((current) => mergeUndoNotices(current, notices));
-      setUndoNow(Date.now());
     }
 
     setAutomaticResult(skippedCount > 0 ? {
@@ -301,12 +287,6 @@ const BulkScanningIndex = () => {
   }, [fetchEntries, sessionId]);
 
   useEffect(() => {
-    if (undoNotices.length === 0) return undefined;
-    const timer = window.setInterval(() => setUndoNow(Date.now()), 1_000);
-    return () => window.clearInterval(timer);
-  }, [undoNotices.length]);
-
-  useEffect(() => {
     const socket = getSocket();
 
     const applySession = (nextSession) => {
@@ -432,7 +412,7 @@ const BulkScanningIndex = () => {
       socket.off(SOCKET_EVENTS.SCAN_SESSION_CLEARED, handleSessionCleared);
       socket.off(SOCKET_EVENTS.SCAN_SESSION_FINISHED, handleSessionFinished);
     };
-  }, [activeTab, currentPage, fetchEntries, sessionId]);
+  }, [activeTab, currentPage, fetchEntries, sessionId, setUndoNotices]);
 
   const tabs = BULK_SCAN_TABS.map((tab) => ({
     ...tab,
@@ -472,33 +452,6 @@ const BulkScanningIndex = () => {
     }
   };
 
-  const handleUndo = async (undoNotice) => {
-    if (!sessionId || !undoNotice?.id || undoingId) return;
-    const controller = new AbortController();
-    actionRequestControllerRef.current = controller;
-    setUndoingId(undoNotice.id);
-    try {
-      const response = undoNotice.kind === "action"
-        ? await undoBulkScanAction(sessionId, undoNotice.id, {
-            signal: controller.signal,
-          })
-        : await testTenantBulkAddUndo(sessionId, undoNotice.id);
-      setUndoNotices((current) => current.filter((item) => item.id !== undoNotice.id));
-      await fetchEntries();
-      toast.success(response?.message || "Undo completed successfully");
-    } catch (error) {
-      const status = error?.response?.status;
-      if (undoNotice.kind === "action" && [404, 409, 410, 422].includes(status)) {
-        setUndoNotices((current) => current.filter((item) => item.id !== undoNotice.id));
-      }
-      toast.error(getApiErrorMessage(error, "Unable to undo this action"));
-    } finally {
-      if (actionRequestControllerRef.current === controller) {
-        actionRequestControllerRef.current = null;
-      }
-      setUndoingId(null);
-    }
-  };
 
   const handleBulkAddSuccess = async (response) => {
     setIsBulkAddOpen(false);
@@ -508,7 +461,6 @@ const BulkScanningIndex = () => {
         ...undo,
         kind: "bulk_add",
       }]));
-      setUndoNow(Date.now());
     }
     setCurrentPage(0);
     await fetchEntries();
@@ -570,7 +522,6 @@ const BulkScanningIndex = () => {
       });
       if (notices.length > 0) {
         setUndoNotices((current) => mergeUndoNotices(current, notices));
-        setUndoNow(Date.now());
       }
       setActionPreview(null);
       setActionType(null);
@@ -647,6 +598,7 @@ const BulkScanningIndex = () => {
             value={activeTab}
           />
         </div>
+        <GlobalUndoBanners inline />
         {automaticResult && (
           <div className="px-4 pt-4">
             <Alert size="sm" variant="warning">
@@ -673,49 +625,6 @@ const BulkScanningIndex = () => {
             </Alert>
           </div>
         )}
-        {undoNotices.map((notice) => {
-          const expiry = Date.parse(notice.expiresAt);
-          const remainingSeconds = Number.isNaN(expiry)
-            ? 0
-            : Math.max(0, Math.ceil((expiry - undoNow) / 1_000));
-          const actionLabel = notice.action === "check_in"
-            ? "Check In"
-            : notice.action === "check_out"
-              ? "Check Out"
-              : null;
-
-          return (
-            <div className="px-4 pt-4" key={notice.id}>
-              <Alert size="sm" variant={remainingSeconds > 0 ? "danger" : "neutral"}>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                    <Timer aria-hidden="true" className="shrink-0" size={18} />
-                    {notice.message && <span>{notice.message}</span>}
-                    {notice.laundryName && <Badge variant="info">{notice.laundryName}</Badge>}
-                    {notice.batchCode && <Badge variant="info">Batch {notice.batchCode}</Badge>}
-                    <span>{remainingSeconds > 0 ? "Undo available for" : "Undo expired"}</span>
-                    {remainingSeconds > 0 && (
-                      <Badge className="font-mono text-sm" size="md" variant="danger">
-                        {formatCountdown(remainingSeconds)}
-                      </Badge>
-                    )}
-                  </span>
-                  <Button
-                    disabled={remainingSeconds <= 0 || Boolean(undoingId)}
-                    loading={undoingId === notice.id}
-                    onClick={() => handleUndo(notice)}
-                    size="sm"
-                    variant="danger"
-                  >
-                    {notice.kind === "bulk_add"
-                      ? "Undo Bulk Add"
-                      : `Undo${actionLabel ? ` ${actionLabel}` : ""}`}
-                  </Button>
-                </div>
-              </Alert>
-            </div>
-          );
-        })}
         {activeTab === BULK_SCAN_GROUPS.NEW_UNLINKED &&
           (counts?.newUnlinked ?? 0) > 0 && (
             <div className="flex flex-col gap-3 px-4 pt-4 lg:flex-row lg:items-center">

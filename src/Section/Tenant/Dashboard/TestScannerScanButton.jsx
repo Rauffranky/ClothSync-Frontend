@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { Eraser, Plus, Radio, Undo2 } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Eraser, Plus, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../Components/UI/Button";
 import useSocketEvent from "../../../Hooks/useSocketEvent";
@@ -7,26 +7,31 @@ import { getApiErrorMessage } from "../../../axios/api";
 import {
   clearTenantBulkScanSession,
   testTenantBulkAdd,
-  testTenantBulkAddUndo,
 } from "../../../axios/scanners/tenantBulkScan";
 import { SOCKET_EVENTS } from "../../../socket/events";
 import { toast } from "../../../Utils/toast";
 import { setActiveBulkScanSessionId } from "../../../Utils/bulkScanSession";
+import useGlobalUndoNotices, { mergeUndoNotices } from "../../../Hooks/useGlobalUndoNotices";
 
 const TEST_SCAN_PAYLOAD = Object.freeze({
   scannerId: "b6eea2cb-5492-4683-b82e-925ee9c4da1c",
   epcs: Object.freeze([
-  "TEST-EPC-620",
-  "TEST-EPC-621",
-  "TEST-EPC-622",
-  "TEST-EPC-623",
-  "TEST-EPC-624",
-  "TEST-EPC-625",
-  "TEST-EPC-626",
-  "TEST-EPC-627",
-  "TEST-EPC-628",
-  "TEST-EPC-629",
-  //   "TEST-EPC-55",
+  "TEST-EPC-630",
+  "TEST-EPC-631",
+  "TEST-EPC-632",
+  "TEST-EPC-633",
+  "TEST-EPC-634",
+  "TEST-EPC-635",
+  "TEST-EPC-636",
+  "TEST-EPC-637",
+  "TEST-EPC-638",
+  "TEST-EPC-639",
+  "TEST-EPC-640",
+  "TEST-EPC-641",
+  "TEST-EPC-642",
+  "TEST-EPC-643",
+  "TEST-EPC-644",
+  "TEST-EPC-645",
   ]),
 });
 
@@ -38,27 +43,14 @@ const TEST_BULK_ADD_PAYLOAD = Object.freeze({
   description: "Socket testing asset",
 });
 
-const UNDO_WINDOW_SECONDS = 120;
 
 const TestScannerScanButton = () => {
   const navigate = useNavigate();
+  const [, setUndoNotices] = useGlobalUndoNotices();
   const [isResolvingScannerMode, setIsResolvingScannerMode] = useState(false);
   const [isBulkAdding, setIsBulkAdding] = useState(false);
-  const [isUndoing, setIsUndoing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
-  const [undoSecondsRemaining, setUndoSecondsRemaining] = useState(0);
   const [sessionId, setSessionId] = useState(null);
-  const [undoId, setUndoId] = useState(null);
-
-  useEffect(() => {
-    if (undoSecondsRemaining <= 0) return undefined;
-
-    const timer = window.setTimeout(() => {
-      setUndoSecondsRemaining((seconds) => Math.max(0, seconds - 1));
-    }, 1_000);
-
-    return () => window.clearTimeout(timer);
-  }, [undoSecondsRemaining]);
 
   const handleBulkScanEvent = useCallback((data) => {
     console.log("SCANNER BULK EVENT:", data);
@@ -128,13 +120,7 @@ const TestScannerScanButton = () => {
       );
       const undo = response?.data?.undo;
       if (undo?.canUndo && undo?.id) {
-        const expiresAtTime = Date.parse(undo.expiresAt);
-        const expirySeconds = Number.isNaN(expiresAtTime)
-          ? undo.windowSeconds || UNDO_WINDOW_SECONDS
-          : Math.max(0, Math.ceil((expiresAtTime - Date.now()) / 1_000));
-
-        setUndoId(undo.id);
-        setUndoSecondsRemaining(expirySeconds);
+        setUndoNotices((current) => mergeUndoNotices(current, [{ ...undo, kind: "bulk_add" }]));
       } else {
         console.warn("BULK ADD RESPONSE DID NOT INCLUDE AN UNDO ID:", response);
       }
@@ -146,24 +132,6 @@ const TestScannerScanButton = () => {
     }
   };
 
-  const handleTestBulkAddUndo = async () => {
-    if (isUndoing || undoSecondsRemaining <= 0 || !sessionId || !undoId) return;
-
-    setIsUndoing(true);
-    try {
-      const response = await testTenantBulkAddUndo(
-        sessionId,
-        undoId,
-      );
-      setUndoSecondsRemaining(0);
-      setUndoId(null);
-      toast.success(response?.message || "Test bulk add undone successfully");
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to undo the test bulk add"));
-    } finally {
-      setIsUndoing(false);
-    }
-  };
 
   const handleClearSession = async () => {
     if (isClearing || !sessionId) return;
@@ -173,8 +141,6 @@ const TestScannerScanButton = () => {
       const response = await clearTenantBulkScanSession(sessionId);
       setSessionId(null);
       setActiveBulkScanSessionId(null);
-      setUndoId(null);
-      setUndoSecondsRemaining(0);
       toast.success(response?.message || "Test scan session cleared successfully");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Unable to clear the test scan session"));
@@ -183,8 +149,6 @@ const TestScannerScanButton = () => {
     }
   };
 
-  const undoMinutes = Math.floor(undoSecondsRemaining / 60);
-  const undoSeconds = String(undoSecondsRemaining % 60).padStart(2, "0");
 
   return (
     <div className="flex flex-wrap justify-end gap-2">
@@ -206,18 +170,6 @@ const TestScannerScanButton = () => {
         variant="secondary"
       >
         {sessionId ? "Test Bulk Add" : "Run Test Scan First"}
-      </Button>
-      <Button
-        disabled={undoSecondsRemaining <= 0 || !sessionId || !undoId}
-        leftIcon={<Undo2 size={16} />}
-        loading={isUndoing}
-        onClick={handleTestBulkAddUndo}
-        size="sm"
-        variant="danger"
-      >
-        {undoSecondsRemaining > 0
-          ? `Undo Bulk Add (${undoMinutes}:${undoSeconds})`
-          : "Undo Window Expired"}
       </Button>
       <Button
         disabled={!sessionId}

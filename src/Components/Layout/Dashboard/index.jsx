@@ -2,6 +2,7 @@ import { useMemo, useState, Suspense } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import SideBar from "./SideBar";
+import GlobalUndoBanners from "./GlobalUndoBanners";
 
 const DashboardLayout = ({ portalKey }) => {
   const { pathname } = useLocation();
@@ -51,6 +52,7 @@ const DashboardLayout = ({ portalKey }) => {
           </main>
         </div>
       </div>
+      {!pathname.includes("/bulk-scanning") && <GlobalUndoBanners />}
     </div>
   );
 };
