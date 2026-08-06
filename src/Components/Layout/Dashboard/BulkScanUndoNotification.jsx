@@ -76,26 +76,26 @@ const BulkScanUndoNotification = ({
   const renderContent = () => {
     if (directionalMessage) {
       return (
-        <div className="flex min-w-0 flex-1 items-start sm:items-center gap-2">
+        <div className={`flex min-w-0 flex-1 gap-2 ${inline ? "items-start sm:items-center" : "flex-wrap items-center"}`}>
           {inline && <Timer aria-hidden="true" size={18} className="shrink-0 mt-0.5 sm:mt-0 text-(--color-overdue)" />}
           <span className="leading-relaxed">
             {isExpired ? <span>Undo time expired.</span> : directionalMessage}
           </span>
-          {notice.batchCode && <Badge variant="info">Batch {notice.batchCode}</Badge>}
+          {notice.batchCode && <Badge variant="info" className="shrink-0">Batch {notice.batchCode}</Badge>}
         </div>
       );
     }
 
     // Fallback for non-directional (e.g. bulk_add)
     return (
-      <div className="flex min-w-0 flex-1 items-start sm:items-center gap-2">
+      <div className={`flex min-w-0 flex-1 gap-2 ${inline ? "items-start sm:items-center" : "flex-wrap items-center"}`}>
         {inline && <Timer aria-hidden="true" size={18} className="shrink-0 mt-0.5 sm:mt-0 text-(--color-overdue)" />}
         <span className="leading-relaxed flex flex-wrap items-center gap-2">
           {notice.message && <span>{notice.message}</span>}
-          {notice.laundryName && <Badge variant="info">{notice.laundryName}</Badge>}
-          {notice.batchCode && <Badge variant="info">Batch {notice.batchCode}</Badge>}
+          {notice.laundryName && <Badge variant="info" className="shrink-0">{notice.laundryName}</Badge>}
+          {notice.batchCode && <Badge variant="info" className="shrink-0">Batch {notice.batchCode}</Badge>}
           <span>Undo available for</span>
-          <Badge className="font-mono text-sm" size="md" variant="danger">
+          <Badge className="font-mono text-sm shrink-0" size="md" variant="danger">
             {formattedTime}
           </Badge>
         </span>
@@ -153,8 +153,8 @@ const BulkScanUndoNotification = ({
           </div>
         ) : (
           <div className="flex w-full flex-col gap-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex flex-col gap-2 leading-relaxed">
+            <div className="flex w-full items-start justify-between gap-2">
+              <div className="flex min-w-0 flex-1 flex-col gap-2 leading-relaxed">
                 {renderContent()}
               </div>
               {!inline && (

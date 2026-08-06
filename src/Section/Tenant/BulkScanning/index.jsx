@@ -114,6 +114,34 @@ const BulkScanningIndex = () => {
   const requestIdRef = useRef(0);
   const actionRequestControllerRef = useRef(null);
 
+  const handleCountsUpdate = useCallback((newCounts, currentTab) => {
+    setCounts(newCounts);
+    const totalTags =
+      (newCounts?.newUnlinked ?? 0) +
+      (newCounts?.existingLinked ?? 0) +
+      (newCounts?.detached ?? 0);
+    
+    if (totalTags === 0) return;
+
+    const currentHasData =
+      (currentTab === BULK_SCAN_GROUPS.NEW_UNLINKED && (newCounts.newUnlinked ?? 0) > 0) ||
+      (currentTab === BULK_SCAN_GROUPS.EXISTING_LINKED && (newCounts.existingLinked ?? 0) > 0) ||
+      (currentTab === BULK_SCAN_GROUPS.DETACHED && (newCounts.detached ?? 0) > 0);
+
+    if (!currentHasData) {
+      let nextTab = currentTab;
+      if ((newCounts.newUnlinked ?? 0) > 0) nextTab = BULK_SCAN_GROUPS.NEW_UNLINKED;
+      else if ((newCounts.existingLinked ?? 0) > 0) nextTab = BULK_SCAN_GROUPS.EXISTING_LINKED;
+      else if ((newCounts.detached ?? 0) > 0) nextTab = BULK_SCAN_GROUPS.DETACHED;
+
+      if (nextTab !== currentTab) {
+        setActiveBulkScanGroup(nextTab);
+        setCurrentPage(0);
+        setActiveTab(nextTab);
+      }
+    }
+  }, []);
+
   useEffect(() => () => actionRequestControllerRef.current?.abort(), []);
 
   useEffect(() => {
@@ -174,7 +202,7 @@ const BulkScanningIndex = () => {
       setScanner(
         response?.data?.scanner ?? response?.data?.session?.scanner ?? null,
       );
-      setCounts(normalizeBulkScanCounts(response?.data ?? {}));
+      handleCountsUpdate(normalizeBulkScanCounts(response?.data ?? {}), activeTab);
       setCurrentPage(0);
       setIsLoading(true);
       getSocket().emit(SOCKET_EVENTS.SCAN_SESSION_JOIN, { sessionId: nextSessionId });
@@ -190,7 +218,7 @@ const BulkScanningIndex = () => {
         const collection = normalizeBulkScanEntriesResponse(entriesResponse);
         if (collection.session) setSession(collection.session);
         if (collection.scanner) setScanner(collection.scanner);
-        setCounts(collection.counts);
+        handleCountsUpdate(collection.counts, activeTab);
         setRows(collection.rows);
         setPagination(collection.pagination);
         setLastEpc(collection.rows[0]?.epc ?? null);
@@ -256,7 +284,7 @@ const BulkScanningIndex = () => {
       const collection = normalizeBulkScanEntriesResponse(response);
       if (collection.session) setSession(collection.session);
       if (collection.scanner) setScanner(collection.scanner);
-      setCounts(collection.counts);
+      handleCountsUpdate(collection.counts, activeTab);
       setRows(collection.rows);
       setPagination(collection.pagination);
       setLastEpc(collection.rows[0]?.epc ?? null);
@@ -310,7 +338,7 @@ const BulkScanningIndex = () => {
     const applySession = (nextSession) => {
       if (!nextSession) return;
       setSession(nextSession);
-      setCounts(normalizeBulkScanCounts({ session: nextSession }));
+      handleCountsUpdate(normalizeBulkScanCounts({ session: nextSession }), activeTab);
 
       if (nextSession.id && nextSession.id !== sessionId) {
         setIsLoading(true);
