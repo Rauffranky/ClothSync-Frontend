@@ -328,7 +328,7 @@ const TagsTable = ({ onCountsChange }) => {
             {
               label: "View Details",
               icon: Eye,
-              onClick: () => navigate(`/business/tags/${row.id}`),
+              onClick: () => navigate(`/business/tags/${row.apiId || row.id}`),
             },
             { label: "View History", icon: History },
             {
