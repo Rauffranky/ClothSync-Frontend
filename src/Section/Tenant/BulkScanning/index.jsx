@@ -313,7 +313,7 @@ const BulkScanningIndex = () => {
     } finally {
       if (requestId === requestIdRef.current) setIsLoading(false);
     }
-  }, [activeTab, currentPage, sessionId]);
+  }, [activeTab, currentPage, handleCountsUpdate, sessionId]);
 
   useEffect(() => {
     if (!sessionId) return undefined;
@@ -455,7 +455,7 @@ const BulkScanningIndex = () => {
       socket.off(SOCKET_EVENTS.SCAN_SESSION_CLEARED, handleSessionCleared);
       socket.off(SOCKET_EVENTS.SCAN_SESSION_FINISHED, handleSessionFinished);
     };
-  }, [activeTab, currentPage, fetchEntries, sessionId, setUndoNotices]);
+  }, [activeTab, currentPage, fetchEntries, handleCountsUpdate, sessionId, setUndoNotices]);
 
   const tabs = BULK_SCAN_TABS.map((tab) => ({
     ...tab,
