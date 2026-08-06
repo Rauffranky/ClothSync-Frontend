@@ -581,6 +581,23 @@ const BulkScanningIndex = () => {
     }
   };
 
+  const getManualScanSuggestion = () => {
+    if (!pendingManualScan?.epcs || rows.length === 0) return null;
+    const scannedEpcs = pendingManualScan.epcs;
+    const matchedRows = rows.filter(r => scannedEpcs.includes(r.epc));
+    if (matchedRows.length === 0) return null;
+
+    const returnedCount = matchedRows.filter(r => r.status === "Returned" || r.status === "in_laundry").length;
+    const dispatchedCount = matchedRows.filter(r => r.status === "Dispatched" || r.status === "in_business").length;
+
+    if (returnedCount > 0 && returnedCount >= dispatchedCount) {
+      return "💡 Suggestion: These tags appear to be already Checked In (Returned). You likely want to Check Out.";
+    } else if (dispatchedCount > 0 && dispatchedCount > returnedCount) {
+      return "💡 Suggestion: These tags appear to be already Checked Out (Dispatched). You likely want to Check In.";
+    }
+    return null;
+  };
+
   return (
     <div className="w-full space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -725,7 +742,7 @@ const BulkScanningIndex = () => {
 
       <Modal
         closeOnBackdrop={false}
-        description="This manual scanner requires an action before its tags can be staged. You can still review and override pending rows from the Existing Linked Tags Action menu."
+        description="Please select the intended action for these tags. The selected action will be applied immediately to all valid scanned tags."
         footer={(
           <>
             <Button
@@ -755,9 +772,16 @@ const BulkScanningIndex = () => {
         title="Select Scan Action"
         width={520}
       >
-        <Alert variant="info">
-          Choose the intended direction for {pendingManualScan?.epcs?.length ?? 0} scanned tags.
-        </Alert>
+        <div className="space-y-3">
+          <Alert variant="info">
+            Choose the intended direction for {pendingManualScan?.epcs?.length ?? 0} scanned tags.
+          </Alert>
+          {getManualScanSuggestion() && (
+            <Alert variant="warning" className="text-sm">
+              {getManualScanSuggestion()}
+            </Alert>
+          )}
+        </div>
       </Modal>
 
     </div>
