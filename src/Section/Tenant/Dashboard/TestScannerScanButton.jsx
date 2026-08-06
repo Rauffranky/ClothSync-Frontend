@@ -11,16 +11,18 @@ import {
 import { SOCKET_EVENTS } from "../../../socket/events";
 import { toast } from "../../../Utils/toast";
 import { setActiveBulkScanSessionId } from "../../../Utils/bulkScanSession";
-import useGlobalUndoNotices, { mergeUndoNotices } from "../../../Hooks/useGlobalUndoNotices";
+import useGlobalUndoNotices, {
+  mergeUndoNotices,
+} from "../../../Hooks/useGlobalUndoNotices";
 
 const TEST_SCAN_PAYLOAD = Object.freeze({
   scannerId: "ad27d052-f553-4ecf-ab4c-54a878ae2cc9",
   epcs: Object.freeze([
-  "TEST-EPC-1",
-  "TEST-EPC-2",
-  "TEST-EPC-3",
-  "TEST-EPC-4",
-  "TEST-EPC-5",
+    "TEST-EPC-1",
+    "TEST-EPC-2",
+    "TEST-EPC-3",
+    "TEST-EPC-4",
+    "TEST-EPC-5",
   ]),
 });
 
@@ -31,7 +33,6 @@ const TEST_BULK_ADD_PAYLOAD = Object.freeze({
   washLimit: 100,
   description: "Socket testing asset",
 });
-
 
 const TestScannerScanButton = () => {
   const navigate = useNavigate();
@@ -64,19 +65,10 @@ const TestScannerScanButton = () => {
   }, []);
 
   useSocketEvent(SOCKET_EVENTS.SCANNER_SCAN_BULK, handleBulkScanEvent);
-  useSocketEvent(
-    SOCKET_EVENTS.SCAN_SESSION_UPDATED,
-    handleSessionUpdatedEvent,
-  );
+  useSocketEvent(SOCKET_EVENTS.SCAN_SESSION_UPDATED, handleSessionUpdatedEvent);
   useSocketEvent(SOCKET_EVENTS.SCAN_BULK_ADDED, handleBulkAddedEvent);
-  useSocketEvent(
-    SOCKET_EVENTS.SCAN_BULK_ADD_UNDONE,
-    handleBulkAddUndoneEvent,
-  );
-  useSocketEvent(
-    SOCKET_EVENTS.SCAN_SESSION_CLEARED,
-    handleSessionClearedEvent,
-  );
+  useSocketEvent(SOCKET_EVENTS.SCAN_BULK_ADD_UNDONE, handleBulkAddUndoneEvent);
+  useSocketEvent(SOCKET_EVENTS.SCAN_SESSION_CLEARED, handleSessionClearedEvent);
 
   const handleTestScan = async () => {
     if (isResolvingScannerMode) return;
@@ -92,7 +84,9 @@ const TestScannerScanButton = () => {
         state: { automaticTestScan: { payload: scanPayload } },
       });
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to determine scanner mode"));
+      toast.error(
+        getApiErrorMessage(error, "Unable to determine scanner mode"),
+      );
     } finally {
       setIsResolvingScannerMode(false);
     }
@@ -109,18 +103,21 @@ const TestScannerScanButton = () => {
       );
       const undo = response?.data?.undo;
       if (undo?.canUndo && undo?.id) {
-        setUndoNotices((current) => mergeUndoNotices(current, [{ ...undo, kind: "bulk_add" }]));
+        setUndoNotices((current) =>
+          mergeUndoNotices(current, [{ ...undo, kind: "bulk_add" }]),
+        );
       } else {
         console.warn("BULK ADD RESPONSE DID NOT INCLUDE AN UNDO ID:", response);
       }
-      toast.success(response?.message || "Test bulk add completed successfully");
+      toast.success(
+        response?.message || "Test bulk add completed successfully",
+      );
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Unable to run the test bulk add"));
     } finally {
       setIsBulkAdding(false);
     }
   };
-
 
   const handleClearSession = async () => {
     if (isClearing || !sessionId) return;
@@ -130,14 +127,17 @@ const TestScannerScanButton = () => {
       const response = await clearTenantBulkScanSession(sessionId);
       setSessionId(null);
       setActiveBulkScanSessionId(null);
-      toast.success(response?.message || "Test scan session cleared successfully");
+      toast.success(
+        response?.message || "Test scan session cleared successfully",
+      );
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to clear the test scan session"));
+      toast.error(
+        getApiErrorMessage(error, "Unable to clear the test scan session"),
+      );
     } finally {
       setIsClearing(false);
     }
   };
-
 
   return (
     <div className="flex flex-wrap justify-end gap-2">

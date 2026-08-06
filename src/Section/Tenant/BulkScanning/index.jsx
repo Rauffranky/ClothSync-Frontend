@@ -60,7 +60,19 @@ const emptyPagination = {
 const getEventSession = (payload) =>
   payload?.data?.session ?? payload?.session ?? null;
 
-const getEventUndo = (payload) => payload?.data?.undo ?? payload?.undo ?? null;
+const getEventUndoNotice = (data) => {
+  const payload = data?.data ?? data ?? {};
+  const notif = payload.notification ?? {};
+  const undo = notif.undo ?? payload.undo ?? null;
+  if (!undo?.id || !undo?.expiresAt) return null;
+  
+  return {
+    ...undo,
+    kind: "bulk_add",
+    tagCount: notif.tagCount ?? payload.processedCount ?? 0,
+    assetName: notif.assetName ?? payload.asset?.assetName ?? null,
+  };
+};
 
 const getInitialActiveTab = () => {
   const savedGroup = getActiveBulkScanGroup();
@@ -362,12 +374,9 @@ const BulkScanningIndex = () => {
     const handleSessionUpdated = (data) => applySession(getEventSession(data));
     const handleEntriesUpdated = () => fetchEntries();
     const handleBulkAdded = (data) => {
-      const undo = getEventUndo(data);
-      if (undo?.id && undo?.expiresAt) {
-        setUndoNotices((current) => mergeUndoNotices(current, [{
-          ...undo,
-          kind: "bulk_add",
-        }]));
+      const notice = getEventUndoNotice(data);
+      if (notice) {
+        setUndoNotices((current) => mergeUndoNotices(current, [notice]));
       }
       fetchEntries();
     };
@@ -461,12 +470,9 @@ const BulkScanningIndex = () => {
 
   const handleBulkAddSuccess = async (response) => {
     setIsBulkAddOpen(false);
-    const undo = response?.data?.undo;
-    if (undo?.id && undo?.expiresAt) {
-      setUndoNotices((current) => mergeUndoNotices(current, [{
-        ...undo,
-        kind: "bulk_add",
-      }]));
+    const notice = getEventUndoNotice(response);
+    if (notice) {
+      setUndoNotices((current) => mergeUndoNotices(current, [notice]));
     }
     setCurrentPage(0);
     await fetchEntries();

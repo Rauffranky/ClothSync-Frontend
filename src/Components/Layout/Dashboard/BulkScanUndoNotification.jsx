@@ -58,6 +58,16 @@ const BulkScanUndoNotification = ({
         </span>
       );
     }
+    if (notice.kind === "bulk_add") {
+      const tagCount = notice.tagCount ?? notice.processedCount ?? 0;
+      const assetName = notice.assetName || "Asset";
+      return (
+        <span>
+          {tagCount} new Laundry tag(s) registered successfully and linked to <strong>{assetName}</strong>. You can undo this action in{" "}
+          <strong className="font-mono">{formattedTime}</strong>.
+        </span>
+      );
+    }
     return null;
   };
 
@@ -66,34 +76,32 @@ const BulkScanUndoNotification = ({
   const renderContent = () => {
     if (directionalMessage) {
       return (
-        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          {inline && <Timer aria-hidden="true" size={18} className="shrink-0 text-(--color-overdue)" />}
-          {isExpired ? <span>Undo time expired.</span> : directionalMessage}
+        <div className="flex min-w-0 flex-1 items-start sm:items-center gap-2">
+          {inline && <Timer aria-hidden="true" size={18} className="shrink-0 mt-0.5 sm:mt-0 text-(--color-overdue)" />}
+          <span className="leading-relaxed">
+            {isExpired ? <span>Undo time expired.</span> : directionalMessage}
+          </span>
           {notice.batchCode && <Badge variant="info">Batch {notice.batchCode}</Badge>}
-        </span>
+        </div>
       );
     }
 
     // Fallback for non-directional (e.g. bulk_add)
     return (
-      <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-        {inline && <Timer aria-hidden="true" size={18} className="shrink-0 text-(--color-overdue)" />}
-        {notice.message && <span>{notice.message}</span>}
-        {notice.laundryName && <Badge variant="info">{notice.laundryName}</Badge>}
-        {notice.batchCode && <Badge variant="info">Batch {notice.batchCode}</Badge>}
-        <span>Undo available for</span>
-        <Badge className="font-mono text-sm" size="md" variant="danger">
-          {formattedTime}
-        </Badge>
-      </span>
+      <div className="flex min-w-0 flex-1 items-start sm:items-center gap-2">
+        {inline && <Timer aria-hidden="true" size={18} className="shrink-0 mt-0.5 sm:mt-0 text-(--color-overdue)" />}
+        <span className="leading-relaxed flex flex-wrap items-center gap-2">
+          {notice.message && <span>{notice.message}</span>}
+          {notice.laundryName && <Badge variant="info">{notice.laundryName}</Badge>}
+          {notice.batchCode && <Badge variant="info">Batch {notice.batchCode}</Badge>}
+          <span>Undo available for</span>
+          <Badge className="font-mono text-sm" size="md" variant="danger">
+            {formattedTime}
+          </Badge>
+        </span>
+      </div>
     );
   };
-
-  const actionLabel = notice.action === "check_in"
-    ? "Check In"
-    : notice.action === "check_out"
-      ? "Check Out"
-      : null;
 
   const renderButtons = () => (
     <>
@@ -105,11 +113,7 @@ const BulkScanUndoNotification = ({
         size="sm"
         variant="danger"
       >
-        {isUndoing
-          ? "Undoing..."
-          : notice.kind === "bulk_add"
-            ? "Undo Bulk Add"
-            : `Undo${actionLabel ? ` ${actionLabel}` : ""}`}
+        {isUndoing ? "Undoing..." : "Undo"}
       </Button>
       {!inline && (
         <button
@@ -138,7 +142,7 @@ const BulkScanUndoNotification = ({
         leftIcon={!inline ? <Timer aria-hidden="true" size={18} /> : undefined}
       >
         {inline ? (
-          <div className="flex w-full flex-wrap items-center justify-between gap-3">
+          <div className="flex w-full items-start sm:items-center justify-between gap-3">
             {renderContent()}
             <div className="flex shrink-0 items-center gap-3">
               {isExpired && !directionalMessage ? (
@@ -176,11 +180,7 @@ const BulkScanUndoNotification = ({
                   size="sm"
                   variant="danger"
                 >
-                  {isUndoing
-                    ? "Undoing..."
-                    : notice.kind === "bulk_add"
-                      ? "Undo Bulk Add"
-                      : `Undo${actionLabel ? ` ${actionLabel}` : ""}`}
+                  {isUndoing ? "Undoing..." : "Undo"}
                 </Button>
               )}
             </div>

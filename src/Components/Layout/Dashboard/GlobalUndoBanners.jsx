@@ -10,7 +10,19 @@ import { SOCKET_EVENTS } from "../../../socket/events";
 import { mergeUndoNotices } from "../../../Hooks/useGlobalUndoNotices";
 import BulkScanUndoNotification from "./BulkScanUndoNotification";
 
-const getEventUndo = (payload) => payload?.data?.undo ?? payload?.undo ?? null;
+const getEventUndoNotice = (data) => {
+  const payload = data?.data ?? data ?? {};
+  const notif = payload.notification ?? {};
+  const undo = notif.undo ?? payload.undo ?? null;
+  if (!undo?.id || !undo?.expiresAt) return null;
+  
+  return {
+    ...undo,
+    kind: "bulk_add",
+    tagCount: notif.tagCount ?? payload.processedCount ?? 0,
+    assetName: notif.assetName ?? payload.asset?.assetName ?? null,
+  };
+};
 
 const GlobalUndoBanners = ({ inline = false }) => {
   const [undoNotices, setUndoNotices] = useGlobalUndoNotices();
@@ -24,9 +36,9 @@ const GlobalUndoBanners = ({ inline = false }) => {
     const socket = getSocket();
 
     const handleBulkAdded = (data) => {
-      const undo = getEventUndo(data);
-      if (undo?.id && undo?.expiresAt) {
-        setUndoNotices((current) => mergeUndoNotices(current, [{ ...undo, kind: "bulk_add" }]));
+      const notice = getEventUndoNotice(data);
+      if (notice) {
+        setUndoNotices((current) => mergeUndoNotices(current, [notice]));
       }
     };
 

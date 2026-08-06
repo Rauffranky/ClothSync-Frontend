@@ -1,4 +1,4 @@
-  import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   Box,
@@ -28,7 +28,6 @@ import ActivityLogTab from "./Tabs/ActivityLogTab";
 import DispatchBatchesTab from "./Tabs/DispatchBatchesTab";
 import InventoryTab from "./Tabs/InventoryTab";
 import OverviewTab from "./Tabs/OverviewTab";
-
 
 const getDetailValue = (value) =>
   value === null || value === undefined || value === ""
@@ -194,17 +193,21 @@ const LinkedLaundryDetail = () => {
     },
   ];
 
-
-
   const contactItems = [
-    { label: "Contact Name", value: laundryDetails.contact.name, icon: UserRound },
+    {
+      label: "Contact Name",
+      value: laundryDetails.contact.name,
+      icon: UserRound,
+    },
     { label: "Contact Email", value: laundryDetails.contact.email, icon: Mail },
-    { label: "Contact Phone", value: laundryDetails.contact.phone, icon: Phone },
+    {
+      label: "Contact Phone",
+      value: laundryDetails.contact.phone,
+      icon: Phone,
+    },
     { label: "Location", value: laundryDetails.contact.address, icon: MapPin },
     { label: "Country", value: laundryDetails.contact.country, icon: Globe2 },
   ];
-
- 
 
   const tabOptions = [
     { label: "Overview", value: "overview" },
@@ -242,14 +245,16 @@ const LinkedLaundryDetail = () => {
             </Badge>
           )}
         </div>
-        <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-muted)">
-          View the complete laundry relationship, profile, account, and activity summary.
-        </p>
       </div>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {statCards.map(({ icon, label, value, variant }) => (
-          <Card className="flex flex-col justify-between" key={label} padding="16px" rounded="16px">
+          <Card
+            className="flex flex-col justify-between"
+            key={label}
+            padding="16px"
+            rounded="16px"
+          >
             <IconWrapper
               icon={icon}
               iconSize={16}
@@ -300,7 +305,11 @@ const LinkedLaundryDetail = () => {
 
         <div className="border-t border-(--theme-border)">
           <div className="overflow-x-auto px-5 pt-4 sm:px-6">
-            <Tabs items={tabOptions} onChange={setActiveTab} value={activeTab} />
+            <Tabs
+              items={tabOptions}
+              onChange={setActiveTab}
+              value={activeTab}
+            />
           </div>
           <div className="rounded-b-[20px] bg-(--theme-surface-strong) p-4 sm:p-6">
             {activeTab === "overview" && <OverviewTab />}
