@@ -623,6 +623,7 @@ const ScannerTable = ({
       />
 
       <AddScannerModal
+        getStaffMembers={getStaffMembers}
         initialValues={editScannerState.scanner || undefined}
         isOpen={editScannerState.isOpen}
         mode="edit"

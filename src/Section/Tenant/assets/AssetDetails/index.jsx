@@ -1,20 +1,43 @@
-import { useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import Tabs from "../../../../Components/UI/Tabs";
+import { getTenantAssetDetails } from "../../../../axios/assets/tenantAssets";
 import HeaderCard from "./HeaderCard";
 import RFIDCard from "./RFIDCard";
 import LifecycleCard from "./LifecycleCard";
 import { TAB_COMPONENTS } from "./components";
-import { assetDetailData } from "./data";
+import { assetDetailData, normalizeAssetDetailResponse } from "./data";
 import Card from "../../../../Components/UI/Card";
 
 const AssetDetailsIndex = () => {
-    const data = assetDetailData;
+    const { id } = useParams();
+    const [data, setData] = useState(assetDetailData);
     const [searchParams, setSearchParams] = useSearchParams();
     const tabLabels = useMemo(() => data.tabs.map((tab) => tab.label), [data.tabs]);
     const requestedTab = searchParams.get("tab");
     const activeTab = tabLabels.includes(requestedTab) ? requestedTab : "Overview";
     const ActiveTabComponent = TAB_COMPONENTS[activeTab];
+
+    useEffect(() => {
+        let isActive = true;
+
+        getTenantAssetDetails(id)
+            .then((response) => {
+                if (isActive) {
+                    console.log("Tenant asset detail response:", response);
+                    setData(normalizeAssetDetailResponse(response));
+                }
+            })
+            .catch((error) => {
+                if (isActive) {
+                    console.error("Unable to load tenant asset details:", error.message);
+                }
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, [id]);
 
     const handleTabChange = (nextTab) => {
         setSearchParams((currentParams) => {

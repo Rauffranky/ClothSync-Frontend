@@ -22,3 +22,8 @@ export const updateLaundryScannerStatus = (id, status) =>
     { status },
     { timeout: 15000 },
   );
+
+export const clearLaundryScannerSession = (sessionId) =>
+  api.put(LAUNDRY_SCANNER_ENDPOINTS.CLEAR_SESSION(sessionId), undefined, {
+    timeout: 15000,
+  });

@@ -6,3 +6,8 @@ export const getTenantAssets = (params, language = "en") =>
     params,
     headers: { "x-language": language },
   });
+
+export const getTenantAssetDetails = (id, language = "en") =>
+  api.get(TENANT_ASSET_ENDPOINTS.DETAILS(id), {
+    headers: { "x-language": language },
+  });

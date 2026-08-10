@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import DashboardLayout from "../Components/Layout/Dashboard";
 import LandingLayout from "../Components/Layout/Landing";
 import PermissionRoute from "./PermissionRoute";
+import ProtectedRoute from "./ProtectedRoute";
+import PublicRoute from "./PublicRoute";
 
 // ============================================================================
 // LAZY LOADED PAGES
@@ -33,6 +35,7 @@ const LaundryReportAnalyticsPage = lazy(() => import("../Page/Dashboard/Laundry/
 const LaundryScannersPage = lazy(() => import("../Page/Dashboard/Laundry/ScannersPage"));
 const LaundryScannerWarningsPage = lazy(() => import("../Page/Dashboard/Laundry/ScannerWarningsPage"));
 const LaundryScannerDetailsPage = lazy(() => import("../Page/Dashboard/Laundry/ScannerDetailsPage"));
+const LaundryIncomingBatchesPage = lazy(() => import("../Page/Dashboard/Laundry/IncomingBatchesPage"));
 
 //Tenant 
 const AssetsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetsPage"));
@@ -60,12 +63,12 @@ const AppRoutes = () => {
         {/* Auth Routes without landing header/footer */}
         <Route path="/login" element={<Navigate to="/business/login" replace />} />
         <Route path="/signup" element={<Navigate to="/business/signup" replace />} />
-        <Route path="/superadmin/login" element={<SuperAdminLoginPage />} />
-        <Route path="/business/login" element={<AuthPage defaultMode="login" defaultRole="business" />} />
-        <Route path="/business/signup" element={<AuthPage defaultMode="signup" defaultRole="business" />} />
+        <Route path="/superadmin/login" element={<PublicRoute portal="superadmin"><SuperAdminLoginPage /></PublicRoute>} />
+        <Route path="/business/login" element={<PublicRoute portal="business"><AuthPage defaultMode="login" defaultRole="business" /></PublicRoute>} />
+        <Route path="/business/signup" element={<PublicRoute portal="business"><AuthPage defaultMode="signup" defaultRole="business" /></PublicRoute>} />
         <Route path="/business/staff/verify-email" element={<StaffEmailVerificationPage />} />
-        <Route path="/laundry/login" element={<AuthPage defaultMode="login" defaultRole="laundry" />} />
-        <Route path="/laundry/signup" element={<AuthPage defaultMode="signup" defaultRole="laundry" />} />
+        <Route path="/laundry/login" element={<PublicRoute portal="laundry"><AuthPage defaultMode="login" defaultRole="laundry" /></PublicRoute>} />
+        <Route path="/laundry/signup" element={<PublicRoute portal="laundry"><AuthPage defaultMode="signup" defaultRole="laundry" /></PublicRoute>} />
         <Route path="/laundry/staff/verify-email" element={<LaundryStaffEmailVerificationPage />} />
         <Route path="/laundry/invite" element={<LaundryInvitationPage />} />
         <Route path="/laundry/handle-invite" element={<LaundryInvitationPage />} />
@@ -77,7 +80,7 @@ const AppRoutes = () => {
         </Route>
 
         {/* Portal Routes with DashboardLayout */}
-        <Route element={<DashboardLayout />}>
+        <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
           {/* Default redirect to superadmin dashboard */}
           <Route
             path="/"
@@ -133,6 +136,14 @@ const AppRoutes = () => {
             element={
               <PermissionRoute permissionKey="linked_tenants">
                 <LaundryLinkedBusinessDetailsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/laundry/incoming-batches"
+            element={
+              <PermissionRoute permissionKey="incoming_batches">
+                <LaundryIncomingBatchesPage />
               </PermissionRoute>
             }
           />

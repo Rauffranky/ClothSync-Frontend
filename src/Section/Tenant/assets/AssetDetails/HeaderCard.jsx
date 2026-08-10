@@ -22,7 +22,7 @@ const HeaderCard = ({ data }) => {
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                             <h2 className="m-0 text-2xl font-bold text-(--theme-text-primary)">
-                                {data.name}
+                                {data.assetName || "—"}
                             </h2>
                             <p className="m-0 mt-1 font-mono text-sm font-semibold text-(--theme-text-muted)">
                                 {data.id}

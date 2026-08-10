@@ -159,8 +159,12 @@ corresponding route. Do not mistake navigation entries for completed pages. When
 adding/removing a screen, reconcile the route, Page, Section, sidebar entry,
 portal permissions, links, and 404 behavior.
 
-There is currently no route guard around `DashboardLayout`. Do not describe the
-dashboard as route-protected until a real guard is implemented and verified.
+`DashboardLayout` is wrapped by `ProtectedRoute`, which requires the current-tab
+access token and redirects unauthenticated Business, Laundry, and Super Admin
+requests to their portal login while preserving the requested location. Login
+and signup screens use `PublicRoute` to redirect authenticated sessions to the
+relevant dashboard; invitation and verification routes remain accessible to all.
+Laundry `PermissionRoute` checks run inside the authentication boundary.
 
 ## 6. Portal and layout behavior
 
@@ -183,6 +187,39 @@ Re-check these facts in source during every related task.
 
 Confirmed API-backed areas:
 
+- Laundry scanner management uses `POST /laundry-scanners/create`,
+  `GET /laundry-scanners/show`, `GET /laundry-scanners/show/:id`,
+  `GET /laundry-scanners/warnings`,
+  `PUT /laundry-scanners/update/:id`, and
+  `PUT /laundry-scanners/update-status/:id`. Scanner stat cards consume the
+  `{ key, label, count }[]` collection returned under `data.counts` by the list
+  request; no separate Laundry summary request is made.
+- Laundry Incoming Batches is implemented at `/laundry/incoming-batches` behind
+  the `incoming_batches` view permission. It lists dispatched batches through
+  `GET /laundry-batches/incoming` with server pagination, optional `keywords`,
+  and URL-backed Incoming (`status=dispatched`), Received (`status=received`),
+  and Delayed (`status=delayed`) tabs. The sidebar labels this feature Batches,
+  and its list/detail UI is read-only operational tracking.
+- The Laundry Dashboard owns incoming/received-batch scanning. Its selector can
+  load dispatched batches (`status=dispatched`) for Check In or received batches
+  (`status=received`) for Check Out from `GET /laundry-batches/incoming`, plus
+  active assigned scanners from `GET /laundry-scanners/show`, then fetches the selected batch
+  through `GET /laundry-batches/incoming/:batchId`. Scans call
+  `POST /laundry-scanners/test-scanner-scan` with `scannerId`, `batchId`, reused
+  `sessionId`, and every EPC from the selected batch detail. Opening Entry, Exit,
+  or Auto scanners automatically submits the full batch without EPC input or a
+  separate scan button; Manual scanners require one `scanAction` choice as
+  `check_in` or `check_out` and then automatically submit the full batch. Entry,
+  Exit, and Auto scanners let the backend derive and perform the action. The batch list and detail are refetched after each
+  successful scan request. The separate batch Receive API is not used because
+  scanning performs Check In/Check Out immediately. Clear confirmation uses
+  `PUT /laundry-scanners/sessions/:sessionId/clear` and only clears scan history;
+  it does not undo completed item actions.
+- Tenant asset details call `GET /tenant-assets/show/:id` when the Business
+  asset-detail route opens. The response's nested `data.asset` and `data.overview`
+  objects populate the existing header, RFID, lifecycle, overview, and returned
+  tag-history fields; unavailable histories render as empty collections. The full
+  backend response payload is also logged to the browser console.
 - Business and Laundry logins call their respective login APIs and store session information.
 - Laundry staff login permissions are read from the stored authenticated user.
   The Laundry sidebar shows only modules whose permission has `view: true`, and

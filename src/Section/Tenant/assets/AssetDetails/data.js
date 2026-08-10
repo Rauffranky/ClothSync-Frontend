@@ -1,3 +1,91 @@
+import { formatDateTime } from "../../../../Utils/date";
+import { formatStatusLabel } from "../../../../Utils/status";
+
+const statusVariants = {
+    in_business: "success",
+    sent_to_laundry: "warning",
+    at_laundry: "purple",
+    washed: "info",
+    returned: "info",
+    delayed: "danger",
+    missing: "danger",
+    retired: "neutral",
+    inactive: "danger",
+};
+
+const lifecycleSteps = [
+    { key: "in_business", label: "In Business", variant: "success" },
+    { key: "sent_to_laundry", label: "Sent to Laundry", variant: "warning" },
+    { key: "at_laundry", label: "In Laundry", variant: "purple" },
+    { key: "washed", label: "Sent to Business", variant: "info" },
+    { key: "returned", label: "Returned", variant: "neutral" },
+];
+
+export const normalizeAssetDetailResponse = (response = {}) => {
+    const payload = response?.data || response;
+    const asset = payload?.asset || {};
+    const overview = payload?.overview || {};
+    const tags = Array.isArray(asset.tags) ? asset.tags : [];
+    const primaryTag = tags[0] || {};
+    const currentStepIndex = lifecycleSteps.findIndex((step) => step.key === asset.status);
+    const status = asset.statusLabel || formatStatusLabel(asset.status);
+
+    return {
+        id: asset.assetCode || asset.id || "—",
+        assetName: asset.assetName || asset.translations?.en?.assetName || "—",
+        category: asset.category?.title || asset.category?.translations?.en?.title || "—",
+        categoryType: asset.category?.categoryCode || "—",
+        zone: asset.zoneName || asset.translations?.en?.zoneName || "—",
+        status,
+        statusVariant: statusVariants[asset.status] || "neutral",
+        assignedLaundry: asset.assignedLaundryLink?.laundry?.companyName || "—",
+        lastScanned: formatDateTime(asset.lastScannedAt || overview.lastScan),
+        lastScanLocation: asset.lastScanLocation || overview.location || "—",
+        washCount: Number(asset.washCount) || 0,
+        maxWash: Number(asset.washLimit) || 0,
+        description: asset.description || asset.translations?.en?.description || "No description provided",
+        recentReads: Number(overview.recentReads) || 0,
+        operator: overview.operator || null,
+        rfid: {
+            tagEpc: primaryTag.epc || "—",
+            tagId: primaryTag.tagCode || "—",
+            linkedDate: "—",
+            previousTag: null,
+        },
+        currentBatch: {
+            id: asset.lastLaundryBatchId || "—",
+            status,
+            date: formatDateTime(asset.lastScannedAt || overview.lastScan, false),
+        },
+        lifecycle: lifecycleSteps.map((step, index) => ({
+            label: step.label,
+            variant: step.variant,
+            active: currentStepIndex >= 0 && index <= currentStepIndex,
+        })),
+        tabs: [
+            { label: "Overview", count: null },
+            { label: "Asset Timeline", count: 0 },
+            { label: "Batch History", count: 0 },
+            { label: "Tag History", count: tags.length },
+            { label: "Audit Logs", count: 0 },
+            { label: "Exceptions", count: 0 },
+        ],
+        timeline: [],
+        batchHistory: [],
+        tagHistory: tags.map((tag) => ({
+            id: tag.tagCode || tag.id,
+            epc: tag.epc || "—",
+            status: formatStatusLabel(tag.mappingStatus || tag.tagStatus),
+            variant: tag.mappingStatus === "linked" ? "success" : "neutral",
+            linkedDate: "—",
+            unlinkedDate: null,
+            reason: "—",
+        })),
+        auditLogs: [],
+        exceptions: [],
+    };
+};
+
 export const assetDetailData = {
     id: "LNS-BED-0041",
     name: "King Duvet Cover",

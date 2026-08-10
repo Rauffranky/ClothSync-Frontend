@@ -54,6 +54,7 @@ export const TENANT_TAG_ENDPOINTS = Object.freeze({
 
 export const TENANT_ASSET_ENDPOINTS = Object.freeze({
   LIST: "/tenant-assets/show",
+  DETAILS: (id) => `/tenant-assets/show/${id}`,
 });
 
 export const TENANT_DISPATCH_BATCH_ENDPOINTS = Object.freeze({
@@ -86,11 +87,19 @@ export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
 
 export const LAUNDRY_SCANNER_ENDPOINTS = Object.freeze({
   CREATE: "/laundry-scanners/create",
+  TEST_SCANNER_SCAN: "/laundry-scanners/test-scanner-scan",
   LIST: "/laundry-scanners/show",
   DETAILS: (id) => `/laundry-scanners/show/${id}`,
   WARNINGS: "/laundry-scanners/warnings",
   UPDATE: (id) => `/laundry-scanners/update/${id}`,
   UPDATE_STATUS: (id) => `/laundry-scanners/update-status/${id}`,
+  CLEAR_SESSION: (sessionId) =>
+    `/laundry-scanners/sessions/${sessionId}/clear`,
+});
+
+export const LAUNDRY_BATCH_ENDPOINTS = Object.freeze({
+  INCOMING: "/laundry-batches/incoming",
+  INCOMING_DETAILS: (batchId) => `/laundry-batches/incoming/${batchId}`,
 });
 
 export const TENANT_STAFF_ROLE_ENDPOINTS = Object.freeze({

@@ -46,21 +46,23 @@ const RFIDCard = ({ data }) => {
         </div>
       </div>
 
-      <Alert variant="orange" rounded="rounded-xl">
-        <div className="flex flex-col gap-1">
-          <div className="text-xs font-bold uppercase tracking-wider">
-            Previous Tag
+      {data.rfid.previousTag && (
+        <Alert variant="orange" rounded="rounded-xl">
+          <div className="flex flex-col gap-1">
+            <div className="text-xs font-bold uppercase tracking-wider">
+              Previous Tag
+            </div>
+            <div className="text-xs font-bold">{data.rfid.previousTag.id}</div>
+            <div className="text-[11px] font-medium opacity-80">
+              {data.rfid.previousTag.epc}
+            </div>
+            <div className="text-[11px] font-medium">
+              Unlinked {data.rfid.previousTag.unlinkedDate} —{" "}
+              {data.rfid.previousTag.reason}
+            </div>
           </div>
-          <div className="text-xs font-bold">{data.rfid.previousTag.id}</div>
-          <div className="text-[11px] font-medium opacity-80">
-            {data.rfid.previousTag.epc}
-          </div>
-          <div className="text-[11px] font-medium">
-            Unlinked {data.rfid.previousTag.unlinkedDate} —{" "}
-            {data.rfid.previousTag.reason}
-          </div>
-        </div>
-      </Alert>
+        </Alert>
+      )}
     </Card>
   );
 };

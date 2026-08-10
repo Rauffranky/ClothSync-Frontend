@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { ArrowLeft, KeyRound, LockKeyhole, Mail } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Button from "../Components/UI/Button";
 import Card from "../Components/UI/Card";
 import Input from "../Components/UI/Input";
@@ -88,6 +88,7 @@ const forgotStepContent = {
 
 const Login = ({ portal }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [authFlow, setAuthFlow] = useState("login");
   const [forgotStep, setForgotStep] = useState("email");
   const isForgotFlow = authFlow === "forgot";
@@ -148,8 +149,12 @@ const Login = ({ portal }) => {
           connectSocket();
 
           toast.success(response?.message || "Login successful");
+          const requestedPath = location.state?.from;
+          const isPortalPath = requestedPath?.startsWith(`/${portal.value}/`);
           navigate(
-            getFirstPermittedHref(NAV[portal.value]) || portal.dashboardPath,
+            (isPortalPath && requestedPath) ||
+              getFirstPermittedHref(NAV[portal.value]) ||
+              portal.dashboardPath,
             { replace: true },
           );
         } catch (error) {

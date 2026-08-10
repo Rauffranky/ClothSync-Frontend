@@ -329,7 +329,7 @@ const AssetsTable = ({ onCountsChange }) => {
             {
               label: "View Details",
               icon: Eye,
-              onClick: () => navigate(`/business/assets/${row.id}`),
+              onClick: () => navigate(`/business/assets/${row.apiId}`),
             },
             {
               label: "Edit Assets",
@@ -423,7 +423,7 @@ const AssetsTable = ({ onCountsChange }) => {
           emptyText="No assets found"
           loading={isLoading}
           onSort={handleTableSort}
-          onRowClick={(row) => navigate(`/business/assets/${row.id}`)}
+          onRowClick={(row) => navigate(`/business/assets/${row.apiId}`)}
           rowKey="id"
           sortBy={sortBy}
           sortDirection={sortDirection}

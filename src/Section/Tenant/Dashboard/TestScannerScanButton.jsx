@@ -16,13 +16,18 @@ import useGlobalUndoNotices, {
 } from "../../../Hooks/useGlobalUndoNotices";
 
 const TEST_SCAN_PAYLOAD = Object.freeze({
-  scannerId: "ad27d052-f553-4ecf-ab4c-54a878ae2cc9",
+  scannerId: "e13ea9c9-260b-4843-90fa-5849579bb5cb",
   epcs: Object.freeze([
     "TEST-EPC-1",
     "TEST-EPC-2",
     "TEST-EPC-3",
     "TEST-EPC-4",
     "TEST-EPC-5",
+    "TEST-EPC-6",
+    "TEST-EPC-7",
+    "TEST-EPC-8",
+    "TEST-EPC-9",
+    "TEST-EPC-10",
   ]),
 });
 

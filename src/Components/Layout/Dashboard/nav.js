@@ -258,7 +258,7 @@ export const NAV = {
     },
     {
       id: 202,
-      label: "Incoming Batches",
+      label: "Batches",
       href: "/laundry/incoming-batches",
       Icon: Truck,
       permissionKey: "incoming_batches",
