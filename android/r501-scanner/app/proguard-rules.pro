@@ -1,0 +1,2 @@
+-keep class android.bld.** { *; }
+-keepattributes Signature,*Annotation*

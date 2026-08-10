@@ -6,9 +6,9 @@ import ChartsRow from "./ChartsRow";
 import DashboardHeader from "./DashboardHeader";
 import InventoryAlerts from "./InventoryAlerts";
 import LinkedLaundriesPanel from "./LinkedLaundriesPanel";
+import LiveBulkScanRedirect from "./LiveBulkScanRedirect";
 import ScannerActivityPanel from "./ScannerActivityPanel";
 import StatsGrid from "./StatsGrid";
-import TestScannerScanButton from "./TestScannerScanButton";
 
 const Dashboard = () => {
   const { period, customRange, selectPeriod, setCustomFrom, setCustomTo } =
@@ -16,6 +16,8 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-col gap-5">
+      <LiveBulkScanRedirect />
+
       {/* Page heading + period filter + date range */}
       <DashboardHeader
         period={period}
@@ -25,7 +27,7 @@ const Dashboard = () => {
         onToChange={setCustomTo}
       />
 
-      <TestScannerScanButton />
+      {/* Hardcoded test-scanner controls are disabled; real APK scans open Bulk Scanning. */}
 
       {/* Row 1 — 8 stat cards */}
       <StatsGrid />

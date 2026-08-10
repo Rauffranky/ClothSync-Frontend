@@ -1,6 +1,5 @@
 import Dropdown from "../../../Components/UI/Dropdown";
 import Card from "../../../Components/UI/Card";
-import LaundryScannerTestControl from "./LaundryScannerTestControl";
 
 const DashboardHeader = () => {
   return (
@@ -17,7 +16,7 @@ const DashboardHeader = () => {
             Monitor incoming batches, processing activity, inventory, scanner status, and exceptions across linked businesses.
           </p>
         </div>
-        <LaundryScannerTestControl />
+        {/* Test scanner controls are disabled; the Android APK owns real scans. */}
       </div>
 
       <div className="flex flex-wrap items-center gap-4">

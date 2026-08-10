@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Building2,
@@ -23,11 +23,13 @@ import ProgressBar from "../../../Components/UI/ProgressBar";
 import Table from "../../../Components/UI/Table";
 import Tabs from "../../../Components/UI/Tabs";
 import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
+import { useSocketEvents } from "../../../Hooks/useSocketEvent";
 import {
   getIncomingBatchDetails as fetchIncomingBatchDetails,
   getIncomingBatches,
 } from "../../../axios/batches/laundryBatches";
 import { toast } from "../../../Utils/toast";
+import { SOCKET_EVENTS } from "../../../socket/events";
 import BatchDetailsModal from "./BatchDetailsModal";
 import {
   getIncomingBatchCollection,
@@ -36,6 +38,12 @@ import {
 } from "./data";
 
 const ITEMS_PER_PAGE = 10;
+const LIVE_SCAN_EVENTS = [
+  SOCKET_EVENTS.SCANNER_SCAN_BULK,
+  SOCKET_EVENTS.SCAN_SESSION_UPDATED,
+  SOCKET_EVENTS.SCAN_ENTRIES_UPDATED,
+  SOCKET_EVENTS.SCAN_SESSION_FINISHED,
+];
 const batchTabs = [
   { label: "Incoming", value: "incoming" },
   { label: "Received", value: "received" },
@@ -191,6 +199,27 @@ const IncomingBatches = () => {
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
+
+  const refreshFromLiveScan = useCallback(() => {
+    setRefreshKey((value) => value + 1);
+    if (!selectedBatch?.apiId) return;
+
+    fetchIncomingBatchDetails(selectedBatch.apiId)
+      .then((response) => {
+        setSelectedBatch(getIncomingBatchDetails(response));
+        setDetailError("");
+      })
+      .catch((error) => {
+        setDetailError(
+          getLaundryBatchErrorMessage(
+            error,
+            "Unable to refresh the live batch details",
+          ),
+        );
+      });
+  }, [selectedBatch?.apiId]);
+
+  useSocketEvents(LIVE_SCAN_EVENTS, refreshFromLiveScan);
 
   useEffect(() => {
     let isActive = true;

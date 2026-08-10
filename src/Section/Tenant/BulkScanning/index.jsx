@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, LogIn, LogOut, RefreshCw, ScanLine, TriangleAlert } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { CheckCircle2, RefreshCw, ScanLine, TriangleAlert } from "lucide-react";
 import Alert from "../../../Components/UI/Alert";
-import Badge from "../../../Components/UI/Badge";
 import Button from "../../../Components/UI/Button";
 import Card from "../../../Components/UI/Card";
-import Modal from "../../../Components/UI/Modal";
 import Tabs from "../../../Components/UI/Tabs";
 import { getApiErrorMessage } from "../../../axios/api";
 import {
@@ -13,7 +10,6 @@ import {
   confirmBulkScanAction,
   getTenantBulkScanEntries,
   previewBulkScanAction,
-  testTenantScannerScan,
 } from "../../../axios/scanners/tenantBulkScan";
 import { getSocket } from "../../../socket/client";
 import { SOCKET_EVENTS } from "../../../socket/events";
@@ -36,7 +32,6 @@ import {
   BULK_SCAN_PAGE_LIMIT,
   BULK_SCAN_TABS,
   getLiveScanGroup,
-  getSkippedReasonMessage,
   normalizeActionUndoNotices,
   normalizeBulkScanCounts,
   normalizeBulkScanEntry,
@@ -83,13 +78,6 @@ const getInitialActiveTab = () => {
 
 
 const BulkScanningIndex = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [pendingAutomaticScan, setPendingAutomaticScan] = useState(
-    () => location.state?.automaticTestScan ?? location.state?.manualTestScan ?? null,
-  );
-  const [pendingManualScan, setPendingManualScan] = useState(null);
-  const [isManualScanSubmitting, setIsManualScanSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState(getInitialActiveTab);
   const [currentPage, setCurrentPage] = useState(0);
   const [sessionId, setSessionId] = useState(getActiveBulkScanSessionId);
@@ -100,7 +88,6 @@ const BulkScanningIndex = () => {
   const [pagination, setPagination] = useState(emptyPagination);
   const [lastEpc, setLastEpc] = useState(null);
   const [, setUndoNotices] = useGlobalUndoNotices();
-  const [automaticResult, setAutomaticResult] = useState(null);
   const [actionPreview, setActionPreview] = useState(null);
   const [actionType, setActionType] = useState(null);
   const [actionRows, setActionRows] = useState([]);
@@ -143,130 +130,6 @@ const BulkScanningIndex = () => {
   }, []);
 
   useEffect(() => () => actionRequestControllerRef.current?.abort(), []);
-
-  useEffect(() => {
-    if (!location.state?.manualTestScan && !location.state?.automaticTestScan) return;
-    navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate]);
-
-  const applyScannerResponse = (response) => {
-    const result = response?.data ?? {};
-    const processedCount = Number(result.processedCount ?? 0);
-    const skippedCount = Number(result.skippedCount ?? 0);
-    const notices = normalizeActionUndoNotices(response, {
-      actionSource: result.actionSource,
-      kind: "action",
-      scannerMode: result.scannerMode,
-    });
-
-    if (notices.length > 0) {
-      setUndoNotices((current) => mergeUndoNotices(current, notices));
-    }
-
-    setAutomaticResult(skippedCount > 0 ? {
-      action: result.action,
-      actionSource: result.actionSource,
-      message: response?.message,
-      processedCount,
-      skippedCount,
-      skippedItems: result.skippedItems ?? [],
-    } : null);
-
-    const message = response?.message || "Scanner scan completed successfully";
-    if (skippedCount > 0 && processedCount === 0) toast.warning(message);
-    else if (processedCount > 0) toast.success(message);
-    else toast.info(message);
-  };
-
-  const submitTestScan = async (scanPayload, scanAction) => {
-    if (!scanPayload || isManualScanSubmitting) return;
-
-    actionRequestControllerRef.current?.abort();
-    const controller = new AbortController();
-    actionRequestControllerRef.current = controller;
-    setIsManualScanSubmitting(true);
-    try {
-      const response = await testTenantScannerScan({
-        ...scanPayload,
-        ...(scanAction ? { scanAction } : {}),
-      }, { signal: controller.signal });
-      applyScannerResponse(response);
-      const nextSessionId = response?.data?.session?.id;
-      if (!nextSessionId) {
-        throw new Error("Test scan succeeded, but data.session.id was not returned");
-      }
-
-      setActiveBulkScanSessionId(nextSessionId);
-      setSessionId(nextSessionId);
-      setSession(response?.data?.session ?? null);
-      setScanner(
-        response?.data?.scanner ?? response?.data?.session?.scanner ?? null,
-      );
-      handleCountsUpdate(normalizeBulkScanCounts(response?.data ?? {}), activeTab);
-      setCurrentPage(0);
-      setIsLoading(true);
-      getSocket().emit(SOCKET_EVENTS.SCAN_SESSION_JOIN, { sessionId: nextSessionId });
-      setPendingAutomaticScan(null);
-      setPendingManualScan(null);
-
-      try {
-        const entriesResponse = await getTenantBulkScanEntries(nextSessionId, {
-          scanGroup: activeTab,
-          page: 1,
-          limit: BULK_SCAN_PAGE_LIMIT,
-        });
-        const collection = normalizeBulkScanEntriesResponse(entriesResponse);
-        if (collection.session) setSession(collection.session);
-        if (collection.scanner) setScanner(collection.scanner);
-        handleCountsUpdate(collection.counts, activeTab);
-        setRows(collection.rows);
-        setPagination(collection.pagination);
-        setLastEpc(collection.rows[0]?.epc ?? null);
-        setLoadError("");
-      } catch (entriesError) {
-        setLoadError(
-          getApiErrorMessage(entriesError, "Unable to load the scanned entries"),
-        );
-      } finally {
-        setIsLoading(false);
-      }
-
-    } catch (error) {
-      if (error?.code !== "ERR_CANCELED") {
-        const message = getApiErrorMessage(error, "Unable to send the test scan");
-        const requiresManualAction =
-          !scanAction &&
-          error?.response?.status === 400 &&
-          /manual scanner|check in or check out/i.test(message);
-
-        if (requiresManualAction) {
-          setPendingAutomaticScan(null);
-          setPendingManualScan(scanPayload);
-        } else {
-          toast.error(message);
-        }
-      }
-    } finally {
-      if (actionRequestControllerRef.current === controller) {
-        actionRequestControllerRef.current = null;
-        setIsManualScanSubmitting(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (!pendingAutomaticScan) return;
-    // Submitting the navigation-provided scan is the external synchronization owned here.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    submitTestScan(
-      pendingAutomaticScan.payload ?? pendingAutomaticScan,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingAutomaticScan]);
-
-  const handleManualScanAction = (scanAction) => {
-    submitTestScan(pendingManualScan, scanAction);
-  };
 
   const fetchEntries = useCallback(async () => {
     if (!sessionId) return;
@@ -581,23 +444,6 @@ const BulkScanningIndex = () => {
     }
   };
 
-  const getManualScanSuggestion = () => {
-    if (!pendingManualScan?.epcs || rows.length === 0) return null;
-    const scannedEpcs = pendingManualScan.epcs;
-    const matchedRows = rows.filter(r => scannedEpcs.includes(r.epc));
-    if (matchedRows.length === 0) return null;
-
-    const returnedCount = matchedRows.filter(r => r.status === "Returned" || r.status === "in_laundry").length;
-    const dispatchedCount = matchedRows.filter(r => r.status === "Dispatched" || r.status === "in_business").length;
-
-    if (returnedCount > 0 && returnedCount >= dispatchedCount) {
-      return "💡 Suggestion: These tags appear to be already Checked In (Returned). You likely want to Check Out.";
-    } else if (dispatchedCount > 0 && dispatchedCount > returnedCount) {
-      return "💡 Suggestion: These tags appear to be already Checked Out (Dispatched). You likely want to Check In.";
-    }
-    return null;
-  };
-
   return (
     <div className="w-full space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -656,32 +502,6 @@ const BulkScanningIndex = () => {
           />
         </div>
         <GlobalUndoBanners inline />
-        {automaticResult && (
-          <div className="px-4 pt-4">
-            <Alert size="sm" variant="warning">
-              <div className="space-y-2">
-                <div>{automaticResult.message}</div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <Badge variant="success">Processed {automaticResult.processedCount}</Badge>
-                  <Badge variant="warning">Skipped {automaticResult.skippedCount}</Badge>
-                </div>
-                {automaticResult.skippedItems.length > 0 && (
-                  <details>
-                    <summary className="cursor-pointer">View skipped tag details</summary>
-                    <ul className="mb-0 mt-2 space-y-1 pl-5">
-                      {automaticResult.skippedItems.map((item) => (
-                        <li key={item.tempTagId ?? item.epc}>
-                          <span className="font-mono">{item.epc ?? "Unknown EPC"}</span>
-                          {" — "}{getSkippedReasonMessage(item.reason)}
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                )}
-              </div>
-            </Alert>
-          </div>
-        )}
         {activeTab === BULK_SCAN_GROUPS.NEW_UNLINKED &&
           (counts?.newUnlinked ?? 0) > 0 && (
             <div className="flex flex-col gap-3 px-4 pt-4 lg:flex-row lg:items-center">
@@ -739,50 +559,6 @@ const BulkScanningIndex = () => {
           selectedRows={actionRows}
         />
       )}
-
-      <Modal
-        closeOnBackdrop={false}
-        description="Please select the intended action for these tags. The selected action will be applied immediately to all valid scanned tags."
-        footer={(
-          <>
-            <Button
-              disabled={isManualScanSubmitting}
-              leftIcon={<LogOut size={16} />}
-              loading={isManualScanSubmitting}
-              onClick={() => handleManualScanAction("check_out")}
-              variant="secondary"
-            >
-              Check Out
-            </Button>
-            <Button
-              disabled={isManualScanSubmitting}
-              leftIcon={<LogIn size={16} />}
-              loading={isManualScanSubmitting}
-              onClick={() => handleManualScanAction("check_in")}
-              variant="primary"
-            >
-              Check In
-            </Button>
-          </>
-        )}
-        onClose={() => {
-          if (!isManualScanSubmitting) setPendingManualScan(null);
-        }}
-        open={Boolean(pendingManualScan)}
-        title="Select Scan Action"
-        width={520}
-      >
-        <div className="space-y-3">
-          <Alert variant="info">
-            Choose the intended direction for {pendingManualScan?.epcs?.length ?? 0} scanned tags.
-          </Alert>
-          {getManualScanSuggestion() && (
-            <Alert variant="warning" className="text-sm">
-              {getManualScanSuggestion()}
-            </Alert>
-          )}
-        </div>
-      </Modal>
 
     </div>
   );

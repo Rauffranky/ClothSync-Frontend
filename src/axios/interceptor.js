@@ -34,9 +34,15 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     const isUnauthorized = error?.response?.status === 401;
+    const responseMessage = String(
+      error?.response?.data?.message ?? error?.response?.data?.error ?? "",
+    ).toLowerCase();
+    const hasUnauthorizedMessage = responseMessage.includes(
+      "unauthorized access",
+    );
     const hasActiveSession = Boolean(getAuthAccessToken());
 
-    if (isUnauthorized && hasActiveSession) {
+    if ((isUnauthorized || hasUnauthorizedMessage) && hasActiveSession) {
       clearAuthSession();
 
       if (typeof window !== "undefined") {

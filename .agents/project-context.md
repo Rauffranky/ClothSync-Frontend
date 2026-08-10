@@ -51,6 +51,12 @@ before changing it.
 - `react-helmet-async` is provided, while pages usually call `usePageMeta`.
 - ESLint 10 with JavaScript, React Hooks, and Vite refresh rules.
 - ESM package format (`"type": "module"`).
+- `android/r501-scanner` is a separate Kotlin/Jetpack Compose Android companion
+  for the Android 13 R501/PDA RFID reader. It uses MVVM, Hilt, Retrofit, Room,
+  WorkManager, encrypted session storage, and compile-only signatures for the
+  device-provided `android.bld.RFIDManager`, so no vendor APK/framework is
+  bundled. Its Gradle wrapper is pinned to 8.9, Android Gradle Plugin to 8.7.3,
+  compile/target SDK to 35, and Java runtime to 17.
 
 Do not add or replace framework, state, form, style, request, or icon libraries
 without explicit user approval and architectural justification.
@@ -187,6 +193,16 @@ Re-check these facts in source during every related task.
 
 Confirmed API-backed areas:
 
+- The native R501 scanner companion consumes the dedicated `/api/mobile-scanner`
+  contract. Login returns the Business/Laundry portal type and persists encrypted
+  access/refresh/session data; an authenticator refreshes expired access tokens.
+  The app loads backend-assigned active scanners, requires an incoming batch for
+  Laundry, starts/stops backend sessions, inventories through the R501 service,
+  debounces duplicate EPCs for 1.5 seconds, and uploads batches of 25 with stable
+  request IDs. Retryable offline requests persist in Room and sync through
+  WorkManager. Debug currently targets the local LAN backend at
+  `192.168.0.109:5001`; release requires an HTTPS Gradle property.
+
 - Laundry scanner management uses `POST /laundry-scanners/create`,
   `GET /laundry-scanners/show`, `GET /laundry-scanners/show/:id`,
   `GET /laundry-scanners/warnings`,
@@ -200,21 +216,14 @@ Confirmed API-backed areas:
   and URL-backed Incoming (`status=dispatched`), Received (`status=received`),
   and Delayed (`status=delayed`) tabs. The sidebar labels this feature Batches,
   and its list/detail UI is read-only operational tracking.
-- The Laundry Dashboard owns incoming/received-batch scanning. Its selector can
-  load dispatched batches (`status=dispatched`) for Check In or received batches
-  (`status=received`) for Check Out from `GET /laundry-batches/incoming`, plus
-  active assigned scanners from `GET /laundry-scanners/show`, then fetches the selected batch
-  through `GET /laundry-batches/incoming/:batchId`. Scans call
-  `POST /laundry-scanners/test-scanner-scan` with `scannerId`, `batchId`, reused
-  `sessionId`, and every EPC from the selected batch detail. Opening Entry, Exit,
-  or Auto scanners automatically submits the full batch without EPC input or a
-  separate scan button; Manual scanners require one `scanAction` choice as
-  `check_in` or `check_out` and then automatically submit the full batch. Entry,
-  Exit, and Auto scanners let the backend derive and perform the action. The batch list and detail are refetched after each
-  successful scan request. The separate batch Receive API is not used because
-  scanning performs Check In/Check Out immediately. Clear confirmation uses
-  `PUT /laundry-scanners/sessions/:sessionId/clear` and only clears scan history;
-  it does not undo completed item actions.
+- The Laundry Dashboard's old browser-based test scanner selector/full-batch
+  simulation is disabled; the Android APK owns real scanner and incoming-batch
+  selection plus Check In/Check Out processing. A real `scan.session.started`
+  or `scanner.scan.bulk` event automatically opens `/laundry/incoming-batches`.
+  While that Batches screen is mounted, bulk scan, session update, entries
+  update, and session-finished events refetch the active Incoming, Received, or
+  Delayed list and any open batch detail, so APK activity is reflected without
+  browser-entered EPCs or calls to `/laundry-scanners/test-scanner-scan`.
 - Tenant asset details call `GET /tenant-assets/show/:id` when the Business
   asset-detail route opens. The response's nested `data.asset` and `data.overview`
   objects populate the existing header, RFID, lifecycle, overview, and returned
@@ -377,33 +386,12 @@ Confirmed API-backed areas:
   linked-laundry options load from their domain APIs; zone options consume the
   asset response's filter metadata when supplied and otherwise derive from
   returned rows. Asset rows/cards normalize the live response instead of mock data.
-- The Business dashboard currently includes a temporary Test Scanner Scan button
-  that navigates to `/business/bulk-scanning` and sends its fixed scanner/EPC
-  payload to `POST /tenant-bulk-scan/test-scanner-scan`. It does not resolve the
-  scanner mode itself. The backend performs automatic entry/exit/auto movements;
-  when a deployed backend returns the manual-scanner `400`, the Bulk Scanning
-  screen opens Check In/Check Out selection and retries the same payload with the
-  selected `scanAction`. Results remain backend-authoritative and can include
-  skipped results and one or more Undo tokens.
-  A successful request
-  persists and joins `data.session.id`, then the Bulk Scanning screen loads its
-  entries and can continue into the normal Add Bulk to System flow.
-  A second temporary Test Bulk Add button posts `{ assetName: "Test Towels",
-  categoryId: "c4a46dde-04fd-4858-b827-82456a756361", zoneName: "Test Zone",
-  washLimit: 100, description: "Socket testing asset" }` to
-  `POST /tenant-bulk-scan/sessions/:sessionId/bulk-add`, using the session ID
-  returned by the current dashboard's successful Test Scanner Scan request. The
-  bulk-add test remains disabled until that request creates a session.
-  After a successful test bulk add, a two-minute Undo Bulk Add countdown enables
-  the temporary request
-  `POST /tenant-bulk-scan/sessions/:sessionId/bulk-add/:undoId/undo`, using the
-  current Test Scanner Scan session ID and exact `data.undo.id` returned by the
-  Bulk Add response. Its availability and countdown use `data.undo.canUndo`,
-  `data.undo.expiresAt`, and `data.undo.windowSeconds`; no static undo ID is used.
-  The dashboard logs `scan.bulk-add.undone` payloads while mounted.
-  Its temporary Clear Session button sends
-  `PUT /tenant-bulk-scan/sessions/:sessionId/clear` for the current test session,
-  resets the local test controls after success, and logs `scan.session.cleared`.
+- The Business dashboard no longer renders its temporary hardcoded Test Scanner
+  Scan/Test Bulk Add controls. While the dashboard is mounted, a real
+  `scan.session.started` or `scanner.scan.bulk` event stores the backend session
+  ID and automatically opens `/business/bulk-scanning`. That screen then loads
+  and updates the real scanned-tag entries through its existing API and socket
+  flow; fixed `TEST-EPC-*` values are not submitted by the dashboard.
 - Tenant linked laundries, pending invitations, and closed invitations use
   separate paginated GET services. Pending records remain in Pending Requests,
   accepted invitations are represented by the linked-laundries service, and
