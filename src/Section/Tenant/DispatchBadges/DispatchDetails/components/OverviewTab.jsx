@@ -19,7 +19,7 @@ const OverviewTab = ({ details }) => {
   const categoryBreakdown = details?.categoryBreakdown || [];
   const partner = details?.laundryPartner || {};
   const latestActivity = details?.latestActivity || [];
-  const totalItems = details?.summary?.totalItems || 98;
+  const totalItems = details?.summary?.totalItems || 0;
 
   return (
     <div className="space-y-6 pt-4">

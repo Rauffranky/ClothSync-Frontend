@@ -4,6 +4,12 @@ import { TENANT_DISPATCH_BATCH_ENDPOINTS } from "../endpoint";
 export const getTenantDispatchBatches = (params) =>
   api.get(TENANT_DISPATCH_BATCH_ENDPOINTS.LIST, { params });
 
+export const getTenantDispatchBatchDetails = (batchId) =>
+  api.get(TENANT_DISPATCH_BATCH_ENDPOINTS.DETAILS(batchId));
+
+export const getTenantDispatchBatchItems = (batchId, params) =>
+  api.get(TENANT_DISPATCH_BATCH_ENDPOINTS.ITEMS(batchId), { params });
+
 export const getTenantDispatchBatchActivityLogs = (batchId, params) =>
   api.get(TENANT_DISPATCH_BATCH_ENDPOINTS.ACTIVITY_LOGS(batchId), { params });
 

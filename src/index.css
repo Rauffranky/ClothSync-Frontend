@@ -283,6 +283,11 @@
   --asset-timeline-admin-note-bg: rgba(255, 255, 255, 0.62);
   --asset-timeline-admin-text: #1E293B;
   --asset-timeline-admin-muted: #64748B;
+  --asset-timeline-linked-bg: linear-gradient(135deg, #ECFDF5, #F0FDFA);
+  --asset-timeline-linked-border: #A7F3D0;
+  --asset-timeline-linked-note-bg: rgba(255, 255, 255, 0.58);
+  --asset-timeline-linked-text: #064E3B;
+  --asset-timeline-linked-muted: #047857;
   --asset-timeline-override-bg: #FEF9C3;
   --asset-timeline-override-border: #FDE68A;
   --asset-timeline-override-note-bg: rgba(255, 255, 255, 0.42);
@@ -405,6 +410,13 @@
   --asset-timeline-admin-note-bg: rgba(15, 23, 42, 0.34);
   --asset-timeline-admin-text: #EDE9FE;
   --asset-timeline-admin-muted: #C4B5FD;
+  --asset-timeline-linked-bg: linear-gradient(135deg,
+      rgba(6, 78, 59, 0.5),
+      rgba(5, 46, 42, 0.38));
+  --asset-timeline-linked-border: rgba(52, 211, 153, 0.38);
+  --asset-timeline-linked-note-bg: rgba(4, 31, 35, 0.4);
+  --asset-timeline-linked-text: #D1FAE5;
+  --asset-timeline-linked-muted: #6EE7B7;
   --asset-timeline-override-bg: rgba(113, 63, 18, 0.36);
   --asset-timeline-override-border: rgba(253, 230, 138, 0.38);
   --asset-timeline-override-note-bg: rgba(15, 23, 42, 0.3);

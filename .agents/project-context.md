@@ -232,7 +232,15 @@ Confirmed API-backed areas:
   asset-detail route opens. The response's nested `data.asset` and `data.overview`
   objects populate the existing header, RFID, lifecycle, overview, and returned
   tag-history fields; unavailable histories render as empty collections. The full
-  backend response payload is also logged to the browser console.
+  backend response payload is also logged to the browser console. Asset audit
+  history uses paginated `GET /tenant-assets/show/:id/audit-logs` and renders
+  action, performer/role, reason, date, previous value, and updated value.
+- Business dispatch-batch details use `GET /tenant-dispatch-batches/show/:id`;
+  their Batch Items and Activity Log tabs use the corresponding paginated
+  `/items` and `/activity-logs` detail endpoints with `page` and `limit`.
+- Business category details consume `GET /tenant-categories/show/:id` and map
+  the category metadata, overview counts, asset/tag/mapping breakdowns, and
+  backend-provided recent assets into the detail screen.
 - Business and Laundry logins call their respective login APIs and store session information.
 - Laundry staff login permissions are read from the stored authenticated user.
   The Laundry sidebar shows only modules whose permission has `view: true`, and

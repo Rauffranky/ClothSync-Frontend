@@ -5,6 +5,7 @@ import LandingLayout from "../Components/Layout/Landing";
 import PermissionRoute from "./PermissionRoute";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
+import AssetDetailsPage from "../Page/Dashboard/Tenant/AssetDetailsPage";
 
 // ============================================================================
 // LAZY LOADED PAGES
@@ -39,7 +40,6 @@ const LaundryIncomingBatchesPage = lazy(() => import("../Page/Dashboard/Laundry/
 
 //Tenant 
 const AssetsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetsPage"));
-const AssetDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetDetailsPage"));
 const ScannersPage = lazy(() => import("../Page/Dashboard/Tenant/ScannersPage"));
 const ScannerWarningsPage = lazy(() => import("../Page/Dashboard/Tenant/ScannerWarningsPage"));
 const ScannerDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/ScannerDetailsPage"));

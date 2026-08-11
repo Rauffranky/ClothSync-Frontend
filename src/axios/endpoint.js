@@ -55,10 +55,15 @@ export const TENANT_TAG_ENDPOINTS = Object.freeze({
 export const TENANT_ASSET_ENDPOINTS = Object.freeze({
   LIST: "/tenant-assets/show",
   DETAILS: (id) => `/tenant-assets/show/${id}`,
+  BATCH_HISTORY: (id) => `/tenant-assets/show/${id}/batch-history`,
+  LIFECYCLE_HISTORY: (id) => `/tenant-assets/show/${id}/lifecycle-history`,
+  AUDIT_LOGS: (id) => `/tenant-assets/show/${id}/audit-logs`,
 });
 
 export const TENANT_DISPATCH_BATCH_ENDPOINTS = Object.freeze({
   LIST: "/tenant-dispatch-batches/show",
+  DETAILS: (batchId) => `/tenant-dispatch-batches/show/${batchId}`,
+  ITEMS: (batchId) => `/tenant-dispatch-batches/show/${batchId}/items`,
   ACTIVITY_LOGS: (batchId) =>
     `/tenant-dispatch-batches/show/${batchId}/activity-logs`,
   UPDATE_ITEMS_STATUS: (batchId) =>

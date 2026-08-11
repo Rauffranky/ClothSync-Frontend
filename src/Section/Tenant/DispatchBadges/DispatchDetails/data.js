@@ -1,3 +1,92 @@
+import { formatDateTime } from "../../../../Utils/date";
+import { formatStatusLabel } from "../../../../Utils/status";
+
+const STATUS_VARIANTS = {
+  draft: "neutral",
+  dispatched: "info",
+  sent_to_laundry: "warning",
+  partially_checked_in: "warning",
+  received: "success",
+  checked_in: "success",
+  at_laundry: "purple",
+  washed: "info",
+  sent_to_business: "info",
+  returned: "success",
+  completed: "success",
+  delayed: "danger",
+  cancelled: "danger",
+};
+
+const getPersonName = (value) => {
+  if (typeof value === "string") return value;
+  return value?.fullName || value?.name || value?.email || "—";
+};
+
+export const normalizeDispatchBatchDetails = (response = {}, fallbackId = "—") => {
+  const payload = response?.data ?? response ?? {};
+  const batch = payload.batch || payload.dispatchBatch || payload;
+  const laundry = batch.laundry || batch.laundryLink?.laundry || batch.assignedLaundry || {};
+  const summary = batch.summary || batch.counts || payload.summary || {};
+  const rawStatus = batch.status || batch.batchStatus || "";
+  const categories = batch.categoryBreakdown || batch.categories || summary.categories || [];
+  const activity = batch.latestActivity || batch.recentActivity || payload.latestActivity || [];
+  const lifecycle = batch.lifecycle || batch.timeline || payload.lifecycle || [];
+  const totalItems = Number(summary.totalItems ?? batch.totalItems ?? batch.itemsCount ?? batch.totalTagsCount ?? 0) || 0;
+
+  return {
+    apiId: batch.id || batch._id || fallbackId,
+    id: batch.batchCode || batch.batchId || batch.code || fallbackId,
+    status: batch.statusLabel || formatStatusLabel(rawStatus),
+    statusVariant: STATUS_VARIANTS[rawStatus] || "neutral",
+    lastActivity: formatDateTime(batch.lastActivityAt || batch.updatedAt || batch.dispatchedAt || batch.createdAt),
+    selectedLaundry: batch.laundryName || laundry.companyName || laundry.businessName || laundry.name || "—",
+    dispatchLocation: batch.dispatchLocation || batch.locationName || batch.location || "—",
+    createdBy: getPersonName(batch.createdByUser || batch.creator || batch.createdBy),
+    dispatchDateTime: formatDateTime(batch.dispatchedAt || batch.dispatchDateTime || batch.createdAt),
+    summary: {
+      totalItems,
+      unlinkedTags: Number(summary.unlinkedTags ?? summary.unlinkedTagsCount ?? 0) || 0,
+      checkedInLaundry: Number(summary.checkedInLaundry ?? summary.checkedInCount ?? summary.receivedItems ?? 0) || 0,
+      itemsReturned: Number(summary.itemsReturned ?? summary.returnedItems ?? 0) || 0,
+      delayed: Number(summary.delayed ?? summary.delayedItems ?? 0) || 0,
+    },
+    lifecycle: Array.isArray(lifecycle)
+      ? lifecycle.map((step, index) => ({
+          id: step.id || step.key || step.status || `step-${index}`,
+          label: step.label || step.title || formatStatusLabel(step.status || step.key),
+          time: step.time || formatDateTime(step.dateTime || step.occurredAt || step.createdAt),
+          state: step.state || (step.completed ? "completed" : step.active ? "active" : "pending"),
+        }))
+      : [],
+    categoryBreakdown: Array.isArray(categories)
+      ? categories.map((category, index) => ({
+          category: category.categoryName || category.title || category.name || category.category || "Uncategorized",
+          count: Number(category.count ?? category.totalItems ?? category.itemsCount ?? 0) || 0,
+          percentage: Number(category.percentage ?? 0) || 0,
+          variant: category.variant || ["teal", "purple", "indigo"][index % 3],
+        }))
+      : [],
+    laundryPartner: {
+      name: batch.laundryName || laundry.companyName || laundry.businessName || laundry.name || "—",
+      status: laundry.statusLabel || formatStatusLabel(laundry.status || "active"),
+      contact: laundry.contactPersonName || laundry.contactName || "—",
+      phone: laundry.phone || "—",
+      email: laundry.email || "—",
+      location: [laundry.address, laundry.city].filter(Boolean).join(", ") || "—",
+    },
+    notes: batch.notes || batch.description || "No dispatch notes provided.",
+    latestActivity: Array.isArray(activity)
+      ? activity.map((item, index) => ({
+          id: item.id || item._id || `activity-${index}`,
+          title: item.title || item.event || item.actionLabel || formatStatusLabel(item.action),
+          meta: [getPersonName(item.performedBy || item.user), formatDateTime(item.dateTime || item.createdAt)]
+            .filter((value) => value && value !== "—")
+            .join(" • "),
+        }))
+      : [],
+  };
+};
+
 export const getMockBatchDetails = (batchId = "BATCH-1024") => {
   return {
     id: batchId,

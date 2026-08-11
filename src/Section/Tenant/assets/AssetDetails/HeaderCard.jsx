@@ -7,33 +7,29 @@ import ProgressBar from "../../../../Components/UI/ProgressBar";
 const HeaderCard = ({ data }) => {
     return (
         <Card >
-            <div className="flex flex-col gap-4 md:flex-row md:items-start">
-                {/* Icon */}
-                <IconWrapper
-                    icon={Shirt}
-                    variant={data.statusVariant}
-                    sizeClassName="h-16 w-16 shrink-0"
-                    roundedClassName="rounded-[16px]"
-                    iconSize={40}
-                />
-
-                {/* Details */}
-                <div className="flex-1 space-y-6">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div>
+            <div className="space-y-7">
+                <div className="flex flex-wrap items-start gap-4">
+                    <IconWrapper
+                        icon={Shirt}
+                        variant={data.statusVariant}
+                        sizeClassName="h-16 w-16 shrink-0"
+                        roundedClassName="rounded-[16px]"
+                        iconSize={40}
+                    />
+                    <div className="min-w-0 flex-1">
                             <h2 className="m-0 text-2xl font-bold text-(--theme-text-primary)">
                                 {data.assetName || "—"}
                             </h2>
                             <p className="m-0 mt-1 font-mono text-sm font-semibold text-(--theme-text-muted)">
                                 {data.id}
                             </p>
-                        </div>
-                        <Badge variant={data.statusVariant} dot>
-                            {data.status}
-                        </Badge>
                     </div>
+                    <Badge variant={data.statusVariant} dot>
+                        {data.status}
+                    </Badge>
+                </div>
 
-                    <div className="grid grid-cols-2 gap-y-5 gap-x-4 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 xl:grid-cols-3">
                         <div className="space-y-1">
                             <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-(--theme-text-muted)">
                                 <Layers size={14} /> Category
@@ -82,9 +78,9 @@ const HeaderCard = ({ data }) => {
                                 {data.lastScanLocation}
                             </p>
                         </div>
-                    </div>
+                </div>
 
-                    <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4">
                         <div className="h-4 w-4 shrink-0 rounded border border-(--theme-border) flex items-center justify-center">
                             <div className="h-1.5 w-1.5 rounded-full bg-(--color-ready)"></div>
                         </div>
@@ -94,7 +90,6 @@ const HeaderCard = ({ data }) => {
                         <div className="shrink-0 text-sm font-bold text-(--theme-text-primary)">
                             {data.washCount} <span className="text-xs font-semibold text-(--theme-text-muted)">/ {data.maxWash} washes</span>
                         </div>
-                    </div>
                 </div>
             </div>
         </Card>

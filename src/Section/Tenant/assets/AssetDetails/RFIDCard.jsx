@@ -1,8 +1,9 @@
-import { Cpu, Eye } from "lucide-react";
+import { CalendarDays, Cpu, Eye, Radio } from "lucide-react";
 import Card from "../../../../Components/UI/Card";
 import Button from "../../../../Components/UI/Button";
 import IconWrapper from "../../../../Components/UI/IconWrapper";
 import Alert from "../../../../Components/UI/Alert";
+import Badge from "../../../../Components/UI/Badge";
 
 const RFIDCard = ({ data }) => {
   return (
@@ -25,25 +26,27 @@ const RFIDCard = ({ data }) => {
         </Button>
       </div>
 
-      <Card>
-        <div className="text-xs font-bold uppercase tracking-wider text-(--theme-text-muted)">
-          Tag EPC{" "}
-          <span className="text-(--theme-text-primary)">
-            ({data.rfid.tagId})
-          </span>
+      <Card bodyClassName="space-y-3" padding="18px 20px">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-(--theme-text-muted)">
+            <Radio aria-hidden="true" size={15} /> Tag EPC
+          </div>
+          <Badge size="sm" variant="info">
+            {data.rfid.tagId}
+          </Badge>
         </div>
-        <div className="font-mono text-[13px] font-black text-(--theme-text-primary) break-all">
+        <div className="break-all font-mono text-sm font-black tracking-wide text-(--theme-text-primary)">
           {data.rfid.tagEpc}
         </div>
       </Card>
 
-      <div className="">
-        <div className="text-xs font-bold uppercase tracking-wider text-(--theme-text-muted)">
-          Linked Date{" "}
-          <span className="text-(--theme-text-primary)">
-            ({data.rfid.linkedDate})
-          </span>
-        </div>
+      <div className="rounded-xl border border-(--theme-border) bg-(--theme-surface) p-4">
+          <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-(--theme-text-muted)">
+            <CalendarDays aria-hidden="true" size={15} /> Linked Date
+          </div>
+          <p className="m-0 text-sm font-bold text-(--theme-text-primary)">
+            {data.rfid.linkedDate}
+          </p>
       </div>
 
       {data.rfid.previousTag && (

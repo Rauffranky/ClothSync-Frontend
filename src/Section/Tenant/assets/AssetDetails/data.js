@@ -26,11 +26,12 @@ export const normalizeAssetDetailResponse = (response = {}) => {
     const asset = payload?.asset || {};
     const overview = payload?.overview || {};
     const tags = Array.isArray(asset.tags) ? asset.tags : [];
-    const primaryTag = tags[0] || {};
+    const primaryTag = asset.tag || tags[0] || {};
     const currentStepIndex = lifecycleSteps.findIndex((step) => step.key === asset.status);
     const status = asset.statusLabel || formatStatusLabel(asset.status);
 
     return {
+        apiId: asset.id || asset._id,
         id: asset.assetCode || asset.id || "—",
         assetName: asset.assetName || asset.translations?.en?.assetName || "—",
         category: asset.category?.title || asset.category?.translations?.en?.title || "—",
@@ -38,18 +39,37 @@ export const normalizeAssetDetailResponse = (response = {}) => {
         zone: asset.zoneName || asset.translations?.en?.zoneName || "—",
         status,
         statusVariant: statusVariants[asset.status] || "neutral",
-        assignedLaundry: asset.assignedLaundryLink?.laundry?.companyName || "—",
+        assignedLaundry:
+            asset.assignedLaundry?.companyName ||
+            asset.assignedLaundryLink?.laundry?.companyName ||
+            primaryTag.currentLaundryLink?.laundry?.companyName ||
+            "—",
         lastScanned: formatDateTime(asset.lastScannedAt || overview.lastScan),
         lastScanLocation: asset.lastScanLocation || overview.location || "—",
-        washCount: Number(asset.washCount) || 0,
+        washCount: Number(asset.assetWashCount ?? asset.washCount) || 0,
         maxWash: Number(asset.washLimit) || 0,
+        tagWashCount: Number(asset.tagWashCount ?? primaryTag.totalLaundryCycles) || 0,
+        washCountDifference: Number(asset.washCountDifference) || 0,
+        washCountMatchesTag: asset.washCountMatchesTag ?? true,
+        activeTagCount: Number(asset.activeTagCount ?? tags.length) || 0,
         description: asset.description || asset.translations?.en?.description || "No description provided",
         recentReads: Number(overview.recentReads) || 0,
         operator: overview.operator || null,
         rfid: {
             tagEpc: primaryTag.epc || "—",
             tagId: primaryTag.tagCode || "—",
-            linkedDate: "—",
+            linkedDate: formatDateTime(
+                primaryTag.linkedDate ||
+                primaryTag.linkedAt ||
+                asset.linkedDate ||
+                asset.linkedAt ||
+                primaryTag.createdAt ||
+                asset.createdAt,
+                false,
+            ),
+            mappingStatus: formatStatusLabel(primaryTag.mappingStatus),
+            tagStatus: formatStatusLabel(primaryTag.tagStatus),
+            currentStatus: formatStatusLabel(primaryTag.currentStatus),
             previousTag: null,
         },
         currentBatch: {
@@ -63,12 +83,11 @@ export const normalizeAssetDetailResponse = (response = {}) => {
             active: currentStepIndex >= 0 && index <= currentStepIndex,
         })),
         tabs: [
-            { label: "Overview", count: null },
-            { label: "Asset Timeline", count: 0 },
-            { label: "Batch History", count: 0 },
-            { label: "Tag History", count: tags.length },
-            { label: "Audit Logs", count: 0 },
-            { label: "Exceptions", count: 0 },
+            { label: "Overview" },
+            { label: "Asset Timeline" },
+            { label: "Batch History" },
+            { label: "Tag History" },
+            { label: "Audit Logs" },
         ],
         timeline: [],
         batchHistory: [],
@@ -77,12 +96,13 @@ export const normalizeAssetDetailResponse = (response = {}) => {
             epc: tag.epc || "—",
             status: formatStatusLabel(tag.mappingStatus || tag.tagStatus),
             variant: tag.mappingStatus === "linked" ? "success" : "neutral",
-            linkedDate: "—",
-            unlinkedDate: null,
+            linkedDate: formatDateTime(tag.linkedDate || tag.linkedAt || tag.createdAt, false),
+            unlinkedDate: tag.unlinkedDate || tag.unlinkedAt
+                ? formatDateTime(tag.unlinkedDate || tag.unlinkedAt, false)
+                : null,
             reason: "—",
         })),
         auditLogs: [],
-        exceptions: [],
     };
 };
 
@@ -105,12 +125,7 @@ export const assetDetailData = {
         tagEpc: "E28001892000406A4A40A63",
         tagId: "TAG-001",
         linkedDate: "Jan 12, 2025",
-        previousTag: {
-            id: "TAG-OLD-001",
-            epc: "E29001892008406A4A4..",
-            unlinkedDate: "May 25, 2025",
-            reason: "tag damaged",
-        },
+        previousTag: null,
     },
     currentBatch: {
         id: "BTH-20240611-001",
@@ -125,12 +140,11 @@ export const assetDetailData = {
         { label: "Returned", variant: "neutral", active: false },
     ],
     tabs: [
-        { label: "Overview", count: null },
-        { label: "Asset Timeline", count: 11 },
-        { label: "Batch History", count: 3 },
-        { label: "Tag History", count: 2 },
-        { label: "Audit Logs", count: 4 },
-        { label: "Exceptions", count: 3 },
+        { label: "Overview" },
+        { label: "Asset Timeline" },
+        { label: "Batch History" },
+        { label: "Tag History" },
+        { label: "Audit Logs" },
     ],
     timeline: [
         {

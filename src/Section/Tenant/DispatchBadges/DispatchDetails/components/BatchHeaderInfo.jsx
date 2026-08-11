@@ -16,7 +16,7 @@ const BatchHeaderInfo = ({ details }) => {
     {
       id: "total",
       label: "Total Batch Items",
-      value: summary.totalItems ?? 98,
+      value: summary.totalItems ?? 0,
       icon: Package,
       variant: "teal",
       color: "var(--color-aurora-teal)",

@@ -21,6 +21,7 @@ const ICON_MAP = {
   "Sent to Business": Truck,
   "Returned to Business": Building2,
   "Re-Tagged": Radio,
+  "Tag Linked": Radio,
   "Override Correction": ShieldCheck,
 };
 
@@ -40,6 +41,14 @@ const SPECIAL_EVENT_STYLES = {
     mutedColor: "var(--asset-timeline-admin-muted)",
     noteBackground: "var(--asset-timeline-admin-note-bg)",
     noteBorderColor: "var(--asset-timeline-admin-border)",
+  },
+  "Tag Linked": {
+    borderColor: "var(--asset-timeline-linked-border)",
+    background: "var(--asset-timeline-linked-bg)",
+    textColor: "var(--asset-timeline-linked-text)",
+    mutedColor: "var(--asset-timeline-linked-muted)",
+    noteBackground: "var(--asset-timeline-linked-note-bg)",
+    noteBorderColor: "var(--asset-timeline-linked-border)",
   },
   "Override Correction": {
     borderColor: "var(--asset-timeline-override-border)",
@@ -151,12 +160,25 @@ const TimelineEventCard = ({ event, isLast }) => {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <TimelineField label="Location" value={event.location} />
             <TimelineField label="Scanner" value={event.scanner} />
+            <TimelineField label="Scanner Code" value={event.scannerCode} mono />
             <TimelineField
               label="Type / Mode"
               value={[event.type, event.mode].filter(Boolean).join(" / ")}
             />
             <TimelineField label="Batch" value={event.batch} mono />
             <TimelineField label="Laundry" value={event.laundry} />
+            <TimelineField label="Tag" value={event.tag} mono />
+            <TimelineField label="Tag EPC" value={event.epc} mono />
+            <TimelineField
+              label="Performed By"
+              value={[event.performedBy, event.actorType].filter(Boolean).join(" · ")}
+            />
+            <TimelineField label="Status Change" value={event.transition} />
+            <TimelineField
+              label="Scan Session"
+              value={[event.session, event.sessionStatus].filter(Boolean).join(" · ")}
+              mono
+            />
           </div>
 
           {event.location && (

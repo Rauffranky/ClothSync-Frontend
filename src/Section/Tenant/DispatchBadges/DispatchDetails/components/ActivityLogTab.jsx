@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, RefreshCw, User, Zap } from "lucide-react";
+import { AlertTriangle, CheckCircle2, RefreshCw, UserRound, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Alert from "../../../../../Components/UI/Alert";
 import Badge from "../../../../../Components/UI/Badge";
@@ -55,12 +55,35 @@ const ActivityLogTab = ({ batchId }) => {
     };
   }, [batchId, page, retryKey]);
 
-  const iconFor = (log) => {
-    const type = log.iconType ?? log.type;
-    if (type === "warning") return AlertTriangle;
-    if (type === "user") return User;
-    if (type === "success") return CheckCircle2;
-    return Zap;
+  const getLogVisual = (log, actor) => {
+    const type = String(log.iconType ?? log.type ?? log.level ?? "").toLowerCase();
+    const eventName = String(log.event ?? log.action ?? log.title ?? "").toLowerCase();
+    if (type === "warning" || type === "danger" || eventName.includes("exception")) {
+      return {
+        icon: AlertTriangle,
+        nodeClass: "border-amber-400 bg-amber-500 text-white shadow-amber-500/25",
+        badgeVariant: "warning",
+      };
+    }
+    if (type === "success") {
+      return {
+        icon: CheckCircle2,
+        nodeClass: "border-emerald-400 bg-emerald-500 text-white shadow-emerald-500/25",
+        badgeVariant: "success",
+      };
+    }
+    if (actor !== "System" || type === "user") {
+      return {
+        icon: UserRound,
+        nodeClass: "border-teal-300 bg-(--color-aurora-teal) text-white shadow-teal-500/25",
+        badgeVariant: "success",
+      };
+    }
+    return {
+      icon: Zap,
+      nodeClass: "border-slate-300 bg-slate-400 text-white shadow-slate-500/20 dark:border-slate-500 dark:bg-slate-600",
+      badgeVariant: "neutral",
+    };
   };
 
   return (
@@ -90,22 +113,58 @@ const ActivityLogTab = ({ batchId }) => {
           ))}
         </div>
       ) : logs.length ? (
-        <div className="space-y-4">
+        <div className="pt-1">
           {logs.map((log, index) => {
-            const LogIcon = iconFor(log);
-            const actor = log.user?.fullName ?? log.performedBy?.fullName ?? log.actorName ?? "System";
+            const actor =
+              log.user?.fullName ??
+              log.performedBy?.fullName ??
+              log.performedBy?.name ??
+              (typeof log.performedBy === "string" ? log.performedBy : null) ??
+              log.actorName ??
+              "System";
+            const visual = getLogVisual(log, actor);
+            const LogIcon = visual.icon;
+            const isLast = index === logs.length - 1;
+            const details = log.details ?? log.description ?? log.reason ?? log.message;
             return (
-              <div key={log.id ?? `${log.createdAt}-${index}`} className="flex gap-3 rounded-xl border border-(--theme-border) p-4">
-                <LogIcon size={18} className="mt-0.5 shrink-0 text-(--color-aurora-teal)" />
-                <div className="min-w-0 space-y-1">
-                  <p className="font-bold text-(--theme-text-primary)">
-                    {log.event ?? log.action ?? log.title ?? log.message ?? "Batch activity"}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-(--theme-text-secondary)">
-                    <Badge variant={actor === "System" ? "neutral" : "info"} size="sm">{actor}</Badge>
-                    <span>{formatDateTime(log.timestamp ?? log.createdAt ?? log.updatedAt)}</span>
+              <div
+                key={log.id ?? `${log.createdAt ?? log.dateTime}-${index}`}
+                className="grid grid-cols-[30px_minmax(0,1fr)] gap-3 sm:grid-cols-[34px_minmax(0,1fr)] sm:gap-4"
+              >
+                <div className="relative flex justify-center">
+                  {!isLast && (
+                    <span className="absolute top-7 -bottom-1 w-px bg-(--theme-border)" />
+                  )}
+                  <span
+                    className={`relative z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full border shadow-lg ${visual.nodeClass}`}
+                  >
+                    <LogIcon size={13} strokeWidth={2.5} />
+                  </span>
+                </div>
+
+                <div className={`min-w-0 ${isLast ? "pb-0" : "pb-7"}`}>
+                  <h4 className="m-0 text-sm font-black leading-6 text-(--theme-text-primary) sm:text-base">
+                    {log.event ?? log.actionLabel ?? log.action ?? log.title ?? log.message ?? "Batch activity"}
+                  </h4>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-(--theme-text-secondary)">
+                    <Badge
+                      variant={visual.badgeVariant}
+                      size="sm"
+                      rounded="rounded-md"
+                      leftIcon={actor === "System" ? <Zap size={11} /> : <UserRound size={11} />}
+                    >
+                      {actor}
+                    </Badge>
+                    <time dateTime={log.timestamp ?? log.dateTime ?? log.createdAt ?? log.updatedAt}>
+                      {formatDateTime(log.timestamp ?? log.dateTime ?? log.occurredAt ?? log.createdAt ?? log.updatedAt)}
+                    </time>
                   </div>
-                  {(log.details ?? log.description) && <p className="text-sm text-(--theme-text-secondary)">{log.details ?? log.description}</p>}
+
+                  {details && (
+                    <div className="mt-2 rounded-lg border border-(--theme-border-soft) bg-(--theme-surface-strong) px-3 py-2.5 text-sm font-medium leading-relaxed text-(--theme-text-secondary)">
+                      {details}
+                    </div>
+                  )}
                 </div>
               </div>
             );
