@@ -7,6 +7,7 @@ data class LoginRequest(val email: String, val password: String, val deviceId: S
 data class RefreshRequest(val refreshToken: String, val sessionId: String)
 data class LoginData(val accessToken: String, val refreshToken: String, val sessionId: String, val portalType: String, val user: UserDto? = null, val owner: UserDto? = null)
 data class UserDto(val id: String = "", val fullName: String = "", val email: String = "")
+data class ScannerTranslationDto(val zoneName: String? = null, val locationName: String? = null)
 data class ScannerDto(
     val scannerUuid: String? = null,
     val scannerCode: String? = null,
@@ -17,12 +18,27 @@ data class ScannerDto(
     val scannerType: String? = null,
     val scannerMode: String? = null,
     val location: String? = null,
+    val zoneName: String? = null,
+    val locationName: String? = null,
+    val scannerLocation: String? = null,
+    val translations: Map<String, ScannerTranslationDto>? = null,
     val assignedOperator: UserDto? = null,
     val status: String? = null,
 )
 fun ScannerDto.actualUuid(): String? = scannerUuid?.takeIf { it.isNotBlank() } ?: id?.takeIf { it.isNotBlank() }
 fun ScannerDto.displayCode(): String = scannerCode?.takeIf { it.isNotBlank() } ?: scannerId.orEmpty()
 fun ScannerDto.displayName(): String = name?.takeIf { it.isNotBlank() } ?: scannerName?.takeIf { it.isNotBlank() } ?: displayCode()
+fun ScannerDto.displayLocation(): String = location?.takeIf { it.isNotBlank() }
+    ?: zoneName?.takeIf { it.isNotBlank() }
+    ?: locationName?.takeIf { it.isNotBlank() }
+    ?: scannerLocation?.takeIf { it.isNotBlank() }
+    ?: translations?.get("en")?.zoneName?.takeIf { it.isNotBlank() }
+    ?: translations?.get("en")?.locationName?.takeIf { it.isNotBlank() }
+    ?: translations?.values?.firstNotNullOfOrNull { translation ->
+        translation.zoneName?.takeIf { it.isNotBlank() }
+            ?: translation.locationName?.takeIf { it.isNotBlank() }
+    }
+    ?: "—"
 data class ScannerListData(val items: List<ScannerDto> = emptyList())
 data class SelectScannerRequest(val deviceId: String)
 data class BatchBusinessDto(

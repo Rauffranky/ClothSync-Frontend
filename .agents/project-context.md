@@ -199,9 +199,13 @@ Confirmed API-backed areas:
   The app loads backend-assigned active scanners, requires an incoming batch for
   Laundry, starts/stops backend sessions, inventories through the R501 service,
   debounces duplicate EPCs for 1.5 seconds, and uploads batches of 25 with stable
-  request IDs. Retryable offline requests persist in Room and sync through
+  request IDs. While a scanner is selected, the APK refreshes its backend
+  assignment/configuration every five seconds so mode changes apply without an
+  app restart. The Bulk Scan screen can safely return to scanner selection and
+  clear the current backend scan-session history plus its local counters.
+  Retryable offline requests persist in Room and sync through
   WorkManager. Debug currently targets the local LAN backend at
-  `192.168.0.109:5001`; release requires an HTTPS Gradle property.
+  `192.168.0.103:5001`; release requires an HTTPS Gradle property.
 
 - Laundry scanner management uses `POST /laundry-scanners/create`,
   `GET /laundry-scanners/show`, `GET /laundry-scanners/show/:id`,

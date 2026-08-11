@@ -25,6 +25,7 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
     private val flushMutex = Mutex()
     private var heartbeat: Job? = null
     private var flushJob: Job? = null
+    private var scannerRefresh: Job? = null
 
     init {
         viewModelScope.launch { repository.pendingOffline.collect { mutable.update { s -> s.copy(pending = it) } } }
@@ -46,12 +47,14 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
         if (scanner.actualUuid() == null) error("Scanner UUID is missing. Refresh scanners and try again.")
         val selectedResponse = repository.selectScanner(scanner)
         val selectedUuid = selectedResponse.actualUuid() ?: scanner.actualUuid()
+            ?: error("Scanner UUID is missing. Refresh scanners and try again.")
         val refreshedScanners = repository.scanners()
         val selected = refreshedScanners.firstOrNull { it.actualUuid() == selectedUuid }
             ?: selectedResponse.takeIf { it.actualUuid() != null }
             ?: scanner
         val batches = if (mutable.value.portal == "laundry") repository.batches() else emptyList()
         mutable.update { it.copy(scanner = selected, scanners = refreshedScanners, batches = batches, message = if (batches.isEmpty() && it.portal == "laundry") "No incoming batches" else "Continue to scan") }
+        startScannerRefresh(selectedUuid)
     }
     fun selectBatch(batch: BatchDto) { mutable.update { it.copy(batch = batch) } }
     fun setManualAction(action: String) { mutable.update { it.copy(manualAction = action) } }
@@ -68,11 +71,25 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
         mutable.update { it.copy(sessionId = sessionId, scanning = true, connected = true, unique = 0, processed = 0, rejected = 0, message = "Scanning") }
         startHeartbeat(scannerUuid)
     }
-    fun stop() = viewModelScope.launch {
+    fun stop() = viewModelScope.launch { stopSession() }
+    private suspend fun stopSession() {
         reader.stopInventory(); mutable.update { it.copy(scanning = false, message = "Stopping…") }
         flushJob?.join()
         flush(); heartbeat?.cancel()
         runCatching { repository.stop(mutable.value.sessionId) }.onSuccess { mutable.update { it.copy(message = "Session stopped") } }.onFailure(::showError)
+    }
+    fun clearData() = launchLoading {
+        if (mutable.value.scanning) error("Stop scanning before clearing data")
+        val sessionId = mutable.value.sessionId
+        if (sessionId.isNotBlank()) repository.clear(sessionId)
+        deduplicator.clear(); unique.clear(); buffer.clear()
+        mutable.update { it.copy(sessionId = "", unique = 0, processed = 0, rejected = 0, message = "Scan data cleared") }
+    }
+    fun changeScanner() = viewModelScope.launch {
+        if (mutable.value.scanning) stopSession()
+        heartbeat?.cancel(); scannerRefresh?.cancel(); reader.disconnect()
+        val scanners = runCatching { repository.scanners() }.getOrElse { mutable.value.scanners }
+        mutable.update { it.copy(scanner = null, batch = null, scanners = scanners, sessionId = "", connected = false, unique = 0, processed = 0, rejected = 0, error = null, message = "Select a scanner") }
     }
     private fun onTag(read: com.clothsync.scanner.rfid.RfidRead) {
         if (!mutable.value.scanning) return
@@ -103,9 +120,27 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
         }
     }
     private fun startHeartbeat(scannerId: String) { heartbeat?.cancel(); heartbeat = viewModelScope.launch { while (isActive) { delay(30_000); val response = runCatching { repository.heartbeat(HeartbeatRequest(scannerId, batteryLevel = 100, networkState = "wifi", rfidConnected = mutable.value.connected)) }.getOrNull(); if (response?.data?.scannerActive == false) { reader.stopInventory(); mutable.update { it.copy(scanning = false, message = "Scanner was deactivated by the backend") }; cancel() } } } }
-    fun logout() = viewModelScope.launch { if (mutable.value.scanning) stop(); reader.disconnect(); repository.logout(); mutable.value = UiState() }
+    private fun startScannerRefresh(scannerId: String) {
+        scannerRefresh?.cancel()
+        scannerRefresh = viewModelScope.launch {
+            while (isActive) {
+                delay(5_000)
+                val scanners = runCatching { repository.scanners() }.getOrNull() ?: continue
+                val refreshed = scanners.firstOrNull { it.actualUuid() == scannerId }
+                if (refreshed == null) {
+                    if (mutable.value.scanning) stopSession()
+                    mutable.update { it.copy(scanner = null, batch = null, scanners = scanners, connected = false, message = "Scanner is no longer active or assigned") }
+                    cancel()
+                } else {
+                    val oldMode = mutable.value.scanner?.scannerMode
+                    mutable.update { it.copy(scanner = refreshed, scanners = scanners, message = if (!oldMode.equals(refreshed.scannerMode, true)) "Scanner mode updated to ${refreshed.scannerMode.orEmpty()}" else it.message) }
+                }
+            }
+        }
+    }
+    fun logout() = viewModelScope.launch { if (mutable.value.scanning) stopSession(); heartbeat?.cancel(); scannerRefresh?.cancel(); reader.disconnect(); repository.logout(); mutable.value = UiState() }
     private fun launchLoading(block: suspend () -> Unit) = viewModelScope.launch { mutable.update { it.copy(loading = true, error = null) }; runCatching { block() }.onFailure(::showError); mutable.update { it.copy(loading = false) } }
     private fun showError(error: Throwable) { mutable.update { it.copy(error = friendly(error), message = friendly(error)) } }
     private fun friendly(error: Throwable) = error.message?.takeIf { it.isNotBlank() } ?: "Request failed"
-    override fun onCleared() { reader.disconnect(); super.onCleared() }
+    override fun onCleared() { heartbeat?.cancel(); scannerRefresh?.cancel(); reader.disconnect(); super.onCleared() }
 }

@@ -33,6 +33,7 @@ class ScannerRepository @Inject constructor(private val api: MobileScannerApi, p
         return try { api.scans(sessionId, request) } catch (error: Exception) { if (retryable(error)) { dao.save(OfflineScanEntity(request.requestId, sessionId, gson.toJson(epcs), action, System.currentTimeMillis())); scheduleSync() }; throw error }
     }
     suspend fun stop(sessionId: String) = api.stop(sessionId)
+    suspend fun clear(sessionId: String) = api.clear(sessionId)
     suspend fun heartbeat(body: HeartbeatRequest) = api.heartbeat(body)
     private fun retryable(error: Exception): Boolean = error !is HttpException || error.code() in listOf(500, 502, 503, 504)
     private fun scheduleSync() { WorkManager.getInstance(context).enqueueUniqueWork("offline-scan-sync", ExistingWorkPolicy.KEEP, OneTimeWorkRequestBuilder<OfflineScanWorker>().setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.SECONDS).setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).build()) }
