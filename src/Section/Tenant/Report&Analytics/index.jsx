@@ -6,7 +6,7 @@ import ReportsHeader from "./ReportsHeader";
 import ReportsStatsGrid from "./ReportsStatsGrid";
 import DelayedItems from "./DelayedItems";
 import MissingLost from "./MissingLost";
-import Overview from "./overview";
+import Overview from "./Overview";
 import SentVsReturn from "./SentVsReturn";
 import TurnaroundTime from "./TurnAroundTime";
 import CategoryWise from "./CategoryWise";
