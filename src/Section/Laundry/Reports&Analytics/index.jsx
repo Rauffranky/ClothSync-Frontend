@@ -2,7 +2,7 @@ import { useState } from "react";
 import Tabs from "../../../Components/UI/Tabs";
 import FiltersSection from "./FiltersSection";
 import StatsGrid from "./StatsGrid";
-import OverviewTab from "./Overview";
+import OverviewTab from "./overview";
 import CheckInSummaryTab from "./CheckInSummary";
 import CheckOutSummaryTab from "./CheckOutSummary";
 import ThroughputTab from "./Throughput";
