@@ -12,6 +12,13 @@ const buildCategoryOptions = () =>
 const buildZoneOptions = () =>
   zoneOptions.filter((option) => option.value !== "all");
 
+const isPositiveInteger = (value) => /^[1-9]\d*$/.test(value);
+
+const getPositiveIntegerError = (value, required) => {
+  if (!value) return required ? "A positive number is required" : "";
+  return isPositiveInteger(value) ? "" : "Enter a whole number greater than 0";
+};
+
 const EditAssetModal = ({ isOpen, onClose, asset }) => {
   const initialZone =
     buildZoneOptions().find((item) => asset?.location?.includes(item.value))?.value || "";
@@ -25,13 +32,33 @@ const EditAssetModal = ({ isOpen, onClose, asset }) => {
   );
   const [zone, setZone] = useState(initialZone);
   const [notes, setNotes] = useState("");
+  const [showWashLimitErrors, setShowWashLimitErrors] = useState(false);
 
   const categoryItems = useMemo(() => buildCategoryOptions(), []);
   const zoneItems = useMemo(() => buildZoneOptions(), []);
 
   const handleSubmit = () => {
+    setShowWashLimitErrors(true);
+    if (
+      getPositiveIntegerError(tagWashLimit, false) ||
+      getPositiveIntegerError(categoryWashLimit, true)
+    ) {
+      return;
+    }
+
     onClose?.();
   };
+
+  const handlePositiveIntegerChange = (setter) => (value) => {
+    if (/^\d*$/.test(value)) setter(value);
+  };
+
+  const tagWashLimitError = showWashLimitErrors
+    ? getPositiveIntegerError(tagWashLimit, false)
+    : "";
+  const categoryWashLimitError = showWashLimitErrors
+    ? getPositiveIntegerError(categoryWashLimit, true)
+    : "";
 
   return (
     <Modal
@@ -73,19 +100,25 @@ const EditAssetModal = ({ isOpen, onClose, asset }) => {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
+            error={Boolean(tagWashLimitError)}
+            helperText={tagWashLimitError}
+            inputMode="numeric"
             label="Tag Wash Limit"
-            onChange={setTagWashLimit}
+            onChange={handlePositiveIntegerChange(setTagWashLimit)}
+            pattern="[1-9][0-9]*"
             placeholder="Enter tag wash limit"
-            type="number"
             value={tagWashLimit}
           />
           <Input
+            error={Boolean(categoryWashLimitError)}
+            helperText={categoryWashLimitError}
+            inputMode="numeric"
             label="Category Wash Limit"
             leftIcon={<Ruler size={16} />}
-            onChange={setCategoryWashLimit}
+            onChange={handlePositiveIntegerChange(setCategoryWashLimit)}
+            pattern="[1-9][0-9]*"
             placeholder="Enter category wash limit"
             required
-            type="number"
             value={categoryWashLimit}
           />
         </div>

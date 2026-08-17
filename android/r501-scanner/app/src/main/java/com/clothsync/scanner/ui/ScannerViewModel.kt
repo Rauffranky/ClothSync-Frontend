@@ -52,18 +52,14 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
         val selected = refreshedScanners.firstOrNull { it.actualUuid() == selectedUuid }
             ?: selectedResponse.takeIf { it.actualUuid() != null }
             ?: scanner
-        val batches = if (mutable.value.portal == "laundry") repository.batches() else emptyList()
-        mutable.update { it.copy(scanner = selected, scanners = refreshedScanners, batches = batches, message = if (batches.isEmpty() && it.portal == "laundry") "No incoming batches" else "Continue to scan") }
+        mutable.update { it.copy(scanner = selected, scanners = refreshedScanners, message = "Continue to scan") }
         startScannerRefresh(selectedUuid)
     }
-    fun selectBatch(batch: BatchDto) { mutable.update { it.copy(batch = batch) } }
     fun setManualAction(action: String) { mutable.update { it.copy(manualAction = action) } }
     fun start() = launchLoading {
         val scanner = mutable.value.scanner ?: error("Select a scanner")
         val scannerUuid = scanner.actualUuid() ?: error("Scanner UUID is missing. Refresh scanners and try again.")
-        val batchId = mutable.value.batch?.actualId()
-        if (mutable.value.portal == "laundry" && batchId == null) error("Selected incoming batch UUID is missing")
-        val session = repository.start(scannerUuid, if (mutable.value.portal == "laundry") batchId else null)
+        val session = repository.start(scannerUuid)
         val connected = reader.connect()
         if (!connected || !reader.startInventory()) error("RFID reader could not start")
         deduplicator.clear(); unique.clear(); buffer.clear()
@@ -114,7 +110,9 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
             runCatching { repository.upload(mutable.value.sessionId, chunk, action) }
                 .onSuccess { response ->
                     val counters = response.data?.counters ?: ScanCounters()
-                    mutable.update { it.copy(processed = it.processed + counters.processedCount, rejected = it.rejected + counters.rejectedCount, message = response.message) }
+                    val batches = response.data?.batchCounters.orEmpty().mapNotNull { it.batchCode }.distinct()
+                    val batchMessage = if (batches.isEmpty()) response.message else "${response.message} Batches: ${batches.joinToString()}"
+                    mutable.update { it.copy(processed = it.processed + counters.processedCount, rejected = it.rejected + counters.rejectedCount, message = batchMessage) }
                 }
                 .onFailure { error -> mutable.update { it.copy(message = "Upload failed: ${friendly(error)}") } }
         }

@@ -1,7 +1,7 @@
 import api from "../api";
 import {
   LAUNDRY_BATCH_ENDPOINTS,
-  LAUNDRY_SCANNER_ENDPOINTS,
+  LAUNDRY_DISPATCH_BATCH_ENDPOINTS,
 } from "../endpoint";
 
 export const getIncomingBatches = (params = {}) =>
@@ -12,7 +12,13 @@ export const getIncomingBatchDetails = (batchId) =>
     timeout: 15000,
   });
 
-export const scanIncomingBatchTags = (data) =>
-  api.post(LAUNDRY_SCANNER_ENDPOINTS.TEST_SCANNER_SCAN, data, {
+export const receiveLaundryDispatchBatch = (batchId, data) =>
+  api.post(LAUNDRY_BATCH_ENDPOINTS.RECEIVE(batchId), data, {
+    timeout: 15000,
+  });
+
+export const getCompletedLaundryDispatchBatches = (params = {}) =>
+  api.get(LAUNDRY_DISPATCH_BATCH_ENDPOINTS.COMPLETED, {
+    params,
     timeout: 15000,
   });

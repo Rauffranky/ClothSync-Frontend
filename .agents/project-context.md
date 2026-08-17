@@ -40,8 +40,27 @@ before changing it.
   names are centralized in `src/socket/events.js`, including socket connection,
   scanner bulk reads, scan sessions/entries/bulk undo, dispatch batches/items,
   and dispatch exceptions. `useSocketEvents` subscribes one stable handler to an
-  event group. Payload shapes and the related scan-session/dispatch feature APIs
+  event group. The app-level live-scan redirect listener is mounted before the
+  route tree, so first-login and cross-page `scan.session.started` or
+  `scanner.scan.bulk` events can open the appropriate Business or Laundry live
+  workflow. Payload shapes and the related scan-session/dispatch feature APIs
   are not yet documented or consumed.
+  Global undo banners also parse automatic Check In/Check Out undo metadata
+  from `scanner.scan.bulk` and `scan.session.updated`, in addition to bulk-add
+  events. The automatic response contract reads `data.undo` or
+  `data.notification.undo`, `data.notification.action/message`, the relevant
+  `checkedInCount`/`checkedOutCount`, and `data.session.id`. Notices are isolated
+  by Business/Laundry portal, persist for their
+  backend expiry window, and use portal-directional messages. Business actions
+  undo through `/tenant-bulk-scan/sessions/:sessionId/actions/:undoId/undo`;
+  Laundry actions use
+  `/laundry-scanners/sessions/:sessionId/actions/:undoId/undo` and refresh the
+  affected batch list/detail after success. The app-level live-scan listener
+  persists automatic undo metadata before redirecting, including responses with
+  a nested `data.data` envelope, so navigation cannot drop the Auto-mode banner.
+  Laundry notices include the backend owner `laundryId` and are rendered only
+  when it matches the authenticated socket's Laundry ID, preventing notices from
+  leaking across Laundry account switches in the same browser tab.
 - Formik 2 and Yup 1 for established validated forms.
 - Saved user `timezone` and `dateFormat` preferences are read by the shared date
   utilities in `src/Utils/date.js`. Updating the authenticated settings profile
@@ -201,11 +220,14 @@ Confirmed API-backed areas:
   debounces duplicate EPCs for 1.5 seconds, and uploads batches of 25 with stable
   request IDs. While a scanner is selected, the APK refreshes its backend
   assignment/configuration every five seconds so mode changes apply without an
-  app restart. The Bulk Scan screen can safely return to scanner selection and
+  app restart. Laundry sessions start after scanner selection without requiring
+  an incoming-batch selection; the backend resolves each EPC to an authorized
+  active batch and can return multiple affected batches in one scan. The Bulk
+  Scan screen can safely return to scanner selection and
   clear the current backend scan-session history plus its local counters.
   Retryable offline requests persist in Room and sync through
   WorkManager. Debug currently targets the local LAN backend at
-  `192.168.0.103:5001`; release requires an HTTPS Gradle property.
+  `192.168.0.102:5001`; release requires an HTTPS Gradle property.
 
 - Laundry scanner management uses `POST /laundry-scanners/create`,
   `GET /laundry-scanners/show`, `GET /laundry-scanners/show/:id`,
@@ -214,12 +236,40 @@ Confirmed API-backed areas:
   `PUT /laundry-scanners/update-status/:id`. Scanner stat cards consume the
   `{ key, label, count }[]` collection returned under `data.counts` by the list
   request; no separate Laundry summary request is made.
+  Laundry and Business scanner edits use their respective
+  `PUT /laundry-scanners/update/:scannerId` and
+  `PUT /tenant-scanners/update/:scannerId` endpoints with `scannerType`,
+  `scannerMode`, top-level `location` and `zoneName`, optional
+  `assignedOperatorId`, `status`, and an English translation containing `name`,
+  `zoneName`, `location`, and `notes`.
+  Scanner Add/Edit staff selectors and the scanner operator filter use
+  `GET /tenant-staff/options` or `GET /laundry-staff/options` with
+  `status=active`, `limit=100`, and optional `keywords`; they map
+  `data.items[].fullName`/`id` to dropdown labels/values. Clearing an assignment
+  sends `assignedOperatorId: null`.
 - Laundry Incoming Batches is implemented at `/laundry/incoming-batches` behind
   the `incoming_batches` view permission. It lists dispatched batches through
   `GET /laundry-batches/incoming` with server pagination, optional `keywords`,
   and URL-backed Incoming (`status=dispatched`), Received (`status=received`),
-  and Delayed (`status=delayed`) tabs. The sidebar labels this feature Batches,
-  and its list/detail UI is read-only operational tracking.
+  and Completed tabs. Completed replaces the former Delayed tab and consumes
+  `GET /laundry-dispatch-batches/completed` with `page`, `limit`, and optional
+  `keywords`, `tenantId`, `dateFrom`, and `dateTo`; it displays backend return
+  progress, completion status, exceptions/missing items, and last return
+  activity. The sidebar labels this feature Batches,
+  and its list/detail UI is read-only operational tracking. The list's Check-In
+  Progress displays checked-in tags against total tags, accepts the backend's
+  tag/item count aliases or nested progress summary, derives the count from
+  returned item statuses when necessary, and refreshes it on live scan events.
+  The Receive Batch flow posts the scan session, accepted tag UUIDs, and any
+  user-confirmed missing tag UUIDs to
+  `POST /laundry-batches/:id/receive`. Its Total, Received, Received
+  Now, Missing, and Pending counters and completion state are taken from that
+  response. `partially_completed` batches remain selectable alongside
+  dispatched batches so late tags can be scanned and confirmed later. Scanner
+  and incoming-batch selection remain owned by the Android APK; the web app
+  captures the real socket session/batch/tag context, opens the selected batch,
+  and offers only receipt confirmation and remaining-item handling. The old
+  browser test-scanner selector and test-scan API integration are removed.
 - The Laundry Dashboard's old browser-based test scanner selector/full-batch
   simulation is disabled; the Android APK owns real scanner and incoming-batch
   selection plus Check In/Check Out processing. A real `scan.session.started`
@@ -399,9 +449,9 @@ Confirmed API-backed areas:
   asset response's filter metadata when supplied and otherwise derive from
   returned rows. Asset rows/cards normalize the live response instead of mock data.
 - The Business dashboard no longer renders its temporary hardcoded Test Scanner
-  Scan/Test Bulk Add controls. While the dashboard is mounted, a real
-  `scan.session.started` or `scanner.scan.bulk` event stores the backend session
-  ID and automatically opens `/business/bulk-scanning`. That screen then loads
+  Scan/Test Bulk Add controls. Across the authenticated Business portal,
+  a real `scan.session.started` or `scanner.scan.bulk` event stores the backend
+  session ID and automatically opens `/business/bulk-scanning`. That screen then loads
   and updates the real scanned-tag entries through its existing API and socket
   flow; fixed `TEST-EPC-*` values are not submitted by the dashboard.
 - Tenant linked laundries, pending invitations, and closed invitations use
@@ -536,7 +586,9 @@ Current endpoints:
 - `PUT /tenant-categories/update/:id`.
 - `PUT /tenant-categories/update-status/:id` with `{ status }`.
 - `POST /tenant-scanners/create` with `{ scannerId, scannerType, scannerMode,
-  assignedOperatorId?, status, translations: { en, ar } }`.
+  assignedOperatorId?, status, translations: { en, ar } }`. Scanner creation
+  requires a location for both fixed and portable devices and sends it as
+  `translations.en.zoneName` and `translations.ar.zoneName`.
 - `GET /tenant-scanners/show` returns `data.items`, `data.pagination`, and
   `data.counts` for the six scanner summary cards. It accepts `page`, `limit`,
   and optional `keywords`,

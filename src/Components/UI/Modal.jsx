@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
@@ -13,11 +13,17 @@ const Modal = ({
   closeOnBackdrop = true,
   showCloseButton = true,
 }) => {
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return undefined;
 
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") onClose?.();
+      if (event.key === "Escape") onCloseRef.current?.();
     };
 
     const previousOverflow = document.body.style.overflow;
@@ -29,7 +35,7 @@ const Modal = ({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose, open]);
+  }, [open]);
 
   if (!open) return null;
 

@@ -79,7 +79,7 @@ fun BatchDto.displayStatus(): String = statusLabel?.takeIf { it.isNotBlank() } ?
 fun BatchDto.displayTotal(): Int = totalItems ?: itemsCount ?: totalTagsCount ?: 0
 fun BatchDto.displayDispatchDate(): String = dispatchedAt ?: dispatchDate ?: createdAt.orEmpty()
 data class BatchListData(val items: List<BatchDto> = emptyList())
-data class StartSessionRequest(val scannerId: String, val batchId: String? = null)
+data class StartSessionRequest(val scannerId: String)
 data class SessionDto(val id: String? = null, val status: String = "active")
 data class StartSessionData(val id: String? = null, val status: String = "active", val session: SessionDto? = null) {
     fun actualSession(): SessionDto? = session?.takeIf { !it.id.isNullOrBlank() }
@@ -87,7 +87,10 @@ data class StartSessionData(val id: String? = null, val status: String = "active
 }
 data class ScanRequest(val requestId: String, val epcs: List<String>, val scanAction: String? = null)
 data class ScanCounters(val receivedCount: Int = 0, val uniqueCount: Int = 0, val processedCount: Int = 0, val rejectedCount: Int = 0, val duplicateCount: Int = 0, val checkedInCount: Int = 0, val checkedOutCount: Int = 0)
-data class ScanResponseData(val session: SessionDto? = null, val counters: ScanCounters = ScanCounters())
+data class BatchCounterDto(val batchId: String? = null, val batchCode: String? = null, val checkedInCount: Int = 0, val checkedOutCount: Int = 0, val acceptedCount: Int = 0, val rejectedCount: Int = 0)
+data class ScanResultDto(val epc: String = "", val accepted: Boolean = false, val batchId: String? = null, val batchCode: String? = null, val reason: String? = null)
+data class UndoDto(val id: String = "", val expiresAt: String = "", val durationSeconds: Int = 0, val displayDuration: String = "")
+data class ScanResponseData(val session: SessionDto? = null, val counters: ScanCounters = ScanCounters(), val affectedBatchIds: List<String> = emptyList(), val batchCounters: List<BatchCounterDto> = emptyList(), val undos: List<UndoDto> = emptyList(), val results: List<ScanResultDto> = emptyList())
 data class HeartbeatRequest(val scannerId: String, val appVersion: String = "1.0.0", val batteryLevel: Int, val networkState: String, val rfidConnected: Boolean)
 data class HeartbeatData(val scannerActive: Boolean = true)
 

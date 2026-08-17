@@ -18,6 +18,7 @@ const Dropdown = ({
   multiple = false,
   value = multiple ? [] : null,
   onChange = () => {},
+  onSearchChange,
   disabled = false,
   search = false,
   placeholder = "Select option",
@@ -120,6 +121,7 @@ const Dropdown = ({
       setMenuPosition(null);
       setActiveIndex(-1);
       setQuery("");
+      onSearchChange?.("");
     };
     const handleClickOutside = (event) => {
       const target = event.target;
@@ -140,7 +142,7 @@ const Dropdown = ({
       window.removeEventListener("action-dropdown-open", closeDropdownMenu);
       window.removeEventListener("modal-open", closeDropdownMenu);
     };
-  }, []);
+  }, [onSearchChange]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -166,6 +168,7 @@ const Dropdown = ({
     setMenuPosition(null);
     setActiveIndex(-1);
     setQuery("");
+    onSearchChange?.("");
   };
 
   const commitChange = (nextValues) => {
@@ -440,7 +443,10 @@ const Dropdown = ({
               />
               <input
                 className="global-input-control h-10 w-full rounded-lg border bg-transparent pl-9 pr-3 text-sm font-semibold outline-none placeholder:text-(--theme-text-muted)"
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  onSearchChange?.(event.target.value);
+                }}
                 placeholder="Search..."
                 ref={searchRef}
                 style={{

@@ -6,7 +6,6 @@ import ChartsRow from "./ChartsRow";
 import DashboardHeader from "./DashboardHeader";
 import InventoryAlerts from "./InventoryAlerts";
 import LinkedLaundriesPanel from "./LinkedLaundriesPanel";
-import LiveBulkScanRedirect from "./LiveBulkScanRedirect";
 import ScannerActivityPanel from "./ScannerActivityPanel";
 import StatsGrid from "./StatsGrid";
 
@@ -16,8 +15,6 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-col gap-5">
-      <LiveBulkScanRedirect />
-
       {/* Page heading + period filter + date range */}
       <DashboardHeader
         period={period}

@@ -27,3 +27,10 @@ export const clearLaundryScannerSession = (sessionId) =>
   api.put(LAUNDRY_SCANNER_ENDPOINTS.CLEAR_SESSION(sessionId), undefined, {
     timeout: 15000,
   });
+
+export const undoLaundryScanAction = (sessionId, undoId, config = {}) =>
+  api.post(
+    LAUNDRY_SCANNER_ENDPOINTS.ACTION_UNDO(sessionId, undoId),
+    undefined,
+    { timeout: 15000, ...config },
+  );

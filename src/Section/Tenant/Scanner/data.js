@@ -46,6 +46,18 @@ export const normalizeScanner = (scanner, index = 0) => {
         name: translation?.name || scanner?.name || "Unnamed Scanner",
         type: titleCase(scanner?.scannerType || scanner?.type),
         mode: titleCase(scanner?.scannerMode || scanner?.mode),
+        scannerLocation:
+            translation?.location ||
+            scanner?.location ||
+            scanner?.locationName ||
+            translation?.zoneName ||
+            scanner?.zoneName ||
+            "",
+        zoneName:
+            translation?.zoneName ||
+            scanner?.zoneName ||
+            scanner?.locationName ||
+            "",
         location:
             translation?.zoneName || scanner?.zoneName || scanner?.locationName || "-",
         operator:

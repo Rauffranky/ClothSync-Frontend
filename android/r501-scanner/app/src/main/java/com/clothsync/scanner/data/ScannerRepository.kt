@@ -27,7 +27,7 @@ class ScannerRepository @Inject constructor(private val api: MobileScannerApi, p
         return api.selectScanner(uuid, SelectScannerRequest(Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID))).data ?: scanner
     }
     suspend fun batches() = api.batches().data?.items.orEmpty()
-    suspend fun start(scannerId: String, batchId: String?) = api.startSession(StartSessionRequest(scannerId, batchId)).data?.actualSession() ?: error("Session ID was not returned")
+    suspend fun start(scannerId: String) = api.startSession(StartSessionRequest(scannerId)).data?.actualSession() ?: error("Session ID was not returned")
     suspend fun upload(sessionId: String, epcs: List<String>, action: String?): ApiEnvelope<ScanResponseData> {
         val request = ScanRequest(UUID.randomUUID().toString(), epcs, action)
         return try { api.scans(sessionId, request) } catch (error: Exception) { if (retryable(error)) { dao.save(OfflineScanEntity(request.requestId, sessionId, gson.toJson(epcs), action, System.currentTimeMillis())); scheduleSync() }; throw error }

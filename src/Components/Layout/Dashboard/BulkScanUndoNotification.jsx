@@ -40,10 +40,29 @@ const BulkScanUndoNotification = ({
     const business = notice.businessName || "Business";
     const laundry = notice.laundryName || "Laundry";
 
+    if (notice.portal === "laundry" && notice.action === "check_in") {
+      return (
+        <span>
+          {qty} tag(s) received from <strong>{business}</strong> into{" "}
+          <strong>{laundry}</strong>. You can undo this check-in in{" "}
+          <strong className="font-mono">{formattedTime}</strong>.
+        </span>
+      );
+    }
+    if (notice.portal === "laundry" && notice.action === "check_out") {
+      return (
+        <span>
+          {qty} tag(s) returned from <strong>{laundry}</strong> to{" "}
+          <strong>{business}</strong>. You can undo this check-out in{" "}
+          <strong className="font-mono">{formattedTime}</strong>.
+        </span>
+      );
+    }
+
     if (notice.action === "check_out") {
       return (
         <span>
-          {qty} Laundry tag(s) checked out successfully from <strong>{business}</strong> to{" "}
+          {qty} tag(s) dispatched from <strong>{business}</strong> to{" "}
           <strong>{laundry}</strong>. You can undo this action in{" "}
           <strong className="font-mono">{formattedTime}</strong>.
         </span>
@@ -52,7 +71,7 @@ const BulkScanUndoNotification = ({
     if (notice.action === "check_in") {
       return (
         <span>
-          {qty} Laundry tag(s) checked in successfully from <strong>{laundry}</strong> to{" "}
+          {qty} tag(s) returned from <strong>{laundry}</strong> to{" "}
           <strong>{business}</strong>. You can undo this action in{" "}
           <strong className="font-mono">{formattedTime}</strong>.
         </span>

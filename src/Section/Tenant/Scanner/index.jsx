@@ -5,7 +5,7 @@ import ScannerStats from "./ScannerStats";
 import ScannerTable from "./ScannerTable";
 import AddScannerModal from "./AddScannerModal";
 import { createTenantScanner, getTenantScanners, updateTenantScanner, updateTenantScannerStatus } from "../../../axios/scanners/tenantScanners";
-import { getTenantStaff } from "../../../axios/staff/tenantStaff";
+import { getTenantStaffOptions } from "../../../axios/staff/tenantStaff";
 import { getApiErrorMessage } from "../../../axios/api";
 import { toast } from "../../../Utils/toast";
 
@@ -14,7 +14,7 @@ const ScannerManagementIndex = ({
   getScanners = getTenantScanners,
   updateScanner = updateTenantScanner,
   updateScannerStatus = updateTenantScannerStatus,
-  getStaffMembers = getTenantStaff,
+  getStaffOptions = getTenantStaffOptions,
   detailRoutePrefix = "/business/scanners",
 }) => {
   const [isAddScannerOpen, setIsAddScannerOpen] = useState(false);
@@ -60,9 +60,7 @@ const ScannerManagementIndex = ({
       scannerId: values.scannerId,
       scannerType: values.scannerType.toLowerCase(),
       scannerMode: values.scannerMode.toLowerCase(),
-      ...(values.assignedOperatorId
-        ? { assignedOperatorId: values.assignedOperatorId }
-        : {}),
+      assignedOperatorId: values.assignedOperatorId || null,
       status: values.status.toLowerCase(),
       translations: {
         en: {
@@ -119,14 +117,14 @@ const ScannerManagementIndex = ({
         getScanners={getScanners}
         updateScanner={updateScanner}
         updateScannerStatus={updateScannerStatus}
-        getStaffMembers={getStaffMembers}
+        getStaffOptions={getStaffOptions}
       />
 
       <AddScannerModal
         isOpen={isAddScannerOpen}
         onClose={() => setIsAddScannerOpen(false)}
         onSubmit={handleCreateScanner}
-        getStaffMembers={getStaffMembers}
+        getStaffOptions={getStaffOptions}
       />
     </div>
   );

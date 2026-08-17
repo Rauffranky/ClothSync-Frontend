@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CircleCheck,
   CircleX,
@@ -14,11 +14,8 @@ import Button from "../../../Components/UI/Button";
 import Input from "../../../Components/UI/Input";
 import Dropdown from "../../../Components/UI/Dropdown";
 import { getApiErrorMessage } from "../../../axios/api";
-import { getTenantStaff } from "../../../axios/staff/tenantStaff";
-import {
-  getStaffPaginatedCollection,
-  normalizeStaffMember,
-} from "../Staff/data";
+import { getTenantStaffOptions } from "../../../axios/staff/tenantStaff";
+import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
 
 const scannerModeOptions = [
   { label: "Entry", value: "Entry" },
@@ -32,6 +29,7 @@ const initialFormState = {
   scannerId: "",
   scannerType: "Fixed",
   scannerMode: "Entry",
+  location: "",
   zoneName: "",
   assignedOperatorId: "",
   status: "Active",
@@ -50,11 +48,7 @@ const scannerValidationSchema = yup.object({
     then: (schema) => schema.required("Scanner mode is required"),
     otherwise: (schema) => schema.notRequired(),
   }),
-  zoneName: yup.string().when("scannerType", {
-    is: "Fixed",
-    then: (schema) => schema.trim().required("Zone name is required"),
-    otherwise: (schema) => schema.notRequired(),
-  }),
+  zoneName: yup.string().trim().required("Scanner location is required"),
 });
 
 const scannerApiValidationSchema = scannerValidationSchema.shape({
@@ -65,6 +59,11 @@ const scannerApiValidationSchema = scannerValidationSchema.shape({
     .transform((value) => (value === "" ? undefined : value))
     .uuid("Assigned operator ID must be a valid UUID")
     .notRequired(),
+});
+
+const scannerEditValidationSchema = scannerApiValidationSchema.shape({
+  location: yup.string().trim().required("Location is required"),
+  zoneName: yup.string().trim().required("Zone name is required"),
 });
 
 const scannerTypeCards = [
@@ -98,7 +97,7 @@ const AddScannerModal = ({
   onSubmit,
   mode = "add",
   initialValues = initialFormState,
-  getStaffMembers = getTenantStaff,
+  getStaffOptions = getTenantStaffOptions,
 }) => {
   const resolvedInitialValues = {
     ...initialFormState,
@@ -109,7 +108,10 @@ const AddScannerModal = ({
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: resolvedInitialValues,
-    validationSchema: scannerApiValidationSchema,
+    validationSchema:
+      mode === "edit"
+        ? scannerEditValidationSchema
+        : scannerApiValidationSchema,
     onSubmit: async (values, { resetForm, setSubmitting }) => {
       const payload = {
         scannerName: values.scannerName.trim(),
@@ -118,6 +120,7 @@ const AddScannerModal = ({
         scannerMode: values.scannerMode,
         assignedOperatorId: values.assignedOperatorId.trim(),
         status: values.status,
+        location: values.location.trim(),
         zoneName: values.zoneName.trim(),
         customNotes: values.customNotes.trim(),
       };
@@ -135,29 +138,54 @@ const AddScannerModal = ({
   });
   const wasOpenRef = useRef(false);
   const [staffOptions, setStaffOptions] = useState([]);
+  const [staffSearch, setStaffSearch] = useState("");
+  const debouncedStaffSearch = useDebouncedSearch(staffSearch);
   const [isStaffLoading, setIsStaffLoading] = useState(true);
   const [staffLoadError, setStaffLoadError] = useState("");
   const [staffLoadKey, setStaffLoadKey] = useState(0);
+  const selectedOperatorId = formik.values.assignedOperatorId;
 
   useEffect(() => {
     if (!isOpen) return undefined;
 
     let isActive = true;
 
-    getStaffMembers({ page: 1, limit: 100, status: "active" })
+    getStaffOptions({
+      status: "active",
+      limit: 100,
+      ...(debouncedStaffSearch
+        ? { keywords: debouncedStaffSearch }
+        : {}),
+    })
       .then((response) => {
         if (!isActive) return;
 
-        const options = getStaffPaginatedCollection(response, 1, 100)
-          .rows.map(normalizeStaffMember)
-          .filter((staff) => staff.apiId && staff.status === "Active")
+        const items = Array.isArray(response?.data?.items)
+          ? response.data.items
+          : [];
+        const options = items
+          .filter((staff) => staff?.id && staff?.fullName)
           .map((staff) => ({
-            label: staff.name,
-            searchLabel: `${staff.name} ${staff.email}`,
-            value: staff.apiId,
+            label: staff.fullName,
+            value: staff.id,
           }));
 
-        setStaffOptions(options);
+        setStaffOptions((currentOptions) => {
+          const selectedOption = currentOptions.find(
+            (option) =>
+              String(option.value) ===
+              String(selectedOperatorId),
+          );
+          const selectedIsIncluded = options.some(
+            (option) =>
+              String(option.value) ===
+              String(selectedOperatorId),
+          );
+
+          return selectedOption && !selectedIsIncluded
+            ? [selectedOption, ...options]
+            : options;
+        });
         setStaffLoadError("");
       })
       .catch((error) => {
@@ -174,7 +202,13 @@ const AddScannerModal = ({
     return () => {
       isActive = false;
     };
-  }, [isOpen, staffLoadKey, getStaffMembers]);
+  }, [
+    debouncedStaffSearch,
+    getStaffOptions,
+    isOpen,
+    selectedOperatorId,
+    staffLoadKey,
+  ]);
 
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) {
@@ -197,14 +231,18 @@ const AddScannerModal = ({
   const handleScannerTypeChange = (nextType) => {
     formik.setFieldValue("scannerType", nextType);
     formik.setFieldValue("scannerMode", formik.values.scannerMode || "Entry");
-    if (nextType !== "Fixed") formik.setFieldValue("zoneName", "", false);
   };
 
   const handleClose = () => {
     if (formik.isSubmitting) return;
+    setStaffSearch("");
     formik.resetForm();
     onClose?.();
   };
+
+  const handleStaffSearchChange = useCallback((value) => {
+    setStaffSearch(value);
+  }, []);
 
   return (
     <Modal
@@ -254,6 +292,7 @@ const AddScannerModal = ({
           />
 
           <Input
+            disabled={mode === "edit"}
             error={hasFieldError("scannerId")}
             helperText={getFieldError("scannerId")}
             label="Scanner ID"
@@ -454,6 +493,7 @@ const AddScannerModal = ({
               onChange={(value) =>
                 setField("assignedOperatorId", value || "")
               }
+              onSearchChange={handleStaffSearchChange}
               options={staffOptions}
               placeholder={
                 isStaffLoading
@@ -494,11 +534,24 @@ const AddScannerModal = ({
               </p>
             )}
           </div>
-          {formik.values.scannerType === "Fixed" && (
+          {mode === "edit" ? (
+            <Input
+              error={hasFieldError("location")}
+              helperText={getFieldError("location")}
+              label="Location"
+              leftIcon={<MapPin size={18} />}
+              name="location"
+              onBlur={formik.handleBlur}
+              onChange={(value) => setField("location", value)}
+              placeholder="e.g. Main Entrance"
+              required
+              value={formik.values.location}
+            />
+          ) : (
             <Input
               error={hasFieldError("zoneName")}
               helperText={getFieldError("zoneName")}
-              label="Zone Name"
+              label="Scanner Location"
               leftIcon={<MapPin size={18} />}
               name="zoneName"
               onBlur={formik.handleBlur}
@@ -509,6 +562,21 @@ const AddScannerModal = ({
             />
           )}
         </div>
+
+        {mode === "edit" && (
+          <Input
+            error={hasFieldError("zoneName")}
+            helperText={getFieldError("zoneName")}
+            label="Zone Name"
+            leftIcon={<MapPin size={18} />}
+            name="zoneName"
+            onBlur={formik.handleBlur}
+            onChange={(value) => setField("zoneName", value)}
+            placeholder="e.g. First Floor"
+            required
+            value={formik.values.zoneName}
+          />
+        )}
 
         <Input
           label="Custom Notes"

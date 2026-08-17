@@ -6,7 +6,7 @@ import {
   updateLaundryScanner, 
   updateLaundryScannerStatus 
 } from "../../../axios/scanners/laundryScanners";
-import { getLaundryStaff } from "../../../axios/laundryStaff/laundryStaff";
+import { getLaundryStaffOptions } from "../../../axios/laundryStaff/laundryStaff";
 
 const ScannersPage = () => {
     usePageMeta({
@@ -26,7 +26,7 @@ const ScannersPage = () => {
                 getScanners={getLaundryScanners}
                 updateScanner={updateLaundryScanner}
                 updateScannerStatus={updateLaundryScannerStatus}
-                getStaffMembers={getLaundryStaff}
+                getStaffOptions={getLaundryStaffOptions}
                 detailRoutePrefix="/laundry/scanners"
             />
         </div>

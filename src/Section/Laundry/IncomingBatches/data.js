@@ -1,13 +1,56 @@
 import { formatDateTime } from "../../../Utils/date";
 import { formatStatusLabel } from "../../../Utils/status";
 
+export const batchStatusLabels = {
+  dispatched: "Dispatched",
+  partially_completed: "Partially Completed",
+  at_laundry: "Received",
+  washed: "Washed",
+  sent_to_business: "Sent to Business",
+  partially_returned: "Partially Returned",
+  completed: "Completed",
+  delayed: "Delayed",
+};
+
+export const batchStatusColors = {
+  partially_completed: "orange",
+  at_laundry: "purple",
+  completed: "green",
+  delayed: "red",
+};
+
 const statusVariants = {
   dispatched: "info",
   ready_for_check_in: "info",
+  partially_completed: "warning",
   partially_checked_in: "warning",
-  received: "success",
-  at_laundry: "success",
+  received: "purple",
+  at_laundry: "purple",
   checked_in: "success",
+  completed: "success",
+  delayed: "danger",
+};
+
+const statusColorVariants = {
+  orange: "warning",
+  purple: "purple",
+  green: "success",
+  red: "danger",
+};
+
+export const itemStatusLabels = {
+  sent: "Pending Scan",
+  at_laundry: "Received",
+  missing: "Missing",
+  damaged: "Damaged",
+  delayed: "Delayed",
+};
+
+const itemStatusVariants = {
+  sent: "neutral",
+  at_laundry: "success",
+  missing: "warning",
+  damaged: "danger",
   delayed: "danger",
 };
 
@@ -16,10 +59,70 @@ const getBusinessName = (batch) => {
   return business.businessName || business.companyName || business.name || batch.businessName || "—";
 };
 
+const getCount = (...values) => {
+  for (const value of values) {
+    if (Array.isArray(value)) return value.length;
+    if (value === null || value === undefined || value === "") continue;
+
+    const count = Number(value);
+    if (Number.isFinite(count)) return count;
+  }
+
+  return null;
+};
+
+const checkedInStatuses = new Set([
+  "accepted",
+  "at_laundry",
+  "checked_in",
+  "in_laundry",
+  "received",
+]);
+
+const clampCheckedInCount = (count, total) =>
+  total > 0 ? Math.min(Math.max(count, 0), total) : Math.max(count, 0);
+
+const getCheckedInTagCount = (batch, total, statusValue) => {
+  const summary = batch.summary || batch.progress || batch.counts || {};
+  const explicitCount = getCount(
+    batch.receivedCount,
+    batch.checkedInTagsCount,
+    batch.checkedInTagCount,
+    batch.tagsCheckedIn,
+    batch.checkedInItemsCount,
+    batch.receivedItemsCount,
+    batch.checkedInItems,
+    batch.receivedItems,
+    batch.checkedInCount,
+    summary.receivedCount,
+    summary.checkedInTagsCount,
+    summary.checkedInTagCount,
+    summary.checkedInItems,
+    summary.receivedItems,
+    summary.checkedInCount,
+  );
+
+  if (explicitCount !== null) return clampCheckedInCount(explicitCount, total);
+
+  const checkedInItems = getBatchItems(batch).filter((item) =>
+    checkedInStatuses.has(
+      String(item.status || item.tag?.currentStatus || "").toLowerCase(),
+    ),
+  ).length;
+  if (checkedInItems > 0) return clampCheckedInCount(checkedInItems, total);
+
+  return checkedInStatuses.has(String(statusValue).toLowerCase()) ? total : 0;
+};
+
 export const normalizeIncomingBatch = (batch = {}) => {
-  const total = Number(batch.totalItems ?? batch.itemsCount ?? batch.totalTagsCount) || 0;
-  const checkedIn = Number(batch.checkedInItems ?? batch.receivedItems ?? batch.checkedInCount) || 0;
+  const summary = batch.summary || batch.progress || batch.counts || {};
+  const total = Number(batch.totalCount ?? summary.totalCount ?? batch.totalTagsCount ?? batch.totalItems ?? batch.itemsCount) || 0;
   const statusValue = batch.status || "dispatched";
+  const checkedIn = getCheckedInTagCount(batch, total, statusValue);
+  const receivedCount = getCount(batch.receivedCount, summary.receivedCount, checkedIn) ?? 0;
+  const receivedNowCount = getCount(batch.receivedNowCount, summary.receivedNowCount) ?? 0;
+  const missingCount = getCount(batch.missingCount, summary.missingCount) ?? 0;
+  const pendingCount = getCount(batch.pendingCount, summary.pendingCount) ?? Math.max(total - receivedCount - missingCount, 0);
 
   return {
     ...batch,
@@ -30,9 +133,19 @@ export const normalizeIncomingBatch = (batch = {}) => {
     dispatchAt: formatDateTime(batch.dispatchedAt || batch.dispatchDate || batch.createdAt),
     total,
     checkedIn,
-    status: batch.statusLabel || formatStatusLabel(statusValue),
+    totalCount: total,
+    receivedCount,
+    receivedNowCount,
+    missingCount,
+    pendingCount,
+    receiptComplete:
+      pendingCount === 0 && missingCount === 0 && receivedCount === total,
+    status: batchStatusLabels[statusValue] || batch.statusLabel || formatStatusLabel(statusValue),
     statusValue,
-    statusVariant: statusVariants[statusValue] || "neutral",
+    statusVariant:
+      statusColorVariants[batchStatusColors[statusValue]] ||
+      statusVariants[statusValue] ||
+      "neutral",
     delayed: Number(batch.delayedItems ?? batch.delayedCount) || 0,
     lastActivity: formatDateTime(batch.lastActivityAt || batch.updatedAt),
     notes: batch.notes || batch.description || "—",
@@ -47,6 +160,7 @@ export function normalizeIncomingBatchItem(item = {}) {
   const tag = item.tag || item.scannedTag || item;
   const asset = item.asset || tag.asset || {};
   const category = item.category || asset.category || {};
+  const statusValue = String(item.status || tag.currentStatus || "sent").toLowerCase();
   return {
     ...item,
     id: item.id || item._id || tag.id || tag._id || tag.epc,
@@ -56,7 +170,9 @@ export function normalizeIncomingBatchItem(item = {}) {
     assetName: asset.assetName || item.assetName || "—",
     assetCode: asset.assetCode || item.assetCode || "—",
     category: getNestedName(category),
-    status: item.statusLabel || formatStatusLabel(item.status || tag.currentStatus),
+    statusValue,
+    status: itemStatusLabels[statusValue] || item.statusLabel || formatStatusLabel(statusValue),
+    statusVariant: itemStatusVariants[statusValue] || "neutral",
   };
 }
 
@@ -80,9 +196,96 @@ export const getIncomingBatchCollection = (response, limit = 10) => {
   return { rows, counts: counts || {}, totalItems, totalPages };
 };
 
+export const getCompletedBatchCollection = (response, limit = 20) => {
+  const payload = response?.data ?? response ?? {};
+  const items = payload.items || [];
+  const pagination = payload.pagination || {};
+  const rows = Array.isArray(items)
+    ? items.map((batch) => {
+        const progress = batch.progress || {};
+        const business = batch.business || {};
+        const totalCount = Number(progress.totalCount ?? batch.totalTagsCount) || 0;
+        const returnedCount = Number(progress.returnedCount) || 0;
+        const exceptionCount = Number(progress.exceptionCount) || 0;
+        const missingCount = Number(progress.statusCounts?.missing) || 0;
+        const pendingCount = Number(progress.pendingCount) || 0;
+        const progressPercent = Number(progress.progressPercent) || 0;
+        const statusValue = batch.status || "completed";
+        const completionStatusValue = batch.completionStatus || "completed";
+
+        return {
+          ...batch,
+          apiId: batch.id || batch._id,
+          id: batch.batchCode || batch.id || "—",
+          business: business.name || business.businessName || "—",
+          businessEmail: business.email || "—",
+          total: totalCount,
+          returnedCount,
+          missingCount,
+          exceptionCount,
+          pendingCount,
+          progressPercent: Math.min(Math.max(progressPercent, 0), 100),
+          statusValue,
+          status:
+            batchStatusLabels[statusValue] || formatStatusLabel(statusValue),
+          statusVariant:
+            statusColorVariants[batchStatusColors[statusValue]] || "neutral",
+          completionStatusValue,
+          completionStatus:
+            batchStatusLabels[completionStatusValue] ||
+            formatStatusLabel(completionStatusValue),
+          completionStatusVariant:
+            statusColorVariants[batchStatusColors[completionStatusValue]] ||
+            "neutral",
+          completedAt: formatDateTime(batch.completedAt),
+          lastActivity: formatDateTime(
+            batch.lastReturnActivityAt || batch.completedAt,
+          ),
+        };
+      })
+    : [];
+  const totalItems = Number(pagination.totalItems ?? rows.length) || 0;
+  const totalPages =
+    Number(pagination.totalPages ?? Math.ceil(totalItems / limit)) || 0;
+
+  return { rows, totalItems, totalPages };
+};
+
 export const getIncomingBatchDetails = (response) => {
   const payload = response?.data ?? response ?? {};
   return normalizeIncomingBatch(payload.batch || payload.item || payload);
+};
+
+export const normalizeReceiptResponse = (response) => {
+  const data = response?.data ?? response ?? {};
+  const batch = normalizeIncomingBatch(data.batch || {});
+  const totalCount = Number(data.totalCount ?? batch.totalCount) || 0;
+  const receivedCount = Number(data.receivedCount ?? batch.receivedCount) || 0;
+  const receivedNowCount = Number(data.receivedNowCount ?? batch.receivedNowCount) || 0;
+  const missingCount = Number(data.missingCount ?? batch.missingCount) || 0;
+  const pendingCount = Number(data.pendingCount ?? batch.pendingCount) || 0;
+
+  return {
+    totalCount,
+    receivedCount,
+    receivedNowCount,
+    missingCount,
+    pendingCount,
+    batch: {
+      ...batch,
+      total: totalCount,
+      checkedIn: receivedCount,
+      totalCount,
+      receivedCount,
+      receivedNowCount,
+      missingCount,
+      pendingCount,
+      receiptComplete:
+        pendingCount === 0 &&
+        missingCount === 0 &&
+        receivedCount === totalCount,
+    },
+  };
 };
 
 export const normalizeScanResult = (result = {}) => {
@@ -95,7 +298,16 @@ export const normalizeScanResult = (result = {}) => {
   return {
     ...result,
     id: result.id || result.entryId || tag.id || tag.epc || result.epc,
-    tagId: result.tagId || result.tag?.id || result.scannedTag?.tagId || result.scannedTag?.tag?.id || tag.id || null,
+    tagId:
+      result.tagId ||
+      result.tag?.id ||
+      result.tag?._id ||
+      result.scannedTag?.tagId ||
+      result.scannedTag?.tag?.id ||
+      result.scannedTag?.tag?._id ||
+      tag.id ||
+      tag._id ||
+      null,
     epc: result.epc || tag.epc || "—",
     assetName: asset.assetName || result.assetName || "—",
     category: getNestedName(category),

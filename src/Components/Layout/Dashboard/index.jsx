@@ -52,7 +52,10 @@ const DashboardLayout = ({ portalKey }) => {
           </main>
         </div>
       </div>
-      {!pathname.includes("/bulk-scanning") && <GlobalUndoBanners />}
+      {!pathname.includes("/bulk-scanning") &&
+        pathname !== "/laundry/incoming-batches" && (
+        <GlobalUndoBanners portal={activePortalKey} />
+      )}
     </div>
   );
 };

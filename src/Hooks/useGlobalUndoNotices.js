@@ -20,15 +20,16 @@ const useGlobalUndoNotices = () => {
 
     window.addEventListener("bulk-scan-undo-notices-changed", handleStorageChange);
     // Also listen to storage events across tabs
-    window.addEventListener("storage", (e) => {
+    const handleCrossTabStorage = (e) => {
       if (e.key === "active-tenant-bulk-scan-undo-notices") {
         handleStorageChange();
       }
-    });
+    };
+    window.addEventListener("storage", handleCrossTabStorage);
 
     return () => {
       window.removeEventListener("bulk-scan-undo-notices-changed", handleStorageChange);
-      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("storage", handleCrossTabStorage);
     };
   }, []);
 

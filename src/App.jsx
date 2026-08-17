@@ -4,6 +4,7 @@ import SplashScreen from "./Components/UI/SplashScreen";
 import { applyThemeMode, getThemeMode } from "./Utils/themeMode";
 import { startSocketConnection } from "./socket/client";
 import useUserDatePreferences from "./Hooks/useUserDatePreferences";
+import LiveScanRedirect from "./Components/Layout/Dashboard/LiveScanRedirect";
 
 const SPLASH_SESSION_KEY = "clothsync-splash-shown";
 
@@ -57,6 +58,7 @@ function App() {
 
   return (
     <>
+      <LiveScanRedirect />
       <AppRoutes />
       {shouldShowSplash && (
         <SplashScreen isLeaving={splashState === "leaving"} />

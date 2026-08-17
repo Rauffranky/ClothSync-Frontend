@@ -11,6 +11,9 @@ export const createLaundryStaff = (payload) =>
 export const getLaundryStaff = (params = {}) =>
   api.get(LAUNDRY_STAFF_ENDPOINTS.LIST, { params, timeout: 15000 });
 
+export const getLaundryStaffOptions = (params = {}) =>
+  api.get(LAUNDRY_STAFF_ENDPOINTS.OPTIONS, { params, timeout: 15000 });
+
 export const getLaundryStaffDetails = (id) =>
   api.get(LAUNDRY_STAFF_ENDPOINTS.DETAILS(id), { timeout: 15000 });
 

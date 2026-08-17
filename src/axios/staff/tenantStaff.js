@@ -7,6 +7,9 @@ export const createTenantStaff = (payload) =>
 export const getTenantStaff = (params = {}) =>
   api.get(TENANT_STAFF_ENDPOINTS.LIST, { params, timeout: 15000 });
 
+export const getTenantStaffOptions = (params = {}) =>
+  api.get(TENANT_STAFF_ENDPOINTS.OPTIONS, { params, timeout: 15000 });
+
 export const getTenantStaffDetails = (id) =>
   api.get(TENANT_STAFF_ENDPOINTS.DETAILS(id), { timeout: 15000 });
 

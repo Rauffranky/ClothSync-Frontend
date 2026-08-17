@@ -92,7 +92,6 @@ export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
 
 export const LAUNDRY_SCANNER_ENDPOINTS = Object.freeze({
   CREATE: "/laundry-scanners/create",
-  TEST_SCANNER_SCAN: "/laundry-scanners/test-scanner-scan",
   LIST: "/laundry-scanners/show",
   DETAILS: (id) => `/laundry-scanners/show/${id}`,
   WARNINGS: "/laundry-scanners/warnings",
@@ -100,11 +99,18 @@ export const LAUNDRY_SCANNER_ENDPOINTS = Object.freeze({
   UPDATE_STATUS: (id) => `/laundry-scanners/update-status/${id}`,
   CLEAR_SESSION: (sessionId) =>
     `/laundry-scanners/sessions/${sessionId}/clear`,
+  ACTION_UNDO: (sessionId, undoId) =>
+    `/laundry-scanners/sessions/${sessionId}/actions/${undoId}/undo`,
 });
 
 export const LAUNDRY_BATCH_ENDPOINTS = Object.freeze({
   INCOMING: "/laundry-batches/incoming",
   INCOMING_DETAILS: (batchId) => `/laundry-batches/incoming/${batchId}`,
+  RECEIVE: (batchId) => `/laundry-batches/${batchId}/receive`,
+});
+
+export const LAUNDRY_DISPATCH_BATCH_ENDPOINTS = Object.freeze({
+  COMPLETED: "/laundry-dispatch-batches/completed",
 });
 
 export const TENANT_STAFF_ROLE_ENDPOINTS = Object.freeze({
@@ -122,6 +128,7 @@ export const TENANT_ACCESS_SECTION_ENDPOINTS = Object.freeze({
 export const TENANT_STAFF_ENDPOINTS = Object.freeze({
   CREATE: "/tenant-staff/create",
   LIST: "/tenant-staff/show",
+  OPTIONS: "/tenant-staff/options",
   DETAILS: (id) => `/tenant-staff/show/${id}`,
   UPDATE: (id) => `/tenant-staff/update/${id}`,
   UPDATE_STATUS: (id) => `/tenant-staff/update-status/${id}`,
@@ -154,6 +161,7 @@ export const LAUNDRY_TENANT_ENDPOINTS = Object.freeze({
 export const LAUNDRY_STAFF_ENDPOINTS = Object.freeze({
   CREATE: "/laundry-staff/create",
   LIST: "/laundry-staff/show",
+  OPTIONS: "/laundry-staff/options",
   DETAILS: (id) => `/laundry-staff/show/${id}`,
   UPDATE: (id) => `/laundry-staff/update/${id}`,
   UPDATE_STATUS: (id) => `/laundry-staff/update-status/${id}`,

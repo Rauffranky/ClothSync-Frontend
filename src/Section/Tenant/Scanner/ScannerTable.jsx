@@ -37,17 +37,13 @@ import {
 } from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import { getApiErrorMessage } from "../../../axios/api";
-import { getTenantStaff } from "../../../axios/staff/tenantStaff";
+import { getTenantStaffOptions } from "../../../axios/staff/tenantStaff";
 import {
   getTenantScanners,
   updateTenantScanner,
   updateTenantScannerStatus,
 } from "../../../axios/scanners/tenantScanners";
 import { toast } from "../../../Utils/toast";
-import {
-  getStaffPaginatedCollection,
-  normalizeStaffMember,
-} from "../Staff/data";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -59,7 +55,7 @@ const ScannerTable = ({
   getScanners = getTenantScanners,
   updateScanner = updateTenantScanner,
   updateScannerStatus = updateTenantScannerStatus,
-  getStaffMembers = getTenantStaff,
+  getStaffOptions = getTenantStaffOptions,
 }) => {
   const navigate = useNavigate();
   const [scannerRows, setScannerRows] = useState([]);
@@ -95,17 +91,18 @@ const ScannerTable = ({
   useEffect(() => {
     let isActive = true;
 
-    getStaffMembers({ page: 1, limit: 100, status: "active" })
+    getStaffOptions({ limit: 100, status: "active" })
       .then((response) => {
         if (!isActive) return;
 
-        const activeOperators = getStaffPaginatedCollection(response, 1, 100)
-          .rows.map(normalizeStaffMember)
-          .filter((staff) => staff.apiId && staff.status === "Active")
+        const items = Array.isArray(response?.data?.items)
+          ? response.data.items
+          : [];
+        const activeOperators = items
+          .filter((staff) => staff?.id && staff?.fullName)
           .map((staff) => ({
-            label: staff.name,
-            searchLabel: `${staff.name} ${staff.email}`,
-            value: staff.apiId,
+            label: staff.fullName,
+            value: staff.id,
           }));
 
         setOperatorOptions([
@@ -129,7 +126,7 @@ const ScannerTable = ({
     return () => {
       isActive = false;
     };
-  }, [operatorLoadKey, getStaffMembers]);
+  }, [getStaffOptions, operatorLoadKey]);
 
   useEffect(() => {
     let isActive = true;
@@ -276,7 +273,8 @@ const ScannerTable = ({
         scannerId: scanner.id,
         scannerType: scanner.type,
         scannerMode: scanner.mode,
-        zoneName: scanner.location,
+        location: scanner.scannerLocation,
+        zoneName: scanner.zoneName,
         assignedOperatorId: scanner.assignedOperatorId,
         customNotes: scanner.customNotes,
       },
@@ -299,22 +297,17 @@ const ScannerTable = ({
     }
 
     const payload = {
-      scannerId: updatedScanner.scannerId,
       scannerType: updatedScanner.scannerType.toLowerCase(),
       scannerMode: updatedScanner.scannerMode.toLowerCase(),
-      ...(updatedScanner.assignedOperatorId
-        ? { assignedOperatorId: updatedScanner.assignedOperatorId }
-        : {}),
+      location: updatedScanner.location,
+      zoneName: updatedScanner.zoneName,
+      assignedOperatorId: updatedScanner.assignedOperatorId || null,
       status: updatedScanner.status.toLowerCase(),
       translations: {
         en: {
           name: updatedScanner.scannerName,
           zoneName: updatedScanner.zoneName,
-          notes: updatedScanner.customNotes,
-        },
-        ar: {
-          name: updatedScanner.scannerName,
-          zoneName: updatedScanner.zoneName,
+          location: updatedScanner.location,
           notes: updatedScanner.customNotes,
         },
       },
@@ -623,7 +616,7 @@ const ScannerTable = ({
       />
 
       <AddScannerModal
-        getStaffMembers={getStaffMembers}
+        getStaffOptions={getStaffOptions}
         initialValues={editScannerState.scanner || undefined}
         isOpen={editScannerState.isOpen}
         mode="edit"
