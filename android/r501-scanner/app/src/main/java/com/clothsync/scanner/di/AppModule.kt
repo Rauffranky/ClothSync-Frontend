@@ -25,7 +25,9 @@ object AppModule {
     @Provides fun dao(db: ScannerDatabase) = db.offlineScans()
     @Provides @Singleton fun gson() = Gson()
     @Provides @Singleton fun api(store: SecureSessionStore, gson: Gson): MobileScannerApi {
+        val logging = okhttp3.logging.HttpLoggingInterceptor().apply { level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY }
         val client = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor(logging)
             .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().apply { store.accessToken().takeIf { it.isNotBlank() }?.let { header("Authorization", "Bearer $it") } }.build()) }
             .authenticator { _, response ->
                 if (responseCount(response) > 1 || store.refreshToken().isBlank()) return@authenticator null
