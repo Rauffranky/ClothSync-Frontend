@@ -174,7 +174,7 @@ Dashboard routes:
   `/business/tags`, `/business/tags/:id`, `/business/bulk-scanning`,
   `/business/dispatch-batches`, `/business/dispatch-batches/:id`, and `/business/settings`.
   Reports & Analytics is available at `/business/reports-analytics`.
-- Laundry: `/laundry/dashboard`, `/laundry/linked-businesses`, connected
+- Laundry: `/laundry/dashboard`, `/laundry/linked-businesses`, `/laundry/check-out`, connected
   business details at `/laundry/linked-businesses/:id`, `/laundry/staff`, and
   `/laundry/staff-roles`, and `/laundry/settings`.
 - Each portal root redirects to its dashboard.
@@ -252,8 +252,9 @@ Confirmed API-backed areas:
   `GET /laundry-batches/incoming` with server pagination, optional `keywords`,
   and URL-backed Incoming (`status=dispatched`), Received (`status=received`),
   and Completed tabs. Completed replaces the former Delayed tab and consumes
-  `GET /laundry-dispatch-batches/completed` with `page`, `limit`, and optional
-  `keywords`, `tenantId`, `dateFrom`, and `dateTo`; it displays backend return
+  `GET /laundry-batches/completed` with `page`, `limit`, `keywords`, optional
+  `tenantId`, `dateFrom`, and `dateTo`, plus `sortBy=checkedOutAt` and
+  `sortOrder=desc`; it displays backend return
   progress, completion status, exceptions/missing items, and last return
   activity. The sidebar labels this feature Batches,
   and its list/detail UI is read-only operational tracking. The list's Check-In

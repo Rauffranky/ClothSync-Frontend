@@ -107,10 +107,7 @@ export const LAUNDRY_BATCH_ENDPOINTS = Object.freeze({
   INCOMING: "/laundry-batches/incoming",
   INCOMING_DETAILS: (batchId) => `/laundry-batches/incoming/${batchId}`,
   RECEIVE: (batchId) => `/laundry-batches/${batchId}/receive`,
-});
-
-export const LAUNDRY_DISPATCH_BATCH_ENDPOINTS = Object.freeze({
-  COMPLETED: "/laundry-dispatch-batches/completed",
+  COMPLETED: "/laundry-batches/completed",
 });
 
 export const TENANT_STAFF_ROLE_ENDPOINTS = Object.freeze({

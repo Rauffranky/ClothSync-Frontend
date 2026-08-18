@@ -248,7 +248,12 @@ export const getCompletedBatchCollection = (response, limit = 20) => {
   const totalPages =
     Number(pagination.totalPages ?? Math.ceil(totalItems / limit)) || 0;
 
-  return { rows, totalItems, totalPages };
+  return {
+    rows,
+    totalItems,
+    totalPages,
+    stats: payload.stats || {},
+  };
 };
 
 export const getIncomingBatchDetails = (response) => {

@@ -1,13 +1,18 @@
 import { usePageMeta } from "../../../Hooks/usePageMeta";
 import IncomingBatches from "../../../Section/Laundry/IncomingBatches";
 
-const IncomingBatchesPage = () => {
+const IncomingBatchesPage = ({ checkoutMode = false }) => {
   usePageMeta({
-    title: "Batches - ClothSync",
-    meta: [{ name: "description", content: "Track incoming Laundry batches and their check-in progress." }],
+    title: checkoutMode ? "Check-Out - ClothSync" : "Batches - ClothSync",
+    meta: [{
+      name: "description",
+      content: checkoutMode
+        ? "Track laundry batches checked out to businesses."
+        : "Track incoming Laundry batches and their check-in progress.",
+    }],
   });
 
-  return <IncomingBatches />;
+  return <IncomingBatches checkoutMode={checkoutMode} />;
 };
 
 export default IncomingBatchesPage;

@@ -7,6 +7,12 @@ export const getLaundryTenants = (params) =>
     timeout: 15000,
   });
 
+export const getLaundryTenantOptions = (params = {}) =>
+  api.get(LAUNDRY_TENANT_ENDPOINTS.LIST, {
+    params: { view: "options", ...params },
+    timeout: 15000,
+  });
+
 export const getLaundryTenantDetails = (id) =>
   api.get(LAUNDRY_TENANT_ENDPOINTS.DETAILS(id), {
     timeout: 15000,

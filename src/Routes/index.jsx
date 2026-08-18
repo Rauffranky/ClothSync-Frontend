@@ -148,6 +148,14 @@ const AppRoutes = () => {
             }
           />
           <Route
+            path="/laundry/check-out"
+            element={
+              <PermissionRoute permissionKey="check_out">
+                <LaundryIncomingBatchesPage checkoutMode />
+              </PermissionRoute>
+            }
+          />
+          <Route
             path="/laundry/staff"
             element={
               <PermissionRoute permissionKey="staff">

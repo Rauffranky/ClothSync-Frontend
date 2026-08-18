@@ -33,10 +33,11 @@ import {
   getIncomingBatches,
 } from "../../../axios/batches/laundryBatches";
 import { toast } from "../../../Utils/toast";
-import { getLaundryTenants } from "../../../axios/laundryTenants/laundryTenants";
+import { getLaundryTenantOptions } from "../../../axios/laundryTenants/laundryTenants";
 import { SOCKET_EVENTS } from "../../../socket/events";
 import {
   captureLaundryScanEvent,
+  clearActiveLaundryScan,
   getActiveLaundryScan,
 } from "../../../Utils/laundryScanSession";
 import BatchDetailsModal from "./BatchDetailsModal";
@@ -96,6 +97,12 @@ const stats = [
     variant: "danger",
     Icon: Timer,
   },
+];
+const checkoutStats = [
+  { id: "totalCheckedOutBatches", key: "totalCheckedOutBatches", label: "Total Checked-Out Batches", variant: "neutral", Icon: Box },
+  { id: "checkedOutToday", key: "checkedOutToday", label: "Checked Out Today", variant: "info", Icon: CheckCircle2 },
+  { id: "totalCheckedOutItems", key: "totalCheckedOutItems", label: "Total Checked-Out Items", variant: "success", Icon: PackageCheck },
+  { id: "averageItemsPerBatch", key: "averageItemsPerBatch", label: "Average Items / Batch", variant: "warning", Icon: Clock3 },
 ];
 
 const columns = [
@@ -252,13 +259,27 @@ const completedColumns = [
   { key: "lastActivity", label: "Last Return Activity" },
 ];
 
-const IncomingBatches = () => {
+const getInitialLiveScan = () => {
+  const navigation = performance.getEntriesByType?.("navigation")?.[0];
+  if (navigation?.type === "reload") {
+    clearActiveLaundryScan();
+    return null;
+  }
+  return getActiveLaundryScan();
+};
+
+const IncomingBatches = ({ checkoutMode = false }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const tenantIdFilter = searchParams.get("tenantId") || "";
   const dateFromFilter = searchParams.get("dateFrom") || "";
   const dateToFilter = searchParams.get("dateTo") || "";
-  const activeTab = batchTabs.some((tab) => tab.value === requestedTab)
+  const availableTabs = checkoutMode
+    ? batchTabs.filter((tab) => tab.value === "completed")
+    : batchTabs.filter((tab) => tab.value !== "completed");
+  const activeTab = checkoutMode
+    ? "completed"
+    : availableTabs.some((tab) => tab.value === requestedTab)
     ? requestedTab
     : "incoming";
   const statusFilter = activeTab === "incoming" ? "dispatched" : activeTab;
@@ -275,7 +296,7 @@ const IncomingBatches = () => {
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
-  const [liveScan, setLiveScan] = useState(getActiveLaundryScan);
+  const [liveScan, setLiveScan] = useState(getInitialLiveScan);
   const [businessOptions, setBusinessOptions] = useState([
     { label: "All Businesses", value: "all" },
   ]);
@@ -320,37 +341,17 @@ const IncomingBatches = () => {
     // Loading synchronizes the filter with the linked-business API request.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsBusinessFilterLoading(true);
-    getLaundryTenants({ page: 1, limit: 100, status: "active" })
+    getLaundryTenantOptions()
       .then((response) => {
         if (!isActive) return;
-        const payload = response?.data ?? response ?? {};
-        const records = payload.items || payload.tenants || payload.businesses || [];
+        const records = response?.data?.items || [];
         const options = Array.isArray(records)
-          ? records.map((record) => {
-              const tenant =
-                (record.tenant && typeof record.tenant === "object"
-                  ? record.tenant
-                  : null) ||
-                (record.tenantId && typeof record.tenantId === "object"
-                  ? record.tenantId
-                  : null) ||
-                record.business ||
-                {};
-              return {
-                label:
-                  record.businessName ||
-                  record.tenantName ||
-                  tenant.businessName ||
-                  tenant.name ||
-                  "Unnamed Business",
-                value:
-                  tenant.id ||
-                  tenant._id ||
-                  (typeof record.tenantId === "string" ? record.tenantId : null) ||
-                  record.businessId ||
-                  record.id,
-              };
-            }).filter((option) => option.value)
+          ? records
+              .map((item) => ({
+                value: item.tenantId,
+                label: item.businessName,
+              }))
+              .filter((option) => option.value && option.label)
           : [];
         setBusinessOptions([
           { label: "All Businesses", value: "all" },
@@ -401,19 +402,21 @@ const IncomingBatches = () => {
     setIsLoading(true);
     const completedRequestParams = {
       page: currentPage + 1,
-      limit: 20,
+      limit: 10,
       ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
       ...(tenantIdFilter ? { tenantId: tenantIdFilter } : {}),
       ...(dateFromFilter ? { dateFrom: dateFromFilter } : {}),
       ...(dateToFilter ? { dateTo: dateToFilter } : {}),
+      sortBy: "checkedOutAt",
+      sortOrder: "desc",
     };
     if (activeTab === "completed") {
       getCompletedLaundryDispatchBatches(completedRequestParams)
         .then((response) => {
           if (!isActive) return;
-          const collection = getCompletedBatchCollection(response, 20);
+          const collection = getCompletedBatchCollection(response, 10);
           setRows(collection.rows);
-          setCounts({});
+          setCounts(collection.stats);
           setTotalItems(collection.totalItems);
           setTotalPages(collection.totalPages);
           setLoadError("");
@@ -569,11 +572,11 @@ const IncomingBatches = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="m-0 text-2xl font-black text-(--theme-text-primary)">
-          Batches
+          {checkoutMode ? "Check Out" : "Batches"}
         </h1>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        {stats.map(({ Icon, ...stat }) => (
+        {(checkoutMode ? checkoutStats : stats).map(({ Icon, ...stat }) => (
           <Card key={stat.id} bodyClassName="flex min-h-38 flex-col gap-4">
             <IconWrapper
               icon={Icon}
@@ -609,9 +612,11 @@ const IncomingBatches = () => {
         </Alert>
       )}
       <GlobalUndoBanners inline portal="laundry" />
-      <div className="w-full md:w-max">
-        <Tabs items={batchTabs} onChange={handleTabChange} value={activeTab} />
-      </div>
+      {!checkoutMode && (
+        <div className="w-full md:w-max">
+          <Tabs items={availableTabs} onChange={handleTabChange} value={activeTab} />
+        </div>
+      )}
       <div
         className={
           activeTab === "completed"
@@ -697,7 +702,7 @@ const IncomingBatches = () => {
       />
       <Pagination
         forcePage={currentPage}
-        itemsPerPage={activeTab === "completed" ? 20 : ITEMS_PER_PAGE}
+        itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={({ selected }) => setCurrentPage(selected)}
         pageCount={totalPages}
         totalItems={totalItems}
