@@ -86,7 +86,16 @@ data class StartSessionData(val id: String? = null, val status: String = "active
         ?: id?.takeIf { it.isNotBlank() }?.let { SessionDto(it, status) }
 }
 data class ScanRequest(val requestId: String, val epcs: List<String>, val scanAction: String? = null)
-data class ScanCounters(val receivedCount: Int = 0, val uniqueCount: Int = 0, val processedCount: Int = 0, val rejectedCount: Int = 0, val duplicateCount: Int = 0, val checkedInCount: Int = 0, val checkedOutCount: Int = 0)
+data class ScanCounters(
+    val receivedCount: Int = 0,
+    val uniqueCount: Int = 0,
+    val processedCount: Int = 0,
+    val rejectedCount: Int = 0,
+    val duplicateCount: Int = 0,
+    val checkedInCount: Int = 0,
+    val checkedOutCount: Int = 0,
+    val rejectionReasons: Map<String, Int> = emptyMap(),
+)
 data class BatchCounterDto(val batchId: String? = null, val batchCode: String? = null, val checkedInCount: Int = 0, val checkedOutCount: Int = 0, val acceptedCount: Int = 0, val rejectedCount: Int = 0)
 data class ScanResultDto(val epc: String = "", val accepted: Boolean = false, val batchId: String? = null, val batchCode: String? = null, val reason: String? = null)
 data class UndoDto(val id: String = "", val expiresAt: String = "", val durationSeconds: Int = 0, val displayDuration: String = "")

@@ -26,6 +26,7 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
     private var heartbeat: Job? = null
     private var flushJob: Job? = null
     private var scannerRefresh: Job? = null
+    private var sessionScanAction: String? = null
 
     init {
         viewModelScope.launch { repository.pendingOffline.collect { mutable.update { s -> s.copy(pending = it) } } }
@@ -59,6 +60,7 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
     fun start() = launchLoading {
         val scanner = mutable.value.scanner ?: error("Select a scanner")
         val scannerUuid = scanner.actualUuid() ?: error("Scanner UUID is missing. Refresh scanners and try again.")
+        sessionScanAction = scanner.scannerMode?.takeIf { it.equals("manual", true) }?.let { mutable.value.manualAction }
         val session = repository.start(scannerUuid)
         val connected = reader.connect()
         if (!connected || !reader.startInventory()) error("RFID reader could not start")
@@ -73,6 +75,7 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
         flushJob?.join()
         flush(); heartbeat?.cancel()
         runCatching { repository.stop(mutable.value.sessionId) }.onSuccess { mutable.update { it.copy(message = "Session stopped") } }.onFailure(::showError)
+        sessionScanAction = null
     }
     fun clearData() = launchLoading {
         if (mutable.value.scanning) error("Stop scanning before clearing data")
@@ -106,13 +109,15 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
         while (buffer.isNotEmpty()) {
             val chunk = buffer.take(25)
             buffer.subList(0, chunk.size).clear()
-            val action = mutable.value.scanner?.scannerMode?.takeIf { it.equals("manual", true) }?.let { mutable.value.manualAction }
-            runCatching { repository.upload(mutable.value.sessionId, chunk, action) }
+            runCatching { repository.upload(mutable.value.sessionId, chunk, sessionScanAction) }
                 .onSuccess { response ->
                     val counters = response.data?.counters ?: ScanCounters()
                     val batches = response.data?.batchCounters.orEmpty().mapNotNull { it.batchCode }.distinct()
                     val batchMessage = if (batches.isEmpty()) response.message else "${response.message} Batches: ${batches.joinToString()}"
-                    mutable.update { it.copy(processed = it.processed + counters.processedCount, rejected = it.rejected + counters.rejectedCount, message = batchMessage) }
+                    val reasons = counters.rejectionReasons.entries
+                        .joinToString { "${it.key}: ${it.value}" }
+                    val rejectionMessage = if (reasons.isBlank()) batchMessage else "$batchMessage Rejections: $reasons"
+                    mutable.update { it.copy(processed = it.processed + counters.processedCount, rejected = it.rejected + counters.rejectedCount, message = rejectionMessage) }
                 }
                 .onFailure { error -> mutable.update { it.copy(message = "Upload failed: ${friendly(error)}") } }
         }
