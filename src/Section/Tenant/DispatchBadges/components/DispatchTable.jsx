@@ -13,6 +13,7 @@ import Badge from "../../../../Components/UI/Badge";
 import Card from "../../../../Components/UI/Card";
 import IconWrapper from "../../../../Components/UI/IconWrapper";
 import Pagination from "../../../../Components/UI/Pagination";
+import ProgressBar from "../../../../Components/UI/ProgressBar";
 import Table from "../../../../Components/UI/Table";
 import { STATUS_BADGE_VARIANTS } from "../data";
 
@@ -90,6 +91,34 @@ const DispatchTable = ({
         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-(--theme-surface-strong) border border-(--theme-border) text-xs font-bold text-(--theme-text-primary)">
           <Package size={13} className="text-(--theme-text-secondary)" />
           <span>{row.items}</span>
+        </div>
+      ),
+    },
+    {
+      label: "RETURNED",
+      accessor: "returned",
+      render: (value) => <span>{value ?? 0}</span>,
+    },
+    {
+      label: "MISSING",
+      accessor: "missing",
+      render: (value) => <span>{value ?? 0}</span>,
+    },
+    {
+      label: "RETURN PROGRESS",
+      accessor: "returnProgressPercentage",
+      render: (_value, row) => (
+        <div className="flex min-w-36 items-center gap-3">
+          <ProgressBar
+            className="min-w-20"
+            heightClass="h-1.5"
+            max={100}
+            value={row.returnProgressPercentage}
+            variant="success"
+          />
+          <span className="whitespace-nowrap text-xs">
+            {row.returned}/{row.items} ({Math.round(row.returnProgressPercentage)}%)
+          </span>
         </div>
       ),
     },

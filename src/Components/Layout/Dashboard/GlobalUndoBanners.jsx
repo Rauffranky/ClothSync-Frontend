@@ -35,8 +35,13 @@ const GlobalUndoBanners = ({ inline = false, portal = null }) => {
   const [dismissedIds, setDismissedIds] = useState(new Set());
   const [undoingId, setUndoingId] = useState(null);
   const [activeLaundryId, setActiveLaundryId] = useState(null);
+  const [now, setNow] = useState(() => Date.now());
   const actionRequestControllerRef = useRef(null);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
 
   useEffect(() => {
@@ -151,6 +156,24 @@ const GlobalUndoBanners = ({ inline = false, portal = null }) => {
     setDismissedIds((prev) => new Set(prev).add(id));
   };
 
+  const visibleNotices = undoNotices.filter((notice) => {
+    const noticePortal = notice.portal || "business";
+    return noticePortal === (portal || "business") &&
+      (portal !== "laundry" || (activeLaundryId && notice.laundryId === activeLaundryId));
+  });
+  const hasExpiredNotices = visibleNotices.some(
+    (notice) => notice.expiresAt && new Date(notice.expiresAt).getTime() <= now,
+  );
+  const clearExpired = () => {
+    setUndoNotices((current) =>
+      current.filter(
+        (notice) =>
+          !notice.expiresAt || new Date(notice.expiresAt).getTime() > Date.now(),
+      ),
+    );
+    setDismissedIds(new Set());
+  };
+
   return (
     <div
       className={
@@ -159,6 +182,15 @@ const GlobalUndoBanners = ({ inline = false, portal = null }) => {
           : "fixed bottom-6 right-6 z-999 flex max-w-[90vw] flex-col gap-3 md:max-w-md"
       }
     >
+      {portal === "laundry" && hasExpiredNotices && (
+        <button
+          className="self-end rounded-lg border border-(--color-overdue)/40 bg-(--theme-surface) px-3 py-2 text-xs font-bold text-(--color-overdue) shadow-sm"
+          onClick={clearExpired}
+          type="button"
+        >
+          Clear expired notices
+        </button>
+      )}
       {undoNotices.map((notice) => {
         const noticePortal = notice.portal || "business";
         const activePortal = portal || "business";

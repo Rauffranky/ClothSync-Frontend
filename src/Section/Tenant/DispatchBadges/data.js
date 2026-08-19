@@ -1,11 +1,17 @@
 export const DISPATCH_BATCH_ITEMS_PER_PAGE = 7;
 
 export const STATUS_BADGE_VARIANTS = {
+  "Dispatched": "pending",
   "Sent to Laundry": "pending",
+  "At Laundry": "purple",
   "In Laundry": "purple",
+  "Checked In": "info",
   "Sent to Business": "ready",
+  "Completed": "completed",
   "Returned": "completed",
+  "Partially Returned": "warning",
   "Delayed": "overdue",
+  "Missing": "overdue",
 };
 
 export const laundryOptions = [
@@ -200,6 +206,15 @@ export const getTenantDispatchBatchCollection = (response, limit = 20) => {
       {};
     const backendId = batch.id ?? batch._id;
     const rawStatus = batch.status ?? batch.batchStatus ?? "";
+    const returnProgress = batch.returnProgress ?? {};
+    const returned = Number(batch.returned ?? returnProgress.returned ?? 0) || 0;
+    const missing = Number(batch.missing ?? 0) || 0;
+    const total = Number(
+      batch.totalItems ?? returnProgress.total ?? batch.totalTagsCount ?? 0,
+    ) || 0;
+    const returnProgressPercentage = Number(
+      batch.returnProgressPercentage ?? returnProgress.percentage ?? (total ? (returned / total) * 100 : 0),
+    ) || 0;
     return {
       ...batch,
       apiId: backendId,
@@ -207,14 +222,10 @@ export const getTenantDispatchBatchCollection = (response, limit = 20) => {
       laundryName: batch.laundryName ?? laundry.companyName ?? laundry.businessName ?? laundry.name ?? "—",
       dispatchLocation: batch.dispatchLocation ?? batch.locationName ?? batch.location ?? "—",
       created: formatDateTime(batch.createdAt ?? batch.dispatchDateTime ?? batch.created),
-      items: Number(
-        batch.totalTagsCount ??
-          batch.totalItems ??
-          batch.itemsCount ??
-          batch.totalItemsCount ??
-          batch.items?.length ??
-          0,
-      ),
+      items: total || Number(batch.itemsCount ?? batch.totalItemsCount ?? batch.items?.length ?? 0),
+      returned,
+      missing,
+      returnProgressPercentage: Math.min(Math.max(returnProgressPercentage, 0), 100),
       status: formatStatusLabel(rawStatus),
       rawStatus,
       createdBy: (typeof creator === "string" ? creator : creator.fullName ?? creator.name) ?? "—",
