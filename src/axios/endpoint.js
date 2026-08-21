@@ -52,6 +52,13 @@ export const TENANT_TAG_ENDPOINTS = Object.freeze({
   MAPPING_HISTORY: (id) => `/tenant-tags/show/${id}/mapping-history`,
 });
 
+export const TENANT_RETAG_ENDPOINTS = Object.freeze({
+  ITEM_CHANGE: "/tenant-retag/item-change",
+  TAG_CHANGE: "/tenant-retag/tag-change",
+  RETIRE_DISCARD: "/tenant-retag/retire-discard",
+  MARK_LOST: "/tenant-retag/mark-lost",
+});
+
 export const TENANT_ASSET_ENDPOINTS = Object.freeze({
   LIST: "/tenant-assets/show",
   DETAILS: (id) => `/tenant-assets/show/${id}`,

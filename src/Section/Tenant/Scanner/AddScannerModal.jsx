@@ -21,6 +21,7 @@ const scannerModeOptions = [
   { label: "Entry", value: "Entry" },
   { label: "Exit", value: "Exit" },
   { label: "Manual", value: "Manual" },
+  { label: "Read only", value: "read_only" },
   { label: "Auto", value: "Auto" },
 ];
 

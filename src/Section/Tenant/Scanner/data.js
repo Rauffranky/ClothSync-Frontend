@@ -240,6 +240,7 @@ export const scannerModeOptions = [
     { label: "Entry", value: "entry" },
     { label: "Exit", value: "exit" },
     { label: "Manual", value: "manual" },
+    { label: "Read only", value: "read_only" },
     { label: "Auto", value: "auto" },
 ];
 

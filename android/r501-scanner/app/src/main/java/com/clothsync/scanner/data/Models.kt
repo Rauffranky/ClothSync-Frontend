@@ -97,7 +97,7 @@ data class ScanCounters(
     val rejectionReasons: Map<String, Int> = emptyMap(),
 )
 data class BatchCounterDto(val batchId: String? = null, val batchCode: String? = null, val checkedInCount: Int = 0, val checkedOutCount: Int = 0, val acceptedCount: Int = 0, val rejectedCount: Int = 0)
-data class ScanResultDto(val epc: String = "", val accepted: Boolean = false, val batchId: String? = null, val batchCode: String? = null, val reason: String? = null)
+data class ScanResultDto(val epc: String = "", val accepted: Boolean = false, val batchId: String? = null, val batchCode: String? = null, val reason: String? = null, val status: String? = null, val statusLabel: String? = null, val details: String? = null)
 data class UndoDto(val id: String = "", val expiresAt: String = "", val durationSeconds: Int = 0, val displayDuration: String = "")
 data class ScanResponseData(val session: SessionDto? = null, val counters: ScanCounters = ScanCounters(), val affectedBatchIds: List<String> = emptyList(), val batchCounters: List<BatchCounterDto> = emptyList(), val undos: List<UndoDto> = emptyList(), val results: List<ScanResultDto> = emptyList())
 data class HeartbeatRequest(val scannerId: String, val appVersion: String = "1.0.0", val batteryLevel: Int, val networkState: String, val rfidConnected: Boolean)

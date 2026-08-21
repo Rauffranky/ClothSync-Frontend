@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
-data class UiState(val loading: Boolean = false, val loggedIn: Boolean = false, val portal: String = "", val error: String? = null, val message: String = "Ready", val scanners: List<ScannerDto> = emptyList(), val scanner: ScannerDto? = null, val batches: List<BatchDto> = emptyList(), val batch: BatchDto? = null, val sessionId: String = "", val scanning: Boolean = false, val connected: Boolean = false, val manualAction: String = "check_in", val unique: Int = 0, val processed: Int = 0, val rejected: Int = 0, val pending: Int = 0)
+data class UiState(val loading: Boolean = false, val loggedIn: Boolean = false, val portal: String = "", val error: String? = null, val message: String = "Ready", val scanners: List<ScannerDto> = emptyList(), val scanner: ScannerDto? = null, val batches: List<BatchDto> = emptyList(), val batch: BatchDto? = null, val sessionId: String = "", val scanning: Boolean = false, val connected: Boolean = false, val manualAction: String = "check_in", val unique: Int = 0, val processed: Int = 0, val rejected: Int = 0, val pending: Int = 0, val results: List<ScanResultDto> = emptyList())
 
 @HiltViewModel
 class ScannerViewModel @Inject constructor(private val repository: ScannerRepository, private val reader: RfidReader, private val feedback: ScanFeedback) : ViewModel() {
@@ -60,7 +60,8 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
     fun start() = launchLoading {
         val scanner = mutable.value.scanner ?: error("Select a scanner")
         val scannerUuid = scanner.actualUuid() ?: error("Scanner UUID is missing. Refresh scanners and try again.")
-        sessionScanAction = scanner.scannerMode?.takeIf { it.equals("manual", true) }?.let { mutable.value.manualAction }
+        sessionScanAction = if (scanner.scannerMode.equals("read_only", true)) "read_only"
+            else scanner.scannerMode?.takeIf { it.equals("manual", true) }?.let { mutable.value.manualAction }
         val session = repository.start(scannerUuid)
         val connected = reader.connect()
         if (!connected || !reader.startInventory()) error("RFID reader could not start")
@@ -82,13 +83,13 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
         val sessionId = mutable.value.sessionId
         if (sessionId.isNotBlank()) repository.clear(sessionId)
         deduplicator.clear(); unique.clear(); buffer.clear()
-        mutable.update { it.copy(sessionId = "", unique = 0, processed = 0, rejected = 0, message = "Scan data cleared") }
+        mutable.update { it.copy(sessionId = "", unique = 0, processed = 0, rejected = 0, results = emptyList(), message = "Scan data cleared") }
     }
     fun changeScanner() = viewModelScope.launch {
         if (mutable.value.scanning) stopSession()
         heartbeat?.cancel(); scannerRefresh?.cancel(); reader.disconnect()
         val scanners = runCatching { repository.scanners() }.getOrElse { mutable.value.scanners }
-        mutable.update { it.copy(scanner = null, batch = null, scanners = scanners, sessionId = "", connected = false, unique = 0, processed = 0, rejected = 0, error = null, message = "Select a scanner") }
+        mutable.update { it.copy(scanner = null, batch = null, scanners = scanners, sessionId = "", connected = false, unique = 0, processed = 0, rejected = 0, results = emptyList(), error = null, message = "Select a scanner") }
     }
     private fun onTag(read: com.clothsync.scanner.rfid.RfidRead) {
         if (!mutable.value.scanning) return
@@ -96,10 +97,20 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
         if (unique.add(read.epc)) {
             feedback.acceptedTag()
             buffer += read.epc
-            mutable.update { it.copy(unique = unique.size) }
+            mutable.update { state ->
+                state.copy(
+                    unique = unique.size,
+                    results = state.results + ScanResultDto(
+                        epc = read.epc,
+                        accepted = true,
+                        status = "pending",
+                        statusLabel = "Pending",
+                    ),
+                )
+            }
             if (flushJob?.isActive != true) {
                 flushJob = viewModelScope.launch {
-                    if (buffer.size < 25) delay(350)
+                    if (buffer.size < 25) delay(100)
                     flush()
                 }
             }
@@ -117,7 +128,26 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
                     val reasons = counters.rejectionReasons.entries
                         .joinToString { "${it.key}: ${it.value}" }
                     val rejectionMessage = if (reasons.isBlank()) batchMessage else "$batchMessage Rejections: $reasons"
-                    mutable.update { it.copy(processed = it.processed + counters.processedCount, rejected = it.rejected + counters.rejectedCount, message = rejectionMessage) }
+                    val responseResults = response.data?.results.orEmpty()
+                    val isReadOnly = sessionScanAction == "read_only"
+                    val visibleResults = responseResults.map { result ->
+                        if (isReadOnly) result.copy(accepted = true, status = "read_only", statusLabel = "Read only") else result
+                    }
+                    mutable.update { state ->
+                        val responseByEpc = visibleResults.associateBy { it.epc.uppercase() }
+                        val mergedResults = state.results.map { current ->
+                            responseByEpc[current.epc.uppercase()] ?: current
+                        }.toMutableList()
+                        visibleResults.forEach { result ->
+                            if (mergedResults.none { it.epc.equals(result.epc, ignoreCase = true) }) mergedResults += result
+                        }
+                        state.copy(
+                            processed = state.processed + counters.processedCount,
+                            rejected = if (isReadOnly) state.rejected else state.rejected + counters.rejectedCount,
+                            results = mergedResults,
+                            message = if (isReadOnly) "Tags received" else rejectionMessage,
+                        )
+                    }
                 }
                 .onFailure { error -> mutable.update { it.copy(message = "Upload failed: ${friendly(error)}") } }
         }

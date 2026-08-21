@@ -18,6 +18,7 @@ const getNumber = (...values) => {
 };
 
 const getRecordId = (record) =>
+  record?.tempTagId ??
   record?.id ??
   record?.entryId ??
   record?.tagId ??
@@ -34,6 +35,9 @@ export const normalizeBulkScanEntry = (record = {}) => {
   return {
     ...record,
     id: getRecordId(record),
+    tempTagId: record.tempTagId ?? tag.tempTagId ?? null,
+    tagId: record.tagId ?? tag.tagId ?? tag.id ?? null,
+    assetId: record.assetId ?? tag.assetId ?? asset?.id ?? asset?._id ?? null,
     epc: record.epc ?? tag.epc ?? "-",
     scannedAt:
       record.scannedAt ??
@@ -103,6 +107,10 @@ export const normalizeBulkScanEntriesResponse = (response) => {
     ? entries.items
     : Array.isArray(payload.items)
       ? payload.items
+      : Array.isArray(entries.results)
+        ? entries.results
+        : Array.isArray(payload.results)
+          ? payload.results
       : [];
   const page = getNumber(pagination.page, pagination.currentPage, 1) || 1;
   const limit = getNumber(pagination.limit, pagination.perPage, BULK_SCAN_PAGE_LIMIT);

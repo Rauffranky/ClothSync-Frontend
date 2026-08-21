@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   Shirt,
   Truck,
+  Tags,
 } from "lucide-react";
 import Alert from "../../../../../../Components/UI/Alert";
 import Badge from "../../../../../../Components/UI/Badge";
@@ -23,6 +24,8 @@ const ICON_MAP = {
   "Re-Tagged": Radio,
   "Tag Linked": Radio,
   "Override Correction": ShieldCheck,
+  "Category Changed": Tags,
+  "Tag Changed": Radio,
 };
 
 const SPECIAL_EVENT_STYLES = {
@@ -169,6 +172,17 @@ const TimelineEventCard = ({ event, isLast }) => {
             <TimelineField label="Laundry" value={event.laundry} />
             <TimelineField label="Tag" value={event.tag} mono />
             <TimelineField label="Tag EPC" value={event.epc} mono />
+            <TimelineField
+              label="Category Change"
+              value={event.oldCategory && event.newCategory ? `${event.oldCategory} → ${event.newCategory}` : null}
+            />
+            <TimelineField
+              label="Tag Change"
+              value={event.oldEpc && event.newEpc ? `${event.oldEpc} → ${event.newEpc}` : null}
+              mono
+            />
+            <TimelineField label="Reason Code" value={event.reasonCode} />
+            <TimelineField label="Correlation ID" value={event.correlationId} mono />
             <TimelineField
               label="Performed By"
               value={[event.performedBy, event.actorType].filter(Boolean).join(" · ")}

@@ -37,6 +37,8 @@ const BulkScanEntriesTable = ({
   group,
   loading,
   onExistingAction,
+  onRetag,
+  onStatusAction,
   onPageChange,
   pagination,
   previewLoading,
@@ -228,8 +230,9 @@ const BulkScanEntriesTable = ({
       label: `Check Out${suggestedAction === "check_out" ? " — Suggested" : ""}`,
       onClick: () => onExistingAction?.("check_out", selectedRows),
     },
-    { icon: RotateCcw, label: "Re-Tag" },
-    { danger: true, icon: Archive, label: "Retire" },
+    { disabled: selectedCount !== 1 || previewLoading, icon: RotateCcw, label: "Re-Tag", onClick: () => onRetag?.(selectedRows[0]) },
+    { danger: true, disabled: selectedCount !== 1 || previewLoading, icon: Archive, label: "Retire", onClick: () => onStatusAction?.("retire_discard", selectedRows[0]) },
+    { danger: true, disabled: selectedCount !== 1 || previewLoading, icon: Archive, label: "Mark Lost", onClick: () => onStatusAction?.("mark_lost", selectedRows[0]) },
   ];
   const showExistingTagActions = group === BULK_SCAN_GROUPS.EXISTING_LINKED;
 

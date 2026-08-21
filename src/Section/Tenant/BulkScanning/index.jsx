@@ -11,6 +11,7 @@ import {
   getTenantBulkScanEntries,
   previewBulkScanAction,
 } from "../../../axios/scanners/tenantBulkScan";
+import { changeTenantItem, changeTenantTag, markTenantTagLost, retireTenantTag } from "../../../axios/retag/tenantRetag";
 import { getSocket } from "../../../socket/client";
 import { SOCKET_EVENTS } from "../../../socket/events";
 import {
@@ -25,6 +26,8 @@ import { toast } from "../../../Utils/toast";
 import BulkScanEntriesTable from "./BulkScanEntriesTable";
 import BulkAddModal from "./BulkAddModal";
 import ExistingTagActionModal from "./ExistingTagActionModal";
+import RetagModal from "./RetagModal";
+import RetagStatusModal from "./RetagStatusModal";
 import ScannerStatusCard from "./ScannerStatusCard";
 import SummaryCards from "./SummaryCards";
 import {
@@ -94,11 +97,15 @@ const BulkScanningIndex = () => {
   const [isPreviewingAction, setIsPreviewingAction] = useState(false);
   const [isConfirmingAction, setIsConfirmingAction] = useState(false);
   const [actionSelectionKey, setActionSelectionKey] = useState(0);
+  const [retagRow, setRetagRow] = useState(null);
+  const [isRetagging, setIsRetagging] = useState(false);
+  const [statusAction, setStatusAction] = useState(null);
   const [isLoading, setIsLoading] = useState(Boolean(sessionId));
   const [isClearing, setIsClearing] = useState(false);
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [loadError, setLoadError] = useState("");
   const requestIdRef = useRef(0);
+  const rowsRef = useRef([]);
   const actionRequestControllerRef = useRef(null);
 
   const handleCountsUpdate = useCallback((newCounts, currentTab) => {
@@ -130,6 +137,7 @@ const BulkScanningIndex = () => {
   }, []);
 
   useEffect(() => () => actionRequestControllerRef.current?.abort(), []);
+  useEffect(() => { rowsRef.current = rows; }, [rows]);
 
   const fetchEntries = useCallback(async () => {
     if (!sessionId) return;
@@ -148,7 +156,9 @@ const BulkScanningIndex = () => {
       if (collection.session) setSession(collection.session);
       if (collection.scanner) setScanner(collection.scanner);
       handleCountsUpdate(collection.counts, activeTab);
-      setRows(collection.rows);
+      if (!(collection.rows.length === 0 && rowsRef.current.length > 0)) {
+        setRows(collection.rows);
+      }
       setPagination(collection.pagination);
       setLastEpc(collection.rows[0]?.epc ?? null);
       setLoadError("");
@@ -227,17 +237,17 @@ const BulkScanningIndex = () => {
       const nextSession = getEventSession(data);
       if (nextSession) applySession(nextSession);
 
-      const eventPayload = data?.data ?? data ?? {};
-      if (
-        Number(eventPayload.processedCount ?? 0) > 0 ||
-        eventPayload.actionSource === "scanner_mode" ||
-        eventPayload.actionSource === "automatic_resolution"
-      ) {
-        fetchEntries();
-        return;
+      const progressPayload = data?.data ?? data ?? {};
+      if (progressPayload.progress && progressPayload.counters) {
+        const progressCount = Number(progressPayload.counters.uniqueCount ?? progressPayload.progressCount ?? 0);
+        setCounts((current) => ({
+          ...(current || emptyCounts),
+          totalTags: Math.max(Number(current?.totalTags || 0), progressCount),
+        }));
       }
 
       const results = data?.data?.results ?? data?.results ?? [];
+      if (Array.isArray(results) && results[0]?.epc) setLastEpc(results[0].epc);
       if (!Array.isArray(results) || currentPage !== 0) return;
 
       const matchingEntries = results
@@ -263,7 +273,6 @@ const BulkScanningIndex = () => {
 
     const handleSessionStarted = (data) => applySession(getEventSession(data));
     const handleSessionUpdated = (data) => applySession(getEventSession(data));
-    const handleEntriesUpdated = () => fetchEntries();
     const handleBulkAdded = (data) => {
       const notice = getEventUndoNotice(data);
       if (notice) {
@@ -298,7 +307,6 @@ const BulkScanningIndex = () => {
     socket.on(SOCKET_EVENTS.SCANNER_SCAN_BULK, handleBulkScan);
     socket.on(SOCKET_EVENTS.SCAN_SESSION_STARTED, handleSessionStarted);
     socket.on(SOCKET_EVENTS.SCAN_SESSION_UPDATED, handleSessionUpdated);
-    socket.on(SOCKET_EVENTS.SCAN_ENTRIES_UPDATED, handleEntriesUpdated);
     socket.on(SOCKET_EVENTS.SCAN_BULK_ADDED, handleBulkAdded);
     socket.on(SOCKET_EVENTS.SCAN_BULK_ADD_UNDONE, handleBulkAddUndone);
     socket.on(SOCKET_EVENTS.SCAN_BULK_ADD_EXPIRED, handleBulkAddExpired);
@@ -311,7 +319,6 @@ const BulkScanningIndex = () => {
       socket.off(SOCKET_EVENTS.SCANNER_SCAN_BULK, handleBulkScan);
       socket.off(SOCKET_EVENTS.SCAN_SESSION_STARTED, handleSessionStarted);
       socket.off(SOCKET_EVENTS.SCAN_SESSION_UPDATED, handleSessionUpdated);
-      socket.off(SOCKET_EVENTS.SCAN_ENTRIES_UPDATED, handleEntriesUpdated);
       socket.off(SOCKET_EVENTS.SCAN_BULK_ADDED, handleBulkAdded);
       socket.off(SOCKET_EVENTS.SCAN_BULK_ADD_UNDONE, handleBulkAddUndone);
       socket.off(SOCKET_EVENTS.SCAN_BULK_ADD_EXPIRED, handleBulkAddExpired);
@@ -444,6 +451,39 @@ const BulkScanningIndex = () => {
     }
   };
 
+  const handleRetagSubmit = async (payload) => {
+    setIsRetagging(true);
+    try {
+      const request = payload.type === "tag"
+        ? { tagId: payload.tagId, newEpc: payload.newEpc, tagWashLimit: payload.tagWashLimit, reasonCode: payload.reasonCode, reasonNotes: payload.reasonNotes }
+        : { tagId: payload.tagId, categoryId: payload.categoryId, assetName: payload.assetName, washLimit: payload.washLimit, reasonCode: payload.reasonCode, reasonNotes: payload.reasonNotes };
+      const response = payload.type === "tag" ? await changeTenantTag(request) : await changeTenantItem(request);
+      setRetagRow(null);
+      await fetchEntries();
+      toast.success(response?.message || "Retag completed successfully");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to complete retag"));
+    } finally {
+      setIsRetagging(false);
+    }
+  };
+
+  const handleStatusSubmit = async (payload) => {
+    setIsRetagging(true);
+    try {
+      const response = statusAction.action === "mark_lost"
+        ? await markTenantTagLost(payload)
+        : await retireTenantTag(payload);
+      setStatusAction(null);
+      await fetchEntries();
+      toast.success(response?.message || "Tag status updated successfully");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to update tag status"));
+    } finally {
+      setIsRetagging(false);
+    }
+  };
+
   return (
     <div className="w-full space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -522,6 +562,8 @@ const BulkScanningIndex = () => {
           group={activeTab}
           loading={isLoading}
           onExistingAction={handleExistingAction}
+          onRetag={setRetagRow}
+          onStatusAction={(action, row) => setStatusAction({ action, row })}
           onPageChange={({ selected }) => {
             setIsLoading(true);
             setCurrentPage(selected);
@@ -557,6 +599,27 @@ const BulkScanningIndex = () => {
             scanner?.location ?? scanner?.scannerLocation ?? session?.location ?? ""
           }
           selectedRows={actionRows}
+        />
+      )}
+
+      {retagRow && (
+        <RetagModal
+          busy={isRetagging}
+          latestEpc={lastEpc}
+          onClose={() => { if (!isRetagging) setRetagRow(null); }}
+          onSubmit={handleRetagSubmit}
+          open
+          row={retagRow}
+        />
+      )}
+
+      {statusAction && (
+        <RetagStatusModal
+          action={statusAction.action}
+          busy={isRetagging}
+          onClose={() => { if (!isRetagging) setStatusAction(null); }}
+          onSubmit={handleStatusSubmit}
+          row={statusAction.row}
         />
       )}
 

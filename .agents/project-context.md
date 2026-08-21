@@ -228,6 +228,9 @@ Confirmed API-backed areas:
   Retryable offline requests persist in Room and sync through
   WorkManager. Debug currently targets the local LAN backend at
   `192.168.0.102:5001`; release requires an HTTPS Gradle property.
+  The scanner mode list includes `read_only`; read-only uploads contain only
+  `requestId` and `epcs` (no `scanAction`), and the APK renders each backend
+  result from `response.results` without movement, undo, or confirmation UI.
 
 - Laundry scanner management uses `POST /laundry-scanners/create`,
   `GET /laundry-scanners/show`, `GET /laundry-scanners/show/:id`,

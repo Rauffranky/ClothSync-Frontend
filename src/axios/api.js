@@ -3,7 +3,11 @@ import { getAuthAccessToken } from "./auth/authSession";
 
 const request = async (config) => {
   const response = await apiClient.request(config);
-  return response.data;
+  const correlationId = response.headers?.["x-correlation-id"];
+  if (!correlationId || !response.data || typeof response.data !== "object" || Array.isArray(response.data)) {
+    return response.data;
+  }
+  return { ...response.data, correlationId };
 };
 
 const pendingGetRequests = new Map();

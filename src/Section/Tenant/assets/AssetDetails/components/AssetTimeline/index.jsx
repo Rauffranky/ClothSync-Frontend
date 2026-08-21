@@ -27,6 +27,7 @@ const statusVariants = {
   override_correction: "warning",
   linked: "success",
   tag_linked: "info",
+  category_changed: "warning",
 };
 
 const normalizeLifecycleEvent = (record = {}, index = 0) => {
@@ -34,13 +35,18 @@ const normalizeLifecycleEvent = (record = {}, index = 0) => {
   const batch = record.batch || record.dispatchBatch || record.laundryBatch || {};
   const laundry = record.laundry || batch.laundry || batch.laundryLink?.laundry || record.assignedLaundry || {};
   const tag = record.tag || {};
+  const oldTag = record.oldTag || {};
+  const newTag = record.newTag || {};
+  const metadata = record.metadata || {};
   const performedBy = record.performedBy || record.operator || {};
   const scanSession = record.scanSession || {};
   const eventKey = String(record.eventType || record.action || record.type || record.status || "activity").toLowerCase();
+  const isCategoryChanged = eventKey === "category_changed";
+  const isTagChanged = ["retagged", "re_tagged", "tag_changed", "tag-change"].includes(eventKey);
   const eventAt = record.occurredAt || record.eventAt || record.scannedAt || record.createdAt || record.updatedAt;
   return {
     id: record.id || record._id || `${eventKey}-${eventAt || index}`,
-    title: record.title || record.eventLabel || formatStatusLabel(eventKey),
+    title: isCategoryChanged ? "Category Changed" : isTagChanged ? "Tag Changed" : (record.title || record.eventLabel || formatStatusLabel(eventKey)),
     status: record.statusLabel || formatStatusLabel(record.status || record.eventType || record.action),
     variant: statusVariants[record.status] || statusVariants[eventKey] || "neutral",
     date: formatDate(eventAt),
@@ -53,7 +59,13 @@ const normalizeLifecycleEvent = (record = {}, index = 0) => {
     batch: batch.batchCode || batch.code || record.batchCode || null,
     laundry: laundry.companyName || laundry.businessName || laundry.name || record.laundryName || null,
     tag: tag.tagCode || null,
-    epc: tag.epc || record.metadata?.epc || null,
+    epc: tag.epc || metadata.epc || null,
+    oldEpc: oldTag.epc || null,
+    newEpc: newTag.epc || null,
+    oldCategory: metadata.oldCategory?.name || null,
+    newCategory: metadata.newCategory?.name || null,
+    reasonCode: record.reasonCode || null,
+    correlationId: metadata.correlationId || record.correlationId || null,
     performedBy: performedBy.fullName || performedBy.name || null,
     actorType: formatStatusLabel(record.actorType, null),
     transition: record.fromStatus || record.toStatus
