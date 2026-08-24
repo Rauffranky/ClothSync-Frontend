@@ -39,6 +39,7 @@ import {
   normalizeBulkScanCounts,
   normalizeBulkScanEntry,
   normalizeBulkScanEntriesResponse,
+  getExistingTagErrorMessage,
 } from "./data";
 
 const emptyCounts = {
@@ -156,8 +157,11 @@ const BulkScanningIndex = () => {
       if (collection.session) setSession(collection.session);
       if (collection.scanner) setScanner(collection.scanner);
       handleCountsUpdate(collection.counts, activeTab);
-      if (!(collection.rows.length === 0 && rowsRef.current.length > 0)) {
-        setRows(collection.rows);
+      const visibleRows = activeTab === BULK_SCAN_GROUPS.DETACHED
+        ? collection.rows.filter((row) => String(row.mappingStatus || "").toLowerCase() === "detached")
+        : collection.rows;
+      if (!(visibleRows.length === 0 && rowsRef.current.length > 0)) {
+        setRows(visibleRows);
       }
       setPagination(collection.pagination);
       setLastEpc(collection.rows[0]?.epc ?? null);
@@ -462,7 +466,7 @@ const BulkScanningIndex = () => {
       await fetchEntries();
       toast.success(response?.message || "Retag completed successfully");
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to complete retag"));
+      toast.error(getExistingTagErrorMessage(error) || getApiErrorMessage(error, "Unable to complete retag"));
     } finally {
       setIsRetagging(false);
     }
@@ -606,6 +610,10 @@ const BulkScanningIndex = () => {
         <RetagModal
           busy={isRetagging}
           latestEpc={lastEpc}
+          replacementUnavailable={rows.some((row) => row.epc === lastEpc && (
+            ["linked", "existing_linked"].includes(String(row.mappingStatus || "").toLowerCase()) ||
+            String(row.tagStatus || "").toLowerCase() === "active"
+          ))}
           onClose={() => { if (!isRetagging) setRetagRow(null); }}
           onSubmit={handleRetagSubmit}
           open

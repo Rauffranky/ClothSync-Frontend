@@ -146,6 +146,9 @@ export const statusOptions = [
     { label: "All Tag Statuses", value: "all" },
     { label: "Active", value: "active" },
     { label: "Inactive", value: "inactive" },
+    { label: "Lost", value: "lost" },
+    { label: "Damaged", value: "damaged" },
+    { label: "Retired", value: "retired" },
 ];
 
 const getName = (record, keys, fallback = "—") => {

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-const SelectionCheckbox = ({ checked, indeterminate = false, label, onChange }) => {
+const SelectionCheckbox = ({ checked, disabled = false, indeterminate = false, label, onChange }) => {
     const inputRef = useRef(null);
 
     useEffect(() => {
@@ -13,7 +13,8 @@ const SelectionCheckbox = ({ checked, indeterminate = false, label, onChange }) 
         <input
             aria-label={label}
             checked={checked}
-            className="h-4 w-4 cursor-pointer rounded border-gray-300"
+            className="h-4 w-4 cursor-pointer rounded border-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={disabled}
             onChange={(event) => onChange(event.target.checked)}
             ref={inputRef}
             type="checkbox"

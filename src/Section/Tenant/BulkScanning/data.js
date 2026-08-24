@@ -7,14 +7,19 @@ export const BULK_SCAN_GROUPS = Object.freeze({
 });
 
 export const BULK_SCAN_TABS = Object.freeze([
-  { label: "New Unlinked Tags", value: BULK_SCAN_GROUPS.NEW_UNLINKED },
-  { label: "Existing Linked Tags", value: BULK_SCAN_GROUPS.EXISTING_LINKED },
-  { label: "Detached Tags", value: BULK_SCAN_GROUPS.DETACHED },
+  { label: "New Unlinked", value: BULK_SCAN_GROUPS.NEW_UNLINKED },
+  { label: "Existing Linked", value: BULK_SCAN_GROUPS.EXISTING_LINKED },
+  { label: "Detached", value: BULK_SCAN_GROUPS.DETACHED },
 ]);
 
 const getNumber = (...values) => {
   const value = values.find((item) => Number.isFinite(Number(item)));
   return value === undefined ? 0 : Number(value);
+};
+
+const getNullableNumber = (...values) => {
+  const value = values.find((item) => item !== null && item !== undefined && item !== "");
+  return value === undefined ? null : Number(value);
 };
 
 const getRecordId = (record) =>
@@ -39,6 +44,22 @@ export const normalizeBulkScanEntry = (record = {}) => {
     tagId: record.tagId ?? tag.tagId ?? tag.id ?? null,
     assetId: record.assetId ?? tag.assetId ?? asset?.id ?? asset?._id ?? null,
     epc: record.epc ?? tag.epc ?? "-",
+    tagStatus: record.tagStatus ?? tag.status ?? null,
+    tagStatusLabel: record.tagStatusLabel ?? tag.statusLabel ?? null,
+    mappingStatus: record.mappingStatus ?? tag.mappingStatus ?? null,
+    mappingStatusLabel: record.mappingStatusLabel ?? tag.mappingStatusLabel ?? null,
+    currentStatus: record.currentStatus ?? asset?.status ?? null,
+    currentStatusLabel: record.currentStatusLabel ?? asset?.statusLabel ?? null,
+    assetWashCount: getNullableNumber(record.assetWashCount, asset?.washCount, asset?.washCountUsed),
+    tagWashCount: getNullableNumber(record.tagWashCount, tag.washCount, tag?.washCountUsed),
+    assetWashLimit: getNullableNumber(record.assetWashLimit, asset?.washLimit),
+    tagWashLimit: getNullableNumber(record.tagWashLimit, tag.washLimit),
+    washCountDifference: record.washCountDifference ??
+      Math.abs(
+        getNullableNumber(record.assetWashCount, asset?.washCount, asset?.washCountUsed) -
+        getNullableNumber(record.tagWashCount, tag.washCount, tag?.washCountUsed),
+      ),
+    washCountMatchesTag: record.washCountMatchesTag ?? null,
     scannedAt:
       record.scannedAt ??
       record.lastScannedAt ??
@@ -141,13 +162,28 @@ export const getLiveScanGroup = (result = {}) => {
     return explicitGroup;
   }
 
-  if (entry.detachedAt || entry.previousAssignment) {
+  if (String(entry.mappingStatus ?? result.mappingStatus ?? "").toLowerCase() === "detached") {
     return BULK_SCAN_GROUPS.DETACHED;
   }
 
   const mappingStatus = entry.mappingStatus ?? result.mappingStatus;
   if (mappingStatus === "linked") return BULK_SCAN_GROUPS.EXISTING_LINKED;
   return BULK_SCAN_GROUPS.NEW_UNLINKED;
+};
+
+export const getExistingTagErrorMessage = (error) => {
+  const payload = error?.response?.data ?? error?.data ?? error ?? {};
+  const hasUnavailableTag = Boolean(
+    payload.tagsAlreadyMapped?.length ||
+      payload.tagsUnavailable?.length ||
+      payload.newTagUnavailable ||
+      payload.data?.tagsAlreadyMapped?.length ||
+      payload.data?.tagsUnavailable?.length ||
+      payload.data?.newTagUnavailable,
+  );
+  return hasUnavailableTag
+    ? "This RFID tag is already linked or unavailable. Please scan a new unused RFID tag."
+    : null;
 };
 
 const SKIPPED_REASON_MESSAGES = Object.freeze({

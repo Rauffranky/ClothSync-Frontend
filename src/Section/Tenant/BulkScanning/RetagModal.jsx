@@ -7,7 +7,7 @@ import Input from "../../../Components/UI/Input";
 import Modal from "../../../Components/UI/Modal";
 import { getTenantCategories } from "../../../axios/categories/tenantCategories";
 
-const RetagModal = ({ busy, latestEpc, onClose, onSubmit, open, row }) => {
+const RetagModal = ({ busy, latestEpc, onClose, onSubmit, open, replacementUnavailable, row }) => {
   const [type, setType] = useState("category");
   const [assetName, setAssetName] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -32,7 +32,7 @@ const RetagModal = ({ busy, latestEpc, onClose, onSubmit, open, row }) => {
     value: category.id ?? category._id ?? category.categoryId,
   })), [categories]);
   const canSubmit = Boolean(tagId && reasonCode.trim() && Number(washLimit) > 0 &&
-    (type === "tag" ? latestEpc : assetName.trim() && categoryId));
+    (type === "tag" ? latestEpc && !replacementUnavailable : assetName.trim() && categoryId));
 
   return (
     <Modal
@@ -69,6 +69,11 @@ const RetagModal = ({ busy, latestEpc, onClose, onSubmit, open, row }) => {
           Selected old tag: <span className="font-mono font-bold">{row?.epc ?? "—"}</span>
           {type === "tag" && <> · Scan replacement tag in Read Only mode: <span className="font-mono font-bold">{latestEpc ?? "waiting…"}</span></>}
         </Alert>
+        {type === "tag" && replacementUnavailable && (
+          <Alert variant="danger">
+            This RFID tag is already linked or unavailable. Please scan a new unused RFID tag.
+          </Alert>
+        )}
         {type === "category" ? <div className="grid gap-4 sm:grid-cols-2">
           <Input label="Asset Name" leftIcon={<Shirt size={16} />} onChange={setAssetName} value={assetName} />
           <Dropdown label="Category" onChange={setCategoryId} options={categoryOptions} placeholder="Select category" value={categoryId} />

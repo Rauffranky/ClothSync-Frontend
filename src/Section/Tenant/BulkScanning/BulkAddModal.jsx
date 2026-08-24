@@ -10,6 +10,7 @@ import { getApiErrorMessage } from "../../../axios/api";
 import { getTenantCategories } from "../../../axios/categories/tenantCategories";
 import { testTenantBulkAdd } from "../../../axios/scanners/tenantBulkScan";
 import { toast } from "../../../Utils/toast";
+import { getExistingTagErrorMessage } from "./data";
 
 const validationSchema = Yup.object({
   assetName: Yup.string().trim().required("Asset name is required"),
@@ -65,7 +66,7 @@ const BulkAddModal = ({ onClose, onSuccess, open, sessionId }) => {
         formik.resetForm();
         onSuccess(response);
       } catch (error) {
-        toast.error(getApiErrorMessage(error, "Unable to add bulk tags"));
+        toast.error(getExistingTagErrorMessage(error) || getApiErrorMessage(error, "Unable to add bulk tags"));
       } finally {
         setSubmitting(false);
       }
