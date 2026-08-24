@@ -1,7 +1,6 @@
 import { ChartCard, LineChart } from "../../../Components/UI/Charts";
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const weeks = ["W20", "W21", "W22", "W23", "W24", "W25", "W26"];
 
 const sentReturnedSeries = [
   {
@@ -18,17 +17,8 @@ const sentReturnedSeries = [
   },
 ];
 
-const delayedSeries = [
-  {
-    label: "Delayed Items",
-    values: [18, 22, 25, 22, 28, 30, 33],
-    color: "var(--color-pending)",
-    showPoints: true,
-  },
-];
-
 const ChartsRow = () => (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+  <div className="grid grid-cols-1 gap-4">
     <ChartCard
       title="Sent vs Returned"
       description="Daily dispatch and return volumes — last 7 days"
@@ -43,19 +33,6 @@ const ChartsRow = () => (
       />
     </ChartCard>
 
-    <ChartCard
-      title="Delayed Item Trend"
-      description="Weekly count of items past the expected return"
-    >
-      <LineChart
-        ariaLabel="Weekly delayed item count"
-        height={160}
-        labels={weeks}
-        maxValue={40}
-        series={delayedSeries}
-        ticks={[0, 10, 20, 30, 40]}
-      />
-    </ChartCard>
   </div>
 );
 

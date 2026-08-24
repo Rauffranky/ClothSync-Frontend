@@ -1,4 +1,4 @@
-import { Box, Clock, LogIn, ScanLine, Truck } from "lucide-react";
+import { Box, LogIn, ScanLine, Truck } from "lucide-react";
 import Card from "../../../Components/UI/Card";
 import IconWrapper from "../../../Components/UI/IconWrapper";
 
@@ -44,16 +44,6 @@ const stats = [
     bgColor: "rgba(52,211,153,0.1)",
   },
   {
-    id: "delayed-items",
-    label: "Delayed Items",
-    value: "36",
-    trend: "+6 today",
-    trendColor: "var(--color-pending)",
-    Icon: Clock,
-    color: "var(--color-pending)",
-    bgColor: "rgba(245,158,11,0.1)",
-  },
-  {
     id: "active-scanners",
     label: "Active Scanners",
     value: "3",
@@ -66,7 +56,7 @@ const stats = [
 ];
 
 const StatCard = ({ stat }) => {
-  const { Icon, label, value, trend, trendColor, color, bgColor } = stat;
+  const { Icon, label, value, color } = stat;
   return (
     <Card padding="18px 20px">
       <div className="flex flex-col gap-3">

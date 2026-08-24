@@ -2,7 +2,6 @@ import {
   ArrowLeftRight,
   Box,
   Building2,
-  Clock,
   RotateCcw,
   RotateCw,
   TriangleAlert,
@@ -65,15 +64,6 @@ const stats = [
     Icon: RotateCw,
     color: "var(--color-sky-blue)",
     bgColor: "rgba(96,165,250,0.1)",
-  },
-  {
-    id: "delayed",
-    label: "Delayed Items",
-    subLabel: "past expected return",
-    value: "31",
-    Icon: Clock,
-    color: "var(--color-pending)",
-    bgColor: "rgba(245,158,11,0.1)",
   },
   {
     id: "missing",

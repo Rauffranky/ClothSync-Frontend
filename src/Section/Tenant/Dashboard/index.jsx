@@ -44,7 +44,7 @@ const Dashboard = () => {
         <ScannerActivityPanel />
       </div>
 
-      {/* Row 6 — Sent vs Returned + Delayed trend charts */}
+      {/* Row 6 — Sent vs Returned chart */}
       <ChartsRow />
 
       {/* Row 7 — Wash cycle + Laundry distribution */}

@@ -207,7 +207,7 @@ const AssetsTable = ({ onCountsChange }) => {
             <IconWrapper
               icon={CategoryIcon}
               variant={row.statusVariant}
-              hasAlert={row.status === "Delayed"}
+              hasAlert={false}
               sizeClassName="h-10 w-10 shrink-0"
               roundedClassName="rounded-xl"
               iconSize={18}

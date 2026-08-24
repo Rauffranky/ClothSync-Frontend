@@ -6,7 +6,6 @@ import OverviewTab from "./overview";
 import CheckInSummaryTab from "./CheckInSummary";
 import CheckOutSummaryTab from "./CheckOutSummary";
 import ThroughputTab from "./Throughput";
-import DelayedItemsTab from "./DelayedItems";
 import ScannerActivityTab from "./ScannerActivity";
 
 const ReportsAnalytics = () => {
@@ -18,7 +17,6 @@ const ReportsAnalytics = () => {
     { label: "Check-Out Summary", value: "check-out" },
     { label: "Business-Wise Throughput", value: "throughput" },
     { label: "In-Laundry Inventory", value: "inventory" },
-    { label: "Delayed Items", value: "delayed" },
     { label: "Scanner Activity", value: "scanner-activity" },
   ];
 
@@ -36,7 +34,6 @@ const ReportsAnalytics = () => {
           {activeTab === "check-in" && <CheckInSummaryTab />}
           {activeTab === "check-out" && <CheckOutSummaryTab />}
           {activeTab === "throughput" && <ThroughputTab />}
-          {activeTab === "delayed" && <DelayedItemsTab />}
           {activeTab === "scanner-activity" && <ScannerActivityTab />}
           
           {activeTab === "inventory" && (

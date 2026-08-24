@@ -6,7 +6,6 @@ const processingStatusData = [
   { label: "In Laundry", value: 261, color: "var(--color-aurora-purple)", percentage: "27%" },
   { label: "Processed", value: 198, color: "var(--color-aurora-teal)", percentage: "20%" },
   { label: "Ready", value: 143, color: "var(--color-aurora-teal)", percentage: "15%" },
-  { label: "Delayed", value: 36, color: "var(--color-sunset-orange)", percentage: "4%" },
 ];
 
 // Override ready to distinguish from processed
@@ -15,7 +14,6 @@ const chartData = [
   { label: "In Laundry", value: 261, color: "var(--color-aurora-purple)" },
   { label: "Processed", value: 198, color: "var(--color-neon-cyan)" },
   { label: "Ready", value: 143, color: "var(--color-aurora-teal)" },
-  { label: "Delayed", value: 36, color: "var(--color-sunset-orange)" },
 ];
 
 const legendColors = {
@@ -23,7 +21,6 @@ const legendColors = {
   "In Laundry": "var(--color-aurora-purple)",
   "Processed": "var(--color-neon-cyan)",
   "Ready": "var(--color-aurora-teal)",
-  "Delayed": "var(--color-sunset-orange)",
 };
 
 const ProcessingStatusDistribution = () => {

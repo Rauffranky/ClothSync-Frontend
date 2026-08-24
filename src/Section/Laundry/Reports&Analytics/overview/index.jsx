@@ -1,7 +1,6 @@
 import DailyCheckInCheckOutChart from "./DailyCheckInCheckOutChart";
 import ProcessingStatusDistribution from "./ProcessingStatusDistribution";
 import BusinessThroughput from "./BusinessThroughput";
-import DelayedItemsTrend from "./DelayedItemsTrend";
 import ItemsByCategory from "./ItemsByCategory";
 import AverageTurnaroundTime from "./AverageTurnaroundTime";
 
@@ -14,10 +13,9 @@ const OverviewTab = () => {
         <ProcessingStatusDistribution />
       </div>
 
-      {/* Middle Row: Throughput, Delayed Items, Items by Category */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Middle Row: Throughput and Items by Category */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <BusinessThroughput />
-        <DelayedItemsTrend />
         <ItemsByCategory />
       </div>
 
@@ -28,4 +26,3 @@ const OverviewTab = () => {
 };
 
 export default OverviewTab;
-

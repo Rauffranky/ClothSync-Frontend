@@ -10,7 +10,6 @@ import {
   MapPin,
   PackageCheck,
   RefreshCw,
-  Timer,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import Alert from "../../../Components/UI/Alert";
@@ -89,13 +88,6 @@ const stats = [
     label: "Checked In Today",
     variant: "success",
     Icon: PackageCheck,
-  },
-  {
-    id: "delayed",
-    key: "delayed",
-    label: "Delayed",
-    variant: "danger",
-    Icon: Timer,
   },
 ];
 const checkoutStats = [
@@ -176,22 +168,6 @@ const columns = [
       <Badge dot size="sm" variant={row.statusVariant}>
         {row.status}
       </Badge>
-    ),
-  },
-  {
-    key: "delayed",
-    label: "Delayed",
-    align: "center",
-    render: (value) => (
-      <span
-        className={
-          value
-            ? "font-black text-(--color-overdue)"
-            : "text-(--theme-text-muted)"
-        }
-      >
-        {value || "—"}
-      </span>
     ),
   },
   { key: "lastActivity", label: "Last Activity" },

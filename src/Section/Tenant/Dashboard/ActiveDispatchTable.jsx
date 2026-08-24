@@ -37,14 +37,6 @@ const dispatches = [
     status: "Returned",
     missing: null,
   },
-  {
-    id: "BTH-20240528-004",
-    laundry: "CleanFlow Solutions",
-    date: "May 28, 2025",
-    total: 190,
-    status: "Delayed",
-    missing: 4,
-  },
 ];
 
 const statusVariant = {
@@ -52,7 +44,6 @@ const statusVariant = {
   "Sent To Business": "progress",
   "Sent To Laundry": "pending",
   Returned: "completed",
-  Delayed: "overdue",
 };
 
 const columns = [

@@ -2,7 +2,6 @@ import {
   AlertCircle,
   Box,
   CheckCircle,
-  Clock,
   LogIn,
   LogOut,
   Timer,
@@ -54,15 +53,6 @@ const stats = [
     icon: Box,
     iconColor: "text-(--color-aurora-teal)",
     iconBg: "bg-[color-mix(in_srgb,var(--color-aurora-teal)_15%,transparent)]",
-  },
-  {
-    id: "delayed",
-    label: "Delayed Items",
-    value: "36",
-    trend: "+6 today",
-    icon: Clock,
-    iconColor: "text-[var(--color-sunset-orange)]",
-    iconBg: "bg-[color-mix(in_srgb,var(--color-sunset-orange)_15%,transparent)]",
   },
   {
     id: "exceptions",

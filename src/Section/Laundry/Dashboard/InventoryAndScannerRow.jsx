@@ -2,10 +2,10 @@ import { ArrowRight, Settings, Wifi, WifiOff } from "lucide-react";
 import Card from "../../../Components/UI/Card";
 
 const inventory = [
-  { name: "Grand Plaza Hotel", laundry: 284, processed: 192, ready: 98, delayed: 4 },
-  { name: "CityCare Hospital", laundry: 176, processed: 88, ready: 42, delayed: 12 },
-  { name: "Royal Suites", laundry: 133, processed: 71, ready: 60, delayed: 2 },
-  { name: "Metro Textile Services", laundry: 410, processed: 210, ready: 188, delayed: 18 },
+  { name: "Grand Plaza Hotel", laundry: 284, processed: 192, ready: 98 },
+  { name: "CityCare Hospital", laundry: 176, processed: 88, ready: 42 },
+  { name: "Royal Suites", laundry: 133, processed: 71, ready: 60 },
+  { name: "Metro Textile Services", laundry: 410, processed: 210, ready: 188 },
 ];
 
 const scanners = [
@@ -75,7 +75,7 @@ const InventoryAndScannerRow = () => (
               <span className="font-bold text-(--theme-text-primary)">{item.name}</span>
               <button className="text-xs font-bold text-(--color-sky-blue)">View</button>
             </div>
-            <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="grid grid-cols-3 gap-2 text-center">
               <div className="flex flex-col">
                 <span className="text-lg font-black text-(--color-super-admin-light)">{item.laundry}</span>
                 <span className="text-[10px] font-semibold text-(--theme-text-muted)">Laundry</span>
@@ -87,10 +87,6 @@ const InventoryAndScannerRow = () => (
               <div className="flex flex-col">
                 <span className="text-lg font-black text-(--color-seafoam)">{item.ready}</span>
                 <span className="text-[10px] font-semibold text-(--theme-text-muted)">Ready</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-lg font-black text-(--color-pending)">{item.delayed}</span>
-                <span className="text-[10px] font-semibold text-(--theme-text-muted)">Delayed</span>
               </div>
             </div>
           </div>

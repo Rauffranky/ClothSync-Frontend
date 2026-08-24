@@ -1,7 +1,6 @@
 import {
     AlertCircle,
     Building2,
-    Clock3,
     Cuboid,
     RotateCcw,
     ShieldCheck,
@@ -55,13 +54,6 @@ const getStats = (counts) => [
         variant: "returned",
     },
     {
-        value: counts?.delayed,
-        label: "Delayed",
-        helper: "past expected return",
-        icon: Clock3,
-        variant: "delayed",
-    },
-    {
         value: counts?.missing,
         label: "Missing / Lost",
         helper: "flagged",
@@ -74,14 +66,15 @@ const AssetStats = ({ counts }) => {
     const stats = getStats(counts);
 
     return (
-        <section className="grid gap-2 grid-cols-2 sm:grid-cols-4 2xl:grid-cols-8">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
             {stats.map((item, index) => {
                 const Icon = item.icon;
 
                 return (
                     <Card
                         key={index}
-                        padding="10px"
+                        className="min-h-40"
+                        padding="14px"
                         rounded="8px"
                     >
                         <IconWrapper

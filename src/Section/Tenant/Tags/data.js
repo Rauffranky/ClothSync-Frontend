@@ -136,7 +136,6 @@ export const assetStatusOptions = [
     { label: "In Laundry", value: "at_laundry" },
     { label: "Washed", value: "washed" },
     { label: "Returned", value: "returned" },
-    { label: "Delayed", value: "delayed" },
     { label: "Missing", value: "missing" },
     { label: "Retired", value: "retired" },
     { label: "Inactive", value: "inactive" },
