@@ -9,6 +9,8 @@ import {
 } from "../../../Utils/themeMode";
 import { getFlatPortalItems, portalGroups } from "./nav";
 import { getAuthenticatedTenant } from "../../../axios/auth/tenantAuth";
+import { getLaundrySettingsProfile } from "../../../axios/settings/laundrySettings";
+import { getSettingsProfile } from "../../../Section/Tenant/Settings/data";
 import {
   AUTH_SESSION_USER_UPDATED_EVENT,
   getAuthAccessToken,
@@ -69,6 +71,28 @@ const Header = ({ portalKey, onOpenSidebar }) => {
     };
   }, [portalKey]);
 
+  useEffect(() => {
+    if (portalKey !== "laundry" || !getAuthAccessToken()) return undefined;
+
+    let isActive = true;
+    getLaundrySettingsProfile()
+      .then((response) => {
+        if (!isActive) return;
+        const profile = getSettingsProfile(response);
+        if (!profile) return;
+        const mergedProfile = { ...getAuthSessionUser(), ...profile };
+        setTenantProfile(mergedProfile);
+        setAuthSessionUser(mergedProfile);
+      })
+      .catch(() => {
+        // Keep the authenticated profile when the background refresh fails.
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [portalKey]);
+
   const activePortal = useMemo(() => {
     const portalFromKey = portalGroups.find(
       (portal) => portal.enabled && portal.key === portalKey,
@@ -89,12 +113,18 @@ const Header = ({ portalKey, onOpenSidebar }) => {
   }, [activePortal?.key, pathname]);
 
   const profileName =
-    tenantProfile?.businessName ||
-    tenantProfile?.companyName ||
+    (portalKey === "laundry"
+      ? tenantProfile?.companyName
+      : tenantProfile?.businessName) ||
     tenantProfile?.name ||
     tenantProfile?.fullName ||
     activePortal?.user.name ||
     "User";
+  const contactPersonName =
+    tenantProfile?.contactPersonName ||
+    tenantProfile?.fullName ||
+    tenantProfile?.name ||
+    "";
   const profileInitials = String(profileName)
     .trim()
     .split(/\s+/)
@@ -175,7 +205,9 @@ const Header = ({ portalKey, onOpenSidebar }) => {
                 {profileName}
               </p>
               <p className="m-0 truncate text-[11px] font-semibold text-(--theme-text-muted)">
-                {tenantProfile?.email || activePortal?.user.email}
+                {portalKey === "laundry" && contactPersonName
+                  ? `${contactPersonName} · ${tenantProfile?.email || activePortal?.user.email || ""}`
+                  : tenantProfile?.email || activePortal?.user.email}
               </p>
             </div>
             <span
