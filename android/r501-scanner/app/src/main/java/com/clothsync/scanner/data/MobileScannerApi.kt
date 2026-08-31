@@ -6,6 +6,7 @@ interface MobileScannerApi {
     @POST("login") suspend fun login(@Body body: LoginRequest): ApiEnvelope<LoginData>
     @POST("refresh") suspend fun refresh(@Body body: RefreshRequest): ApiEnvelope<LoginData>
     @POST("logout") suspend fun logout(): ApiEnvelope<Unit>
+    @POST("device/identify") suspend fun identifyDevice(@Body body: DeviceIdentityRequest): ApiEnvelope<DeviceIdentityData>
     @GET("scanners") suspend fun scanners(): ApiEnvelope<ScannerListData>
     @POST("scanners/{scannerId}/select") suspend fun selectScanner(@Path("scannerId") id: String, @Body body: SelectScannerRequest): ApiEnvelope<ScannerDto>
     @GET("incoming-batches") suspend fun batches(): ApiEnvelope<BatchListData>

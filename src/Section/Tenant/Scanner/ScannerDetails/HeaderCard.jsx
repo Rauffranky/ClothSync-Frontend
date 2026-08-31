@@ -14,7 +14,7 @@ const statusVariantMap = {
   Inactive: "danger",
 };
 
-const HeaderCard = ({ data }) => {
+const HeaderCard = ({ data, onConfigure, onReconnect, onReplace, onAccess }) => {
   const DeviceIcon = detailIconMap[data.type] || Cpu;
 
   return (
@@ -42,6 +42,26 @@ const HeaderCard = ({ data }) => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {onConfigure ? (
+            <button
+              type="button"
+              onClick={onConfigure}
+              className="rounded-xl border border-(--theme-border-soft) px-3 py-2 text-sm font-bold text-(--theme-text-primary) transition hover:bg-(--button-ghost-bg)"
+            >
+              Configure Scanner
+            </button>
+          ) : null}
+          {onReconnect ? (
+            <button type="button" onClick={onReconnect} className="rounded-xl border border-(--theme-border-soft) px-3 py-2 text-sm font-bold text-(--theme-text-primary) transition hover:bg-(--button-ghost-bg)">
+              Reconnect Device
+            </button>
+          ) : null}
+          {onReplace ? (
+            <button type="button" onClick={onReplace} className="rounded-xl bg-(--button-danger-bg) px-3 py-2 text-sm font-bold text-(--button-danger-text) transition hover:opacity-90">
+              Replace Device
+            </button>
+          ) : null}
+          {onAccess ? <button type="button" onClick={onAccess} className="rounded-xl border border-(--theme-border-soft) px-3 py-2 text-sm font-bold text-(--theme-text-primary) transition hover:bg-(--button-ghost-bg)">Access & Credentials</button> : null}
           <Badge size="md" variant={statusVariantMap[data.status] || "neutral"}>
             {data.status}
           </Badge>

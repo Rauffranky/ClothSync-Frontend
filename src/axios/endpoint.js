@@ -37,12 +37,18 @@ export const TENANT_CATEGORY_ENDPOINTS = Object.freeze({
 });
 
 export const TENANT_SCANNER_ENDPOINTS = Object.freeze({
-  CREATE: "/tenant-scanners/create",
   LIST: "/tenant-scanners/show",
   DETAILS: (id) => `/tenant-scanners/show/${id}`,
+  CONFIGURE: (id) => `/tenant-scanners/configure/${id}`,
   WARNINGS: "/tenant-scanners/warnings",
   UPDATE: (id) => `/tenant-scanners/update/${id}`,
   UPDATE_STATUS: (id) => `/tenant-scanners/update-status/${id}`,
+  RECONNECT_DEVICE: (id) => `/tenant-scanners/reconnect-device/${id}`,
+  REPLACE_DEVICE: (id) => `/tenant-scanners/replace-device/${id}`,
+  ACCESS: (id) => `/tenant-scanners/access/${id}`,
+  ROTATE_KEY: (id) => `/tenant-scanners/rotate-key/${id}`,
+  REVOKE_KEY: (id) => `/tenant-scanners/revoke-key/${id}`,
+  LOGS: (id) => `/tenant-scanners/show/${id}/logs`,
 });
 
 export const TENANT_TAG_ENDPOINTS = Object.freeze({
@@ -98,12 +104,15 @@ export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
 });
 
 export const LAUNDRY_SCANNER_ENDPOINTS = Object.freeze({
-  CREATE: "/laundry-scanners/create",
   LIST: "/laundry-scanners/show",
   DETAILS: (id) => `/laundry-scanners/show/${id}`,
   WARNINGS: "/laundry-scanners/warnings",
   UPDATE: (id) => `/laundry-scanners/update/${id}`,
   UPDATE_STATUS: (id) => `/laundry-scanners/update-status/${id}`,
+  CONFIGURE: (id) => `/laundry-scanners/configure/${id}`,
+  RECONNECT_DEVICE: (id) => `/laundry-scanners/reconnect-device/${id}`,
+  REPLACE_DEVICE: (id) => `/laundry-scanners/replace-device/${id}`,
+  ACCESS: (id) => `/laundry-scanners/access/${id}`,
   CLEAR_SESSION: (sessionId) =>
     `/laundry-scanners/sessions/${sessionId}/clear`,
   ACTION_UNDO: (sessionId, undoId) =>

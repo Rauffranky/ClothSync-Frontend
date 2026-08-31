@@ -19,6 +19,20 @@ import { getTenantScannerDetails } from "../../../../axios/scanners/tenantScanne
 import { formatDateTime } from "../../../../Utils/date";
 import { normalizeScanner } from "../data";
 import HeaderCard from "./HeaderCard";
+import AddScannerModal from "../AddScannerModal";
+import { configureTenantScanner } from "../../../../axios/scanners/tenantScanners";
+import {
+  reconnectTenantScannerDevice,
+  replaceTenantScannerDevice,
+  updateTenantScannerAccess,
+  rotateTenantScannerKey,
+  revokeTenantScannerKey,
+} from "../../../../axios/scanners/tenantScanners";
+import { getTenantStaffOptions } from "../../../../axios/staff/tenantStaff";
+import { getTenantStaffRoles } from "../../../../axios/staffRoles/tenantStaffRoles";
+import ScannerHardwareRecoveryModal from "./ScannerHardwareRecoveryModal";
+import ScannerAccessModal from "./ScannerAccessModal";
+import { toast } from "../../../../Utils/toast";
 
 const summaryItems = [
   { key: "lastActivity", label: "Last Activity", icon: Logs },
@@ -44,12 +58,27 @@ const DetailField = ({ label, value, mono = false }) => (
 
 const ScannerDetailsIndex = ({
   getScannerDetails = getTenantScannerDetails,
+  configureScanner = configureTenantScanner,
+  getStaffOptions = getTenantStaffOptions,
+  getRoleOptions = getTenantStaffRoles,
+  reconnectScanner = reconnectTenantScannerDevice,
+  replaceScanner = replaceTenantScannerDevice,
+  updateAccess = updateTenantScannerAccess,
+  rotateKey = rotateTenantScannerKey,
+  revokeKey = revokeTenantScannerKey,
+  policyOwnerType = "tenant",
 }) => {
   const { id } = useParams();
   const [scanner, setScanner] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [retryKey, setRetryKey] = useState(0);
+  const [isConfigureOpen, setIsConfigureOpen] = useState(false);
+  const [recoveryMode, setRecoveryMode] = useState(null);
+  const [isRecoverySubmitting, setIsRecoverySubmitting] = useState(false);
+  const [isAccessOpen, setIsAccessOpen] = useState(false);
+  const [staffOptions, setStaffOptions] = useState([]);
+  const [roleOptions, setRoleOptions] = useState([]);
 
   useEffect(() => {
     let isActive = true;
@@ -83,6 +112,57 @@ const ScannerDetailsIndex = ({
     setLoadError("");
     setRetryKey((current) => current + 1);
   };
+
+  const handleConfigure = async (values) => {
+    const response = await configureScanner(scanner.apiId, {
+      scannerType: values.scannerType.toLowerCase(),
+      scannerMode: values.scannerMode.toLowerCase(),
+      location: values.location.trim(),
+      zoneName: values.zoneName.trim(),
+      status: values.status.toLowerCase(),
+      assignedOperatorId: values.assignedOperatorId || null,
+      translations: {
+        en: {
+          name: values.scannerName.trim(),
+          zoneName: values.zoneName.trim(),
+          location: values.location.trim(),
+          notes: values.customNotes.trim(),
+        },
+      },
+    });
+    const payload = response?.data ?? response ?? {};
+    const updated = payload?.item || payload?.scanner || payload;
+    setScanner(normalizeScanner(updated));
+    setIsConfigureOpen(false);
+  };
+
+  const handleRecovery = async (values) => {
+    if (!scanner?.apiId) throw new Error("Scanner backend ID is missing");
+    setIsRecoverySubmitting(true);
+    try {
+      const recover = recoveryMode === "replace"
+        ? replaceScanner
+        : reconnectScanner;
+      const response = await recover(scanner.apiId, values);
+      toast.success(response?.message || "Scanner hardware updated successfully");
+      setRecoveryMode(null);
+      setIsLoading(true);
+      setRetryKey((current) => current + 1);
+    } finally {
+      setIsRecoverySubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAccessOpen) return;
+    Promise.all([
+      getStaffOptions({ status: "active", limit: 100 }),
+      getRoleOptions({ status: "active", limit: 100 }),
+    ]).then(([staffResponse, roleResponse]) => {
+      setStaffOptions((staffResponse?.data?.items || []).filter((item) => item?.id).map((item) => ({ value: item.id, label: item.fullName || item.name || item.email })));
+      setRoleOptions((roleResponse?.data?.items || []).filter((item) => item?.id).map((item) => ({ value: item.id, label: item.name || item.title })));
+    }).catch(() => { setStaffOptions([]); setRoleOptions([]); });
+  }, [getRoleOptions, getStaffOptions, isAccessOpen]);
 
   if (isLoading) {
     return (
@@ -130,7 +210,20 @@ const ScannerDetailsIndex = ({
 
   return (
     <div className="space-y-6">
-      <HeaderCard data={scanner} />
+      <HeaderCard
+        data={scanner}
+        onConfigure={() => setIsConfigureOpen(true)}
+        onReconnect={() => setRecoveryMode("reconnect")}
+        onReplace={() => setRecoveryMode("replace")}
+        onAccess={() => setIsAccessOpen(true)}
+      />
+
+      {!String(scanner.status).toLowerCase().includes("active") ? (
+        <Alert leftIcon={<AlertTriangle size={18} />} variant="warning">
+          This scanner is not active. Scanning remains disabled until hardware
+          recovery, configuration, and backend activation are complete.
+        </Alert>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {summaryItems.map((item) => {
@@ -224,6 +317,34 @@ const ScannerDetailsIndex = ({
           </p>
         </Card>
       </div>
+
+      <AddScannerModal
+        getStaffOptions={getStaffOptions}
+        initialValues={{
+          ...scanner,
+          scannerName: scanner.name,
+          scannerId: scanner.id,
+          scannerType: scanner.type,
+          scannerMode: scanner.mode,
+          location: scanner.scannerLocation,
+          zoneName: scanner.zoneName,
+          customNotes: scanner.customNotes,
+        }}
+        isOpen={isConfigureOpen}
+        mode="edit"
+        onClose={() => setIsConfigureOpen(false)}
+        onSubmit={handleConfigure}
+      />
+
+      <ScannerHardwareRecoveryModal
+        isOpen={Boolean(recoveryMode)}
+        isSubmitting={isRecoverySubmitting}
+        mode={recoveryMode}
+        onClose={() => setRecoveryMode(null)}
+        onSubmit={handleRecovery}
+        scanner={scanner}
+      />
+      <ScannerAccessModal isOpen={isAccessOpen} onClose={() => setIsAccessOpen(false)} scanner={scanner} staffOptions={staffOptions} roleOptions={roleOptions} policyOwnerType={policyOwnerType} onSave={(payload) => updateAccess(scanner.apiId, payload)} onRotate={() => rotateKey(scanner.apiId).then((response) => response?.data || response)} onRevoke={() => revokeKey(scanner.apiId)} />
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import { usePageMeta } from "../../../Hooks/usePageMeta";
 import ScannerManagementIndex from "../../../Section/Tenant/Scanner";
 import { 
-  createLaundryScanner, 
   getLaundryScanners, 
   updateLaundryScanner, 
   updateLaundryScannerStatus 
@@ -22,7 +21,6 @@ const ScannersPage = () => {
     return (
         <div>
             <ScannerManagementIndex 
-                createScanner={createLaundryScanner}
                 getScanners={getLaundryScanners}
                 updateScanner={updateLaundryScanner}
                 updateScannerStatus={updateLaundryScannerStatus}

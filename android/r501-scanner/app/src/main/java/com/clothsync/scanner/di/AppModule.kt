@@ -1,11 +1,11 @@
 package com.clothsync.scanner.di
 
 import android.content.Context
-import androidx.room.Room
 import com.clothsync.scanner.BuildConfig
 import com.clothsync.scanner.data.*
 import com.clothsync.scanner.rfid.R501RfidReader
 import com.clothsync.scanner.rfid.RfidReader
+import com.clothsync.scanner.rfid.Uhf288RfidReader
 import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
@@ -21,11 +21,9 @@ import javax.inject.Singleton
 
 @Module @InstallIn(SingletonComponent::class)
 object AppModule {
-    @Provides @Singleton fun database(@ApplicationContext context: Context): ScannerDatabase = Room.databaseBuilder(context, ScannerDatabase::class.java, "scanner.db").build()
-    @Provides fun dao(db: ScannerDatabase) = db.offlineScans()
     @Provides @Singleton fun gson() = Gson()
     @Provides @Singleton fun api(store: SecureSessionStore, gson: Gson): MobileScannerApi {
-        val logging = okhttp3.logging.HttpLoggingInterceptor().apply { level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY }
+        val logging = okhttp3.logging.HttpLoggingInterceptor().apply { level = okhttp3.logging.HttpLoggingInterceptor.Level.NONE }
         val client = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(logging)
             .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().apply { store.accessToken().takeIf { it.isNotBlank() }?.let { header("Authorization", "Bearer $it") } }.build()) }
@@ -39,6 +37,11 @@ object AppModule {
             }.build()
         return Retrofit.Builder().baseUrl(BuildConfig.API_BASE_URL).client(client).addConverterFactory(GsonConverterFactory.create(gson)).build().create(MobileScannerApi::class.java)
     }
-    @Provides @Singleton fun rfid(@ApplicationContext context: Context): RfidReader = R501RfidReader(context)
+    @Provides @Singleton fun rfid(@ApplicationContext context: Context): RfidReader =
+        if (BuildConfig.SCANNER_VARIANT == "fixed") {
+            Uhf288RfidReader(context)
+        } else {
+            R501RfidReader(context)
+        }
     private fun responseCount(response: Response): Int { var result = 1; var prior = response.priorResponse; while (prior != null) { result++; prior = prior.priorResponse }; return result }
 }

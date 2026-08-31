@@ -5,6 +5,20 @@ import com.google.gson.annotations.SerializedName
 data class ApiEnvelope<T>(val success: Boolean = false, val message: String = "", val data: T? = null)
 data class LoginRequest(val email: String, val password: String, val deviceId: String, val deviceName: String, val platform: String = "android", val appVersion: String = "1.0.0")
 data class RefreshRequest(val refreshToken: String, val sessionId: String)
+data class DeviceIdentityRequest(
+    val hardwareIdentifier: String,
+    val hardwareIdentifierType: String = "android_id",
+    val scannerFamily: String? = null,
+    val deviceModel: String? = null,
+    val platform: String = "android",
+    val appVersion: String? = null,
+    val metadata: Map<String, Any>? = null,
+)
+data class DeviceIdentityData(
+    val outcome: String? = null,
+    val scanner: ScannerDto? = null,
+    val message: String? = null,
+)
 data class LoginData(val accessToken: String, val refreshToken: String, val sessionId: String, val portalType: String, val user: UserDto? = null, val owner: UserDto? = null)
 data class UserDto(val id: String = "", val fullName: String = "", val email: String = "")
 data class ScannerTranslationDto(val zoneName: String? = null, val locationName: String? = null)
@@ -79,7 +93,7 @@ fun BatchDto.displayStatus(): String = statusLabel?.takeIf { it.isNotBlank() } ?
 fun BatchDto.displayTotal(): Int = totalItems ?: itemsCount ?: totalTagsCount ?: 0
 fun BatchDto.displayDispatchDate(): String = dispatchedAt ?: dispatchDate ?: createdAt.orEmpty()
 data class BatchListData(val items: List<BatchDto> = emptyList())
-data class StartSessionRequest(val scannerId: String)
+data class StartSessionRequest(val scannerId: String, val batchId: String? = null)
 data class SessionDto(val id: String? = null, val status: String = "active")
 data class StartSessionData(val id: String? = null, val status: String = "active", val session: SessionDto? = null) {
     fun actualSession(): SessionDto? = session?.takeIf { !it.id.isNullOrBlank() }
@@ -100,7 +114,14 @@ data class BatchCounterDto(val batchId: String? = null, val batchCode: String? =
 data class ScanResultDto(val epc: String = "", val accepted: Boolean = false, val batchId: String? = null, val batchCode: String? = null, val reason: String? = null, val status: String? = null, val statusLabel: String? = null, val details: String? = null)
 data class UndoDto(val id: String = "", val expiresAt: String = "", val durationSeconds: Int = 0, val displayDuration: String = "")
 data class ScanResponseData(val session: SessionDto? = null, val counters: ScanCounters = ScanCounters(), val affectedBatchIds: List<String> = emptyList(), val batchCounters: List<BatchCounterDto> = emptyList(), val undos: List<UndoDto> = emptyList(), val results: List<ScanResultDto> = emptyList())
-data class HeartbeatRequest(val scannerId: String, val appVersion: String = "1.0.0", val batteryLevel: Int, val networkState: String, val rfidConnected: Boolean)
+data class HeartbeatRequest(
+    val scannerId: String,
+    val appVersion: String = "1.0.0",
+    val batteryLevel: Int,
+    val networkState: String,
+    val rfidConnected: Boolean,
+    val metadata: Map<String, Any>? = null,
+)
 data class HeartbeatData(val scannerActive: Boolean = true)
 
 data class StoredSession(val accessToken: String, val refreshToken: String, val sessionId: String, val portalType: String, val userId: String, val userName: String, val ownerId: String)

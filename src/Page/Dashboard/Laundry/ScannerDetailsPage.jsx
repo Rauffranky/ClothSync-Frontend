@@ -1,6 +1,9 @@
 import { usePageMeta } from "../../../Hooks/usePageMeta";
 import ScannerDetailsIndex from "../../../Section/Tenant/Scanner/ScannerDetails";
-import { getLaundryScannerDetails } from "../../../axios/scanners/laundryScanners";
+import { getLaundryScannerDetails, reconnectLaundryScannerDevice, replaceLaundryScannerDevice, updateLaundryScannerAccess } from "../../../axios/scanners/laundryScanners";
+import { getLaundryStaffOptions } from "../../../axios/laundryStaff/laundryStaff";
+import { configureLaundryScanner } from "../../../axios/scanners/laundryScanners";
+import { getLaundryStaffRoles as getLaundryRoles } from "../../../axios/laundryStaff/laundryStaff";
 
 const ScannerDetailsPage = () => {
   usePageMeta({
@@ -15,7 +18,16 @@ const ScannerDetailsPage = () => {
 
   return (
     <div>
-      <ScannerDetailsIndex getScannerDetails={getLaundryScannerDetails} />
+      <ScannerDetailsIndex
+        configureScanner={configureLaundryScanner}
+        getScannerDetails={getLaundryScannerDetails}
+        getStaffOptions={getLaundryStaffOptions}
+        getRoleOptions={getLaundryRoles}
+        reconnectScanner={reconnectLaundryScannerDevice}
+        replaceScanner={replaceLaundryScannerDevice}
+        updateAccess={updateLaundryScannerAccess}
+        policyOwnerType="laundry"
+      />
     </div>
   );
 };
