@@ -9,7 +9,7 @@ plugins {
 def productionApiUrl = providers.gradleProperty("CLOTHSYNC_PRODUCTION_API_URL")
         .orElse("https://clothsync.code-xperts.com/api/mobile-scanner/")
 def debugApiUrl = providers.gradleProperty("CLOTHSYNC_DEBUG_API_URL")
-        .orElse("http://192.168.0.110:5001/api/mobile-scanner/")
+        .orElse("http://192.168.0.108:5001/api/mobile-scanner/")
 
 android {
     namespace "com.clothsync.scanner"
