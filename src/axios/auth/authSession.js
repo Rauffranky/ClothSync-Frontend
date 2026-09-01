@@ -1,6 +1,9 @@
 const AUTH_SESSION_KEYS = Object.freeze({
   ACCESS_TOKEN: "accessToken",
   REFRESH_TOKEN: "refreshToken",
+  SESSION_ID: "sessionId",
+  ACCESS_TOKEN_EXPIRES_AT: "accessTokenExpiresAt",
+  TOKEN: "token",
   USER: "authUser",
 });
 
@@ -65,6 +68,10 @@ export const storeAuthSessionFromResponse = (response) => {
       authData.refreshToken,
     );
   }
+
+  if (authData?.sessionId) sessionStorage.setItem(AUTH_SESSION_KEYS.SESSION_ID, authData.sessionId);
+  if (authData?.accessTokenExpiresAt) sessionStorage.setItem(AUTH_SESSION_KEYS.ACCESS_TOKEN_EXPIRES_AT, authData.accessTokenExpiresAt);
+  if (accessToken) localStorage.setItem("token", accessToken);
 
   const user =
     authData?.user ??

@@ -1,4 +1,5 @@
 export const AUTH_ENDPOINTS = Object.freeze({
+  REFRESH: "/auth/refresh",
   TENANT_LOGIN: "/tenant-auth/login",
   TENANT_LOGOUT: "/tenant-auth/logout",
   TENANT_PROFILE: "/tenant-auth/me",

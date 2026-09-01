@@ -31,8 +31,13 @@ object AppModule {
                 if (responseCount(response) > 1 || store.refreshToken().isBlank()) return@authenticator null
                 val refreshClient = Retrofit.Builder().baseUrl(BuildConfig.API_BASE_URL).addConverterFactory(GsonConverterFactory.create(gson)).client(OkHttpClient()).build().create(MobileScannerApi::class.java)
                 val current = store.session.value ?: return@authenticator null
-                val refreshed = runCatching { runBlocking { refreshClient.refresh(RefreshRequest(current.refreshToken, current.sessionId)).data } }.getOrNull() ?: run { store.clear(); return@authenticator null }
-                store.save(current.copy(accessToken = refreshed.accessToken, refreshToken = refreshed.refreshToken.ifBlank { current.refreshToken }))
+                val refreshed = runCatching { runBlocking { refreshClient.refresh(RefreshRequest(current.refreshToken, current.sessionId)).data } }.getOrNull()
+                    ?: run { store.clear(); return@authenticator null }
+                if (refreshed.accessToken.isBlank() || refreshed.refreshToken.isBlank()) {
+                    store.clear()
+                    return@authenticator null
+                }
+                store.save(current.copy(accessToken = refreshed.accessToken, refreshToken = refreshed.refreshToken))
                 response.request.newBuilder().header("Authorization", "Bearer ${refreshed.accessToken}").build()
             }.build()
         return Retrofit.Builder().baseUrl(BuildConfig.API_BASE_URL).client(client).addConverterFactory(GsonConverterFactory.create(gson)).build().create(MobileScannerApi::class.java)

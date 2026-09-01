@@ -19,7 +19,7 @@ data class DeviceIdentityData(
     val scanner: ScannerDto? = null,
     val message: String? = null,
 )
-data class LoginData(val accessToken: String, val refreshToken: String, val sessionId: String, val portalType: String, val user: UserDto? = null, val owner: UserDto? = null)
+data class LoginData(val accessToken: String, val refreshToken: String, val sessionId: String, val portalType: String = "", val accessTokenExpiresAt: String? = null, val user: UserDto? = null, val owner: UserDto? = null)
 data class UserDto(val id: String = "", val fullName: String = "", val email: String = "")
 data class ScannerTranslationDto(val zoneName: String? = null, val locationName: String? = null)
 data class ScannerDto(
