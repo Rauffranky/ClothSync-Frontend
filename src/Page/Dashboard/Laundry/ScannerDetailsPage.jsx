@@ -1,6 +1,6 @@
 import { usePageMeta } from "../../../Hooks/usePageMeta";
 import ScannerDetailsIndex from "../../../Section/Tenant/Scanner/ScannerDetails";
-import { getLaundryScannerDetails, reconnectLaundryScannerDevice, replaceLaundryScannerDevice, updateLaundryScannerAccess } from "../../../axios/scanners/laundryScanners";
+import { getLaundryScannerDetails, getLaundryScannerLogs, reconnectLaundryScannerDevice, replaceLaundryScannerDevice, updateLaundryScannerAccess } from "../../../axios/scanners/laundryScanners";
 import { getLaundryStaffOptions } from "../../../axios/laundryStaff/laundryStaff";
 import { configureLaundryScanner } from "../../../axios/scanners/laundryScanners";
 import { getLaundryStaffRoles as getLaundryRoles } from "../../../axios/laundryStaff/laundryStaff";
@@ -21,6 +21,7 @@ const ScannerDetailsPage = () => {
       <ScannerDetailsIndex
         configureScanner={configureLaundryScanner}
         getScannerDetails={getLaundryScannerDetails}
+        getScannerLogs={getLaundryScannerLogs}
         getStaffOptions={getLaundryStaffOptions}
         getRoleOptions={getLaundryRoles}
         reconnectScanner={reconnectLaundryScannerDevice}

@@ -68,10 +68,15 @@ export const TENANT_RETAG_ENDPOINTS = Object.freeze({
 
 export const TENANT_ASSET_ENDPOINTS = Object.freeze({
   LIST: "/tenant-assets/show",
+  SUMMARY: "/tenant-inventory/summary",
   DETAILS: (id) => `/tenant-assets/show/${id}`,
   BATCH_HISTORY: (id) => `/tenant-assets/show/${id}/batch-history`,
   LIFECYCLE_HISTORY: (id) => `/tenant-assets/show/${id}/lifecycle-history`,
   AUDIT_LOGS: (id) => `/tenant-assets/show/${id}/audit-logs`,
+});
+
+export const TENANT_DASHBOARD_ENDPOINTS = Object.freeze({
+  OVERVIEW: "/tenant-dashboard/overview",
 });
 
 export const TENANT_DISPATCH_BATCH_ENDPOINTS = Object.freeze({
@@ -87,13 +92,22 @@ export const TENANT_DISPATCH_BATCH_ENDPOINTS = Object.freeze({
 
 export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
   TEST_SCANNER_SCAN: "/tenant-bulk-scan/test-scanner-scan",
+  START_SESSION: "/tenant-bulk-scan/sessions/start",
+  ACTIVE_SESSION: "/tenant-bulk-scan/sessions/active",
   SCAN: (sessionId) => `/tenant-bulk-scan/sessions/${sessionId}/scan`,
+  SUMMARY: (sessionId) => `/tenant-bulk-scan/sessions/${sessionId}/summary`,
   BULK_ADD: (sessionId) =>
     `/tenant-bulk-scan/sessions/${sessionId}/bulk-add`,
   UNDO_BULK_ADD: (sessionId, undoId) =>
     `/tenant-bulk-scan/sessions/${sessionId}/bulk-add/${undoId}/undo`,
   CLEAR_SESSION: (sessionId) =>
     `/tenant-bulk-scan/sessions/${sessionId}/clear`,
+  CLEAR_SELECTED: (sessionId) =>
+    `/tenant-bulk-scan/sessions/${sessionId}/clear-selected`,
+  IGNORE_SELECTED: (sessionId) =>
+    `/tenant-bulk-scan/sessions/${sessionId}/ignore-selected`,
+  FINISH_SESSION: (sessionId) =>
+    `/tenant-bulk-scan/sessions/${sessionId}/finish`,
   ENTRIES: (sessionId) =>
     `/tenant-bulk-scan/sessions/${sessionId}/entries`,
   ACTION_PREVIEW: (sessionId) =>
@@ -107,6 +121,7 @@ export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
 export const LAUNDRY_SCANNER_ENDPOINTS = Object.freeze({
   LIST: "/laundry-scanners/show",
   DETAILS: (id) => `/laundry-scanners/show/${id}`,
+  LOGS: (id) => `/laundry-scanners/show/${id}/logs`,
   WARNINGS: "/laundry-scanners/warnings",
   UPDATE: (id) => `/laundry-scanners/update/${id}`,
   UPDATE_STATUS: (id) => `/laundry-scanners/update-status/${id}`,

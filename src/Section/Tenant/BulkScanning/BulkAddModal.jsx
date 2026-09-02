@@ -81,7 +81,7 @@ const BulkAddModal = ({ onClose, onSuccess, open, sessionId }) => {
     setIsLoadingCategories(true);
     setCategoriesError("");
 
-    getTenantCategories({ page: 1, limit: 100, status: "active" })
+    getTenantCategories({ status: "active", optionsOnly: true })
       .then((response) => {
         if (!isActive) return;
         setCategoryOptions(getCategoryOptions(response));

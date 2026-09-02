@@ -3,6 +3,8 @@ import Badge from "../../../Components/UI/Badge";
 import Card from "../../../Components/UI/Card";
 import Button from "../../../Components/UI/Button";
 import IconWrapper from "../../../Components/UI/IconWrapper";
+import { useDashboardData } from "./DashboardContext";
+import { formatDateTime } from "../../../Utils/date";
 
 const scanners = [
   {
@@ -104,9 +106,19 @@ const ScannerItem = ({ scanner }) => (
 );
 
 const ScannerActivityPanel = () => {
-  const activeCount = scanners.filter((s) => s.status === "Active").length;
-  const warnCount = scanners.filter((s) => s.status === "Warning").length;
-  const offlineCount = scanners.filter((s) => s.status === "Offline").length;
+  const data = useDashboardData();
+  const liveItems = data?.scanners?.items;
+  const rows = Array.isArray(liveItems) ? liveItems.map((item) => ({
+    id: item.scannerId || item.id,
+    name: item.name || item.scannerName || "Unnamed Scanner",
+    type: `${item.scannerType || ""} · ${item.scannerMode || ""}`.trim(),
+    location: item.location || item.zoneName || "—",
+    lastSeen: formatDateTime(item.lastSeenAt || item.lastActivityAt, true, false, "—"),
+    status: String(item.status || "inactive").replace(/(^|_)(\w)/g, (_, p, c) => `${p ? " " : ""}${c.toUpperCase()}`),
+  })) : scanners;
+  const activeCount = rows.filter((s) => s.status === "Active").length;
+  const warnCount = rows.filter((s) => s.status === "Warning").length;
+  const offlineCount = rows.filter((s) => ["Offline", "Inactive"].includes(s.status)).length;
 
   return (
     <Card>
@@ -123,7 +135,7 @@ const ScannerActivityPanel = () => {
             className="mt-0.5 text-xs"
             style={{ color: "var(--theme-text-muted)" }}
           >
-            {scanners.length} scanners registered
+            {rows.length} scanners registered
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -158,7 +170,7 @@ const ScannerActivityPanel = () => {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        {scanners.map((scanner) => (
+        {rows.map((scanner) => (
           <ScannerItem key={scanner.id} scanner={scanner} />
         ))}
       </div>

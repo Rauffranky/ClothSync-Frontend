@@ -34,14 +34,12 @@ const LaundryStaffRolesPage = lazy(() => import("../Page/Dashboard/Laundry/Staff
 const LaundrySettingsPage = lazy(() => import("../Page/Dashboard/Laundry/SettingsPage"));
 const LaundryReportAnalyticsPage = lazy(() => import("../Page/Dashboard/Laundry/ReportAnalyticsPage"));
 const LaundryScannersPage = lazy(() => import("../Page/Dashboard/Laundry/ScannersPage"));
-const LaundryScannerWarningsPage = lazy(() => import("../Page/Dashboard/Laundry/ScannerWarningsPage"));
 const LaundryScannerDetailsPage = lazy(() => import("../Page/Dashboard/Laundry/ScannerDetailsPage"));
 const LaundryIncomingBatchesPage = lazy(() => import("../Page/Dashboard/Laundry/IncomingBatchesPage"));
 
 //Tenant 
 const AssetsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetsPage"));
 const ScannersPage = lazy(() => import("../Page/Dashboard/Tenant/ScannersPage"));
-const ScannerWarningsPage = lazy(() => import("../Page/Dashboard/Tenant/ScannerWarningsPage"));
 const ScannerDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/ScannerDetailsPage"));
 const StaffPage = lazy(() => import("../Page/Dashboard/Tenant/StaffPage"));
 const StaffRolesPage = lazy(() => import("../Page/Dashboard/Tenant/StaffRolesPage"));
@@ -101,7 +99,6 @@ const AppRoutes = () => {
           <Route path="/business/assets" element={<AssetsPage />} />
           <Route path="/business/assets/:id" element={<AssetDetailsPage />} />
           <Route path="/business/scanners" element={<ScannersPage />} />
-          <Route path="/business/scanners/warnings" element={<ScannerWarningsPage />} />
           <Route path="/business/scanners/:id" element={<ScannerDetailsPage />} />
           <Route path="/business/staff" element={<StaffPage />} />
           <Route path="/business/staff-roles" element={<StaffRolesPage />} />
@@ -192,14 +189,6 @@ const AppRoutes = () => {
             element={
               <PermissionRoute permissionKey="scanners">
                 <LaundryScannersPage />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/laundry/scanners/warnings"
-            element={
-              <PermissionRoute permissionKey="scanners">
-                <LaundryScannerWarningsPage />
               </PermissionRoute>
             }
           />

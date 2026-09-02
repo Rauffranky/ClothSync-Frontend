@@ -3,6 +3,7 @@ import Badge from "../../../Components/UI/Badge";
 import Card from "../../../Components/UI/Card";
 import Table from "../../../Components/UI/Table";
 import Button from "../../../Components/UI/Button";
+import { useDashboardData } from "./DashboardContext";
 
 const dispatches = [
   {
@@ -97,7 +98,18 @@ const columns = [
   },
 ];
 
-const ActiveDispatchTable = () => (
+const ActiveDispatchTable = () => {
+  const data = useDashboardData();
+  const liveItems = data?.dispatches?.items;
+  const rows = Array.isArray(liveItems) ? liveItems.map((item) => ({
+    id: item.batchCode || item.id,
+    laundry: item.laundry?.name || item.laundry?.businessName || item.laundryName || "—",
+    date: item.dispatchedAt || item.createdAt || "—",
+    total: item.totalItems ?? item.totalTagsCount ?? 0,
+    status: item.statusLabel || item.status || "—",
+    missing: item.missing ?? item.missingCount ?? null,
+  })) : dispatches;
+  return (
   <Card padding="20px 24px">
     {/* Header */}
     <div className="mb-4 flex items-start justify-between gap-4">
@@ -127,7 +139,7 @@ const ActiveDispatchTable = () => (
 
     <Table
       columns={columns}
-      data={dispatches}
+      data={rows}
       rowKey="id"
       compact
       actions={(row) => (
@@ -142,6 +154,7 @@ const ActiveDispatchTable = () => (
       )}
     />
   </Card>
-);
+  );
+};
 
 export default ActiveDispatchTable;

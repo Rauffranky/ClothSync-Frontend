@@ -7,6 +7,9 @@ export const getLaundryScanners = (params = {}) =>
 export const getLaundryScannerDetails = (id) =>
   api.get(LAUNDRY_SCANNER_ENDPOINTS.DETAILS(id), { timeout: 15000 });
 
+export const getLaundryScannerLogs = (id, params = {}) =>
+  api.get(LAUNDRY_SCANNER_ENDPOINTS.LOGS(id), { params, timeout: 15000 });
+
 export const configureLaundryScanner = (id, data) =>
   api.put(LAUNDRY_SCANNER_ENDPOINTS.CONFIGURE(id), data, { timeout: 15000 });
 

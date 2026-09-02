@@ -1,20 +1,12 @@
 import { BarChart, ChartCard, DonutChart } from "../../../Components/UI/Charts";
+import { useDashboardData } from "./DashboardContext";
 
-const washCycleData = [
-  { label: "< 24h", value: 95, color: "var(--color-sky-blue)" },
-  { label: "24–48h", value: 195, color: "var(--color-sky-blue)" },
-  { label: "48–72h", value: 60, color: "var(--color-pending)" },
-  { label: "> 72h", value: 30, color: "var(--color-overdue)" },
-];
-
-const laundryDistribution = [
-  { label: "PureWash Industrial", value: 312, color: "var(--color-sky-blue)" },
-  { label: "CleanFlow Solutions", value: 175, color: "var(--color-aqua-mist)" },
-  { label: "Metro Linen Services", value: 98, color: "var(--color-seafoam)" },
-  { label: "Others", value: 34, color: "var(--color-blue-gray)" },
-];
-
-const BottomChartsRow = () => (
+const BottomChartsRow = () => {
+  const data = useDashboardData();
+  const washData = Array.isArray(data?.charts?.washCycle) ? data.charts.washCycle.map((item, index) => ({ ...item, color: index < 2 ? "var(--color-sky-blue)" : index === 2 ? "var(--color-pending)" : "var(--color-overdue)" })) : [];
+  const linked = data?.laundries?.items;
+  const laundryData = Array.isArray(linked) ? linked.map((item, index) => ({ label: item.laundry?.name || item.laundry?.businessName || item.name || "Laundry", value: Number(item.itemsCurrentlySentCount || 0), color: ["var(--color-sky-blue)", "var(--color-aqua-mist)", "var(--color-seafoam)", "var(--color-blue-gray)"][index % 4] })) : [];
+  return (
   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
     <ChartCard
       title="Wash Cycle Summary"
@@ -22,7 +14,7 @@ const BottomChartsRow = () => (
     >
       <BarChart
         ariaLabel="Wash cycle distribution by turnaround time"
-        data={washCycleData}
+        data={washData}
         height={200}
         maxValue={200}
         showValues
@@ -37,11 +29,12 @@ const BottomChartsRow = () => (
       <DonutChart
         ariaLabel="Items currently sent per laundry partner"
         centerLabel="total items"
-        data={laundryDistribution}
+        data={laundryData}
         size={190}
       />
     </ChartCard>
   </div>
-);
+  );
+};
 
 export default BottomChartsRow;

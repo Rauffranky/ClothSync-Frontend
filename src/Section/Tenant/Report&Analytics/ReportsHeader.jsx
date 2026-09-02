@@ -1,4 +1,4 @@
-import { Calendar, Download, FileText } from "lucide-react";
+import { Download } from "lucide-react";
 import Button from "../../../Components/UI/Button";
 import DateRangePicker from "../../../Components/UI/DateRangePicker";
 
@@ -29,16 +29,9 @@ const ReportsHeader = ({ customRange, onFromChange, onToChange }) => (
         }}
         placeholder="Date Range"
         disableFuture
-        className="h-[36px]"
+        className="h-9"
       />
 
-      <Button
-        variant="ghost"
-        size="sm"
-        leftIcon={<Calendar size={15} />}
-      >
-        Schedule Report
-      </Button>
 
       <Button
         variant="primary"

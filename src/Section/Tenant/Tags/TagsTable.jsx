@@ -77,7 +77,7 @@ const TagsTable = ({ onCountsChange }) => {
   useEffect(() => {
     let isActive = true;
 
-    getTenantCategories({ page: 1, limit: 100, status: "active" })
+    getTenantCategories({ status: "active", optionsOnly: true })
       .then((response) => {
         if (isActive) setCategoryOptions(getCategoryOptions(response));
       })

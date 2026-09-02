@@ -1,6 +1,7 @@
 import { ArrowRight, ChevronDown } from "lucide-react";
 import Card from "../../../Components/UI/Card";
 import { SegmentedBarChart } from "../../../Components/UI/Charts";
+import { useDashboardData } from "./DashboardContext";
 
 const stages = [
   { id: "at-facility", label: "In Facility", value: 437, color: "var(--color-seafoam)" },
@@ -42,7 +43,18 @@ const LifecycleStage = ({ stage, isLast }) => (
   </div>
 );
 
-const AssetLifecycleOverview = () => (
+const AssetLifecycleOverview = () => {
+  const data = useDashboardData();
+  const counts = data?.assets;
+  const liveStages = counts ? stages.map((stage) => ({ ...stage, value: ({
+    "at-facility": counts.inBusiness,
+    "sent-to-laundry": counts.sentToLaundry,
+    "in-laundry": counts.atLaundry,
+    returning: counts.washed,
+    returned: counts.returned,
+  }[stage.id] ?? 0) })) : stages;
+  const trackable = counts ? Math.max(0, Number(counts.totalAssets || 0) - Number(counts.retired || 0) - Number(counts.inactive || 0)) : 0;
+  return (
   <Card>
     {/* Header */}
     <div className="mb-4 flex items-start justify-between gap-4">
@@ -65,14 +77,14 @@ const AssetLifecycleOverview = () => (
         className="flex items-center gap-1.5 text-xs font-semibold"
         style={{ color: "var(--theme-text-muted)" }}
       >
-        <span>1,236 trackable assets</span>
+        <span>{trackable || "—"} trackable assets</span>
         <ChevronDown size={15} />
       </button>
     </div>
 
     {/* Stage flow */}
     <div className="flex items-center gap-1">
-      {stages.map((stage, i) => (
+      {liveStages.map((stage, i) => (
         <LifecycleStage key={stage.id} stage={stage} isLast={i === stages.length - 1} />
       ))}
     </div>
@@ -80,10 +92,11 @@ const AssetLifecycleOverview = () => (
     <div className="mt-4">
       <SegmentedBarChart
         ariaLabel="Asset distribution across operational lifecycle stages"
-        data={stages}
+        data={liveStages}
       />
     </div>
   </Card>
-);
+  );
+};
 
 export default AssetLifecycleOverview;

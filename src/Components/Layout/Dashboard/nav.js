@@ -21,7 +21,7 @@ import {
   ChartCandlestick,
   ScanQrCode,
   SwatchBook,
-  ShelvingUnit,
+  // ShelvingUnit,
   ChartNoAxesCombined,
   ShieldAlert,
   UsersRound,
@@ -178,18 +178,6 @@ export const NAV = {
       label: "Scanners",
       href: "/business/scanners",
       Icon: ScanQrCode,
-      submenus: [
-        {
-          id: 1061,
-          label: "All Scanners",
-          href: "/business/scanners",
-        },
-        {
-          id: 1062,
-          label: "Scanner Warnings",
-          href: "/business/scanners/warnings",
-        },
-      ],
     },
     {
       id: 110,
@@ -221,12 +209,12 @@ export const NAV = {
       href: "/business/dispatch-batches",
       Icon: SwatchBook,
     },
-    {
-      id: 108,
-      label: "Inventory",
-      href: "/business/inventory",
-      Icon: ShelvingUnit,
-    },
+    // {
+    //   id: 108,
+    //   label: "Inventory",
+    //   href: "/business/inventory",
+    //   Icon: ShelvingUnit,
+    // },
     {
       id: 109,
       label: "Reports & Analytics",

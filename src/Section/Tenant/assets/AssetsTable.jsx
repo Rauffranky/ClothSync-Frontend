@@ -100,8 +100,8 @@ const AssetsTable = ({ onCountsChange }) => {
   useEffect(() => {
     let isActive = true;
     Promise.all([
-      getTenantCategories({ page: 1, limit: 100, status: "active" }),
-      getTenantLaundries({ page: 1, limit: 100 }),
+      getTenantCategories({ status: "active", optionsOnly: true }),
+      getTenantLaundries({ optionsOnly: true }),
     ])
       .then(([categoriesResponse, laundriesResponse]) => {
         if (!isActive) return;

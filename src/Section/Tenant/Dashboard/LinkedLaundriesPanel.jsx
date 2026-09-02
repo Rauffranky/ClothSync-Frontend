@@ -3,6 +3,7 @@ import Badge from "../../../Components/UI/Badge";
 import Card from "../../../Components/UI/Card";
 import Button from "../../../Components/UI/Button";
 import IconWrapper from "../../../Components/UI/IconWrapper";
+import { useDashboardData } from "./DashboardContext";
 
 const laundries = [
   {
@@ -80,7 +81,18 @@ const LaundryItem = ({ item }) => (
   </div>
 );
 
-const LinkedLaundriesPanel = () => (
+const LinkedLaundriesPanel = () => {
+  const data = useDashboardData();
+  const items = data?.laundries?.items;
+  const liveLaundries = Array.isArray(items) ? items.map((item) => ({
+    id: item.id || item.linkId,
+    name: item.laundry?.name || item.laundry?.businessName || item.name || item.businessName || "Unnamed Laundry",
+    itemsSent: item.itemsCurrentlySentCount || item.totalItemsCount || 0,
+    status: item.status === "active" ? "Linked" : "Unlinked",
+    isDefault: Boolean(item.isDefault),
+  })) : laundries;
+  const rows = data ? liveLaundries : laundries;
+  return (
   <Card>
     <div className="mb-3 flex items-start justify-between gap-3">
       <div>
@@ -94,7 +106,7 @@ const LinkedLaundriesPanel = () => (
           className="mt-0.5 text-xs"
           style={{ color: "var(--theme-text-muted)" }}
         >
-          {laundries.filter((l) => l.status === "Linked").length} connected
+          {rows.filter((l) => l.status === "Linked").length} connected
           partners
         </p>
       </div>
@@ -114,11 +126,12 @@ const LinkedLaundriesPanel = () => (
       </Button>
     </div>
     <div className="flex flex-col gap-0.5">
-      {laundries.map((item) => (
+      {rows.map((item) => (
         <LaundryItem key={item.id} item={item} />
       ))}
     </div>
   </Card>
-);
+  );
+};
 
 export default LinkedLaundriesPanel;

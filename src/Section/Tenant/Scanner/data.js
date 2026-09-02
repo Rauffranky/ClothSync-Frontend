@@ -1,4 +1,4 @@
-import { Radio, Wifi, WifiOff, MapPin, Smartphone, AlertTriangle } from "lucide-react";
+import { Radio, Wifi, WifiOff, MapPin, Smartphone } from "lucide-react";
 import { formatDateTime } from "../../../Utils/date";
 import { formatStatusLabel } from "../../../Utils/status";
 
@@ -150,13 +150,6 @@ export const scannerStats = [
         subtext: "handheld units",
         icon: Smartphone,
         variant: "warning",
-    },
-    {
-        id: "warnings",
-        label: "Scanner Warnings",
-        subtext: "require attention",
-        icon: AlertTriangle,
-        variant: "orange",
     },
 ];
 

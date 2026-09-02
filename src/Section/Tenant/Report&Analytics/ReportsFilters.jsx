@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { FileDown } from "lucide-react";
 import Dropdown from "../../../Components/UI/Dropdown";
 import Button from "../../../Components/UI/Button";
+import { getTenantCategories } from "../../../axios/categories/tenantCategories";
+import { getTenantLaundries } from "../../../axios/laundries/tenantLaundries";
 
 const dateOptions = [
   { label: "Last 7 days", value: "7d" },
@@ -10,54 +13,57 @@ const dateOptions = [
   { label: "This Year", value: "1y" },
 ];
 
-const laundryOptions = [
-  { label: "All Laundries", value: "all" },
-  { label: "PureWash Industrial", value: "purewash" },
-  { label: "CleanFlow Solutions", value: "cleanflow" },
-  { label: "Metro Linen Services", value: "metro" },
-];
+const ReportsFilters = ({ filters, onFilter }) => {
+  const [laundryOptions, setLaundryOptions] = useState([{ label: "All Laundries", value: "all" }]);
+  const [categoryOptions, setCategoryOptions] = useState([{ label: "All Categories", value: "all" }]);
+  const [loading, setLoading] = useState(true);
 
-const categoryOptions = [
-  { label: "All Categories", value: "all" },
-  { label: "Bed Linen", value: "bed" },
-  { label: "Towels", value: "towels" },
-  { label: "Uniforms", value: "uniforms" },
-  { label: "Patient Gowns", value: "gowns" },
-];
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      getTenantCategories({ status: "active", optionsOnly: true }),
+      getTenantLaundries({ optionsOnly: true }),
+    ]).then(([categoryResponse, laundryResponse]) => {
+      if (!active) return;
+      const getItems = (response, keys) => {
+        const payload = response?.data?.data ?? response?.data ?? response ?? {};
+        return keys.map((key) => payload?.[key]).find(Array.isArray) || [];
+      };
+      setCategoryOptions([{ label: "All Categories", value: "all" }, ...getItems(categoryResponse, ["items", "categories", "docs"]).map((item) => ({ label: item.title || item.name || "Unnamed Category", value: item.id || item._id })).filter((item) => item.value)]);
+      setLaundryOptions([{ label: "All Laundries", value: "all" }, ...getItems(laundryResponse, ["items", "laundries", "docs"]).map((item) => ({ label: item.laundry?.name || item.businessName || item.companyName || item.name || "Unnamed Laundry", value: item.id || item._id })).filter((item) => item.value)]);
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
-const ReportsFilters = ({ filters, onFilter }) => (
-  <div className="flex flex-wrap items-center gap-3">
+  return (
+  <div className="flex flex-wrap items-center gap-4">
     {/* Date filter */}
     <Dropdown
       options={dateOptions}
       value={filters.date}
       onChange={(val) => onFilter("date", val)}
       placeholder="Date"
-      width="w-40"
-      rounded="10px"
-      triggerClassName="h-[36px]! min-h-0! py-0!"
+      width="w-44"
     />
 
     {/* Laundry filter */}
     <Dropdown
+      disabled={loading}
       options={laundryOptions}
       value={filters.laundry}
       onChange={(val) => onFilter("laundry", val)}
       placeholder="Laundries"
-      width="w-44"
-      rounded="10px"
-      triggerClassName="h-[36px]! min-h-0! py-0!"
+      width="w-48"
     />
 
     {/* Category filter */}
     <Dropdown
+      disabled={loading}
       options={categoryOptions}
       value={filters.category}
       onChange={(val) => onFilter("category", val)}
       placeholder="Categories"
-      width="w-44"
-      rounded="10px"
-      triggerClassName="h-[36px]! min-h-0! py-0!"
+      width="w-48"
     />
 
     {/* Spacer */}
@@ -74,14 +80,14 @@ const ReportsFilters = ({ filters, onFilter }) => (
       <Button
         key={fmt}
         variant="ghost"
-        size="sm"
-        className="h-[28px]! px-3! text-xs!"
-        leftIcon={<FileDown size={12} />}
+        size="md"
+        leftIcon={<FileDown size={15} />}
       >
         {fmt}
       </Button>
     ))}
   </div>
-);
+  );
+};
 
 export default ReportsFilters;

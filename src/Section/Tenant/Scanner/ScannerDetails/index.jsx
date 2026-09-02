@@ -14,8 +14,11 @@ import {
 import Alert from "../../../../Components/UI/Alert";
 import Button from "../../../../Components/UI/Button";
 import Card from "../../../../Components/UI/Card";
+import Table from "../../../../Components/UI/Table";
+import Badge from "../../../../Components/UI/Badge";
+import Pagination from "../../../../Components/UI/Pagination";
 import { getApiErrorMessage } from "../../../../axios/api";
-import { getTenantScannerDetails } from "../../../../axios/scanners/tenantScanners";
+import { getTenantScannerDetails, getTenantScannerLogs } from "../../../../axios/scanners/tenantScanners";
 import { formatDateTime } from "../../../../Utils/date";
 import { normalizeScanner } from "../data";
 import HeaderCard from "./HeaderCard";
@@ -58,6 +61,7 @@ const DetailField = ({ label, value, mono = false }) => (
 
 const ScannerDetailsIndex = ({
   getScannerDetails = getTenantScannerDetails,
+  getScannerLogs = getTenantScannerLogs,
   configureScanner = configureTenantScanner,
   getStaffOptions = getTenantStaffOptions,
   getRoleOptions = getTenantStaffRoles,
@@ -79,6 +83,31 @@ const ScannerDetailsIndex = ({
   const [isAccessOpen, setIsAccessOpen] = useState(false);
   const [staffOptions, setStaffOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [logsPage, setLogsPage] = useState(1);
+  const [logsPagination, setLogsPagination] = useState({});
+  const [logsLoading, setLogsLoading] = useState(true);
+  const [logsError, setLogsError] = useState("");
+  const [logsRefreshKey, setLogsRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (!scanner?.apiId) return undefined;
+    let isActive = true;
+    getScannerLogs(scanner.apiId, { page: logsPage, limit: 50 })
+      .then((response) => {
+        if (!isActive) return;
+        const payload = response?.data?.data ?? response?.data ?? response ?? {};
+        const items = payload?.items || payload?.logs || payload?.docs || [];
+        setLogs(Array.isArray(items) ? items : []);
+        setLogsPagination(payload?.pagination || {});
+        setLogsError("");
+      })
+      .catch((error) => {
+        if (isActive) setLogsError(getApiErrorMessage(error, "Unable to load scanner logs"));
+      })
+      .finally(() => { if (isActive) setLogsLoading(false); });
+    return () => { isActive = false; };
+  }, [getScannerLogs, logsPage, logsRefreshKey, scanner?.apiId]);
 
   useEffect(() => {
     let isActive = true;
@@ -208,6 +237,17 @@ const ScannerDetailsIndex = ({
         .replace(/\b\w/g, (character) => character.toUpperCase())
     : null;
 
+  const logColumns = [
+    { key: "tag", label: "Tag", accessor: (log) => log.tagId || log.tag?.epc || log.epc || "-", className: "font-mono text-xs", sortable: false },
+    { key: "mode", label: "Mode", accessor: (log) => log.mode || log.scanMode || "-", sortable: false },
+    {
+      key: "status", label: "Status", accessor: (log) => log.status || log.scanStatus || "-", sortable: false,
+      render: (value) => <Badge size="sm" variant={String(value).toLowerCase().includes("failed") ? "danger" : "info"}>{String(value).replace(/[_-]+/g, " ")}</Badge>,
+    },
+    { key: "batch", label: "Batch", accessor: (log) => log.batchId || log.batch?.id || log.batch?.batchNumber || "-", sortable: false },
+    { key: "activity", label: "Activity", accessor: (log) => formatDateTime(log.createdAt || log.scannedAt || log.lastActivityAt, true) || "-", sortable: false },
+  ];
+
   return (
     <div className="space-y-6">
       <HeaderCard
@@ -317,6 +357,34 @@ const ScannerDetailsIndex = ({
           </p>
         </Card>
       </div>
+
+      <Card padding="20px" rounded="18px">
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Logs size={19} className="text-(--color-aurora-teal)" />
+            <h2 className="m-0 text-lg font-black text-(--theme-text-primary)">Scanner Logs</h2>
+          </div>
+          <Button leftIcon={<RefreshCw size={14} />} onClick={() => { setLogsLoading(true); setLogsRefreshKey((key) => key + 1); }} size="sm" variant="outline">
+            Refresh
+          </Button>
+        </div>
+        {logsError ? <Alert variant="danger">{logsError}</Alert> : null}
+        <Table
+          columns={logColumns}
+          data={logs}
+          emptyText="No scanner logs found."
+          loading={logsLoading}
+          rowKey={(log, index) => log.id || log._id || `${log.tagId}-${index}`}
+          tableClassName="min-w-[720px]"
+        />
+        <Pagination
+          forcePage={logsPage - 1}
+          itemsPerPage={50}
+          onPageChange={({ selected }) => { setLogsLoading(true); setLogsPage(selected + 1); }}
+          pageCount={Number(logsPagination.totalPages || 0)}
+          totalItems={Number(logsPagination.totalItems || logsPagination.total || 0)}
+        />
+      </Card>
 
       <AddScannerModal
         getStaffOptions={getStaffOptions}

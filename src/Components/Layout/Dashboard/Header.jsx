@@ -138,9 +138,7 @@ const Header = ({ portalKey, onOpenSidebar }) => {
     activeItem &&
     pathname !== `${activePortal?.basePath}/${activeItem.segment}`;
   const nestedPageLabel =
-    pathname === "/business/scanners/warnings"
-      ? "Warnings"
-      : pathname === "/business/staff-roles"
+    pathname === "/business/staff-roles"
         ? "Roles"
         : "Details";
 

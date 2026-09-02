@@ -18,7 +18,7 @@ const RetagModal = ({ busy, latestEpc, onClose, onSubmit, open, replacementUnava
 
   useEffect(() => {
     if (!open) return;
-    getTenantCategories({ page: 1, limit: 100, status: "active" })
+    getTenantCategories({ status: "active", optionsOnly: true })
       .then((response) => {
         const payload = response?.data?.data ?? response?.data ?? {};
         setCategories(payload.items ?? payload.categories ?? payload.docs ?? []);

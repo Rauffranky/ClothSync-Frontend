@@ -1,23 +1,14 @@
 import { ChartCard, LineChart } from "../../../Components/UI/Charts";
+import { useDashboardData } from "./DashboardContext";
 
-const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-const sentReturnedSeries = [
-  {
-    label: "Sent",
-    values: [48, 32, 45, 55, 95, 70, 18],
-    color: "var(--color-sky-blue)",
-    fill: true,
-  },
-  {
-    label: "Returned",
-    values: [52, 30, 42, 60, 90, 65, 15],
-    color: "var(--color-seafoam)",
-    fill: true,
-  },
-];
-
-const ChartsRow = () => (
+const ChartsRow = () => {
+  const data = useDashboardData();
+  const points = Array.isArray(data?.charts?.sentReturned) ? data.charts.sentReturned : [];
+  const labels = points.map((point) => point.label);
+  const values = points.flatMap((point) => [point.sent || 0, point.returned || 0]);
+  const maxValue = Math.max(...values, 1);
+  const series = [{ label: "Sent", values: points.map((point) => point.sent || 0), color: "var(--color-sky-blue)", fill: true }, { label: "Returned", values: points.map((point) => point.returned || 0), color: "var(--color-seafoam)", fill: true }];
+  return (
   <div className="grid grid-cols-1 gap-4">
     <ChartCard
       title="Sent vs Returned"
@@ -26,14 +17,15 @@ const ChartsRow = () => (
       <LineChart
         ariaLabel="Daily sent and returned asset volumes"
         height={160}
-        labels={days}
-        maxValue={100}
-        series={sentReturnedSeries}
+        labels={labels}
+        maxValue={maxValue}
+        series={series}
         ticks={[0, 25, 50, 75, 100]}
       />
     </ChartCard>
 
   </div>
-);
+  );
+};
 
 export default ChartsRow;

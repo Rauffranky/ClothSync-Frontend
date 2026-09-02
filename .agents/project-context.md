@@ -170,7 +170,7 @@ Dashboard routes:
 - Business: `/business/dashboard`, `/business/linked-laundries`,
   `/business/categories`, `/business/categories/:id`, `/business/assets`,
   `/business/assets/:id`, `/business/scanners`, `/business/scanners/:id`,
-  `/business/scanners/warnings`, `/business/staff`, `/business/staff-roles`,
+  `/business/staff`, `/business/staff-roles`,
   `/business/tags`, `/business/tags/:id`, `/business/bulk-scanning`,
   `/business/dispatch-batches`, `/business/dispatch-batches/:id`, and `/business/settings`.
   Reports & Analytics is available at `/business/reports-analytics`.
@@ -602,12 +602,15 @@ Current endpoints:
   (`online`/`offline`/`low_signal`/`warning`), and `assignedOperatorId`.
 - `PUT /tenant-scanners/update/:id` uses the scanner UUID and the scanner create
   request shape.
-- `GET /tenant-scanners/warnings` with `page` and `limit` returns scanners that
-  require attention for the Scanner warnings panel.
+- `GET /tenant-scanners/warnings` remains a backend endpoint but has no active
+  frontend warning panel.
 - `GET /tenant-scanners/show/:id` loads one scanner by its backend UUID for the
   scanner details screen.
 - `PUT /tenant-scanners/update-status/:id` updates one scanner by UUID with
   `{ status }`, where the integrated UI sends `active` or `inactive`.
+- Tenant Bulk Scan transport includes Swagger-backed session
+  start/active/summary/finish and selected-entry clear/ignore operations; the
+  live screen still receives sessions through the authenticated APK/socket flow.
 - `GET /tenant-laundries/show` with optional `page`, `limit`, `keywords`,
   `status`, `dispatchMode`, and `isDefault` query parameters.
 - `GET /tenant-laundries/show/:id` returns the linked-laundry relationship,
