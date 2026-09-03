@@ -10,7 +10,7 @@ The debug APK is configured through `BuildConfig.API_BASE_URL` for the current
 local backend:
 
 ```text
-http://192.168.0.104:5001/api/mobile-scanner/
+https://clothsync.code-xperts.com/api/mobile-scanner/
 ```
 
 The PDA and backend computer must be on the same network, and the backend must
@@ -18,7 +18,7 @@ listen on `0.0.0.0:5001`. Debug permits cleartext LAN HTTP. Release blocks
 cleartext and reads `CLOTHSYNC_PRODUCTION_API_URL` from a Gradle property:
 
 ```sh
-./gradlew assembleRelease -PCLOTHSYNC_PRODUCTION_API_URL=https://api.example.com/api/mobile-scanner/
+./gradlew assembleRelease -PCLOTHSYNC_PRODUCTION_API_URL=https://clothsync.code-xperts.com/api/mobile-scanner/
 ```
 
 ## User flow

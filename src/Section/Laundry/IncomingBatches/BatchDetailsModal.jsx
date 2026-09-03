@@ -7,6 +7,7 @@ import Card from "../../../Components/UI/Card";
 import Modal from "../../../Components/UI/Modal";
 import Table from "../../../Components/UI/Table";
 import { receiveLaundryDispatchBatch } from "../../../axios/batches/laundryBatches";
+import { clearLaundryScannerSession } from "../../../axios/scanners/laundryScanners";
 import { toast } from "../../../Utils/toast";
 import { clearActiveLaundryScan } from "../../../Utils/laundryScanSession";
 import {
@@ -33,6 +34,7 @@ const BatchDetailsModal = ({
 }) => {
   const [remainingChoice, setRemainingChoice] = useState("wait");
   const [isReceiving, setIsReceiving] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [receipt, setReceipt] = useState(null);
   const liveScanMatchesBatch =
     liveScan?.sessionId &&
@@ -78,12 +80,39 @@ const BatchDetailsModal = ({
     }
   };
 
+  const handleClearScanData = async () => {
+    if (!liveScan?.sessionId || isClearing || isReceiving) return;
+    setIsClearing(true);
+    try {
+      await clearLaundryScannerSession(liveScan.sessionId);
+      clearActiveLaundryScan();
+      toast.success("Scan data cleared successfully");
+      onClose?.();
+    } catch (clearError) {
+      toast.error(
+        getLaundryBatchErrorMessage(clearError, "Unable to clear scan data"),
+      );
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   return (
     <Modal
       description={`${batch?.business || ""} · ${batch?.location || ""}`}
       footer={
         <>
-          <Button disabled={isReceiving} onClick={onClose} variant="secondary">Close</Button>
+          <Button disabled={isReceiving || isClearing} onClick={onClose} variant="secondary">Close</Button>
+          {liveScan?.sessionId && (
+            <Button
+              disabled={isReceiving}
+              loading={isClearing}
+              onClick={handleClearScanData}
+              variant="secondary"
+            >
+              Clear Scan Data
+            </Button>
+          )}
           {liveScanMatchesBatch && (
             <Button
               disabled={receivedTagIds.length === 0 && missingTagIds.length === 0}
