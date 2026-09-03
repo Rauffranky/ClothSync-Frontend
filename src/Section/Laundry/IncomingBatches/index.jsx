@@ -31,6 +31,7 @@ import {
   getCompletedLaundryDispatchBatches,
   getIncomingBatches,
 } from "../../../axios/batches/laundryBatches";
+import { clearLaundryScannerSession } from "../../../axios/scanners/laundryScanners";
 import { toast } from "../../../Utils/toast";
 import { getLaundryTenantOptions } from "../../../axios/laundryTenants/laundryTenants";
 import { SOCKET_EVENTS } from "../../../socket/events";
@@ -277,6 +278,7 @@ const IncomingBatches = ({ checkoutMode = false }) => {
     { label: "All Businesses", value: "all" },
   ]);
   const [isBusinessFilterLoading, setIsBusinessFilterLoading] = useState(false);
+  const [isClearingSession, setIsClearingSession] = useState(false);
   const openedLiveBatchRef = useRef(null);
 
   const refreshFromLiveScan = useCallback((payload) => {
@@ -496,6 +498,22 @@ const IncomingBatches = ({ checkoutMode = false }) => {
     );
   };
 
+  const handleClearSession = async () => {
+    if (!liveScan?.sessionId || isClearingSession) return;
+    setIsClearingSession(true);
+    try {
+      await clearLaundryScannerSession(liveScan.sessionId);
+      clearActiveLaundryScan();
+      setLiveScan(null);
+      setRefreshKey((value) => value + 1);
+      toast.success("Scan session cleared successfully");
+    } catch (error) {
+      toast.error(getLaundryBatchErrorMessage(error, "Unable to clear scan session"));
+    } finally {
+      setIsClearingSession(false);
+    }
+  };
+
   const setCompletedFilter = (key, value) => {
     setCurrentPage(0);
     setSearchParams(
@@ -550,6 +568,16 @@ const IncomingBatches = ({ checkoutMode = false }) => {
         <h1 className="m-0 text-2xl font-black text-(--theme-text-primary)">
           {checkoutMode ? "Check Out" : "Batches"}
         </h1>
+        {!checkoutMode && liveScan?.sessionId && (
+          <Button
+            disabled={isClearingSession}
+            loading={isClearingSession}
+            onClick={handleClearSession}
+            variant="secondary"
+          >
+            Clear Session
+          </Button>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {(checkoutMode ? checkoutStats : stats).map(({ Icon, ...stat }) => (
