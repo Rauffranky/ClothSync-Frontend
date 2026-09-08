@@ -2,7 +2,7 @@ import { formatDateTime } from "../../../Utils/date";
 import { formatStatusLabel } from "../../../Utils/status";
 
 export const batchStatusLabels = {
-  dispatched: "Dispatched",
+  dispatched: "Sent to Laundry",
   partially_completed: "Partially Completed",
   at_laundry: "Received",
   washed: "Washed",
@@ -116,7 +116,11 @@ const getCheckedInTagCount = (batch, total, statusValue) => {
 
 export const normalizeIncomingBatch = (batch = {}) => {
   const summary = batch.summary || batch.progress || batch.counts || {};
-  const total = Number(batch.totalCount ?? summary.totalCount ?? batch.totalTagsCount ?? batch.totalItems ?? batch.itemsCount) || 0;
+  const batchItems = getBatchItems(batch);
+  const declaredTotal = Number(batch.totalCount ?? summary.totalCount ?? batch.totalTagsCount ?? batch.totalItems ?? batch.itemsCount) || 0;
+  // Details responses can contain the complete item list while an older count
+  // field is stale. Never render fewer items than the rows we actually show.
+  const total = Math.max(declaredTotal, batchItems.length);
   const statusValue = batch.status || "dispatched";
   const checkedIn = getCheckedInTagCount(batch, total, statusValue);
   const receivedCount = getCount(batch.receivedCount, summary.receivedCount, checkedIn) ?? 0;
@@ -149,7 +153,7 @@ export const normalizeIncomingBatch = (batch = {}) => {
     delayed: Number(batch.delayedItems ?? batch.delayedCount) || 0,
     lastActivity: formatDateTime(batch.lastActivityAt || batch.updatedAt),
     notes: batch.notes || batch.description || "—",
-    items: getBatchItems(batch).map(normalizeIncomingBatchItem),
+    items: batchItems.map(normalizeIncomingBatchItem),
   };
 };
 

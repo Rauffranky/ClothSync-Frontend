@@ -11,7 +11,25 @@ import java.lang.reflect.Proxy
 
 /** Adapter for the fixed UHF288 reader exposed by com.uhf288.scanlable. */
 class Uhf288RfidReader(context: Context) : RfidReader {
-    private companion object { const val TAG = "Uhf288RfidReader" }
+    private companion object {
+        const val TAG = "Uhf288RfidReader"
+
+        // Android permits a native .so to be opened only once for each app
+        // process. The fixed-reader screen can reconnect after a stop, so all
+        // reader instances must use the same class loader.
+        @Volatile
+        private var vendorLoader: DexClassLoader? = null
+
+        @Synchronized
+        fun getVendorLoader(context: Context, vendorApk: String, nativeDir: File): DexClassLoader {
+            return vendorLoader ?: DexClassLoader(
+                vendorApk,
+                context.codeCacheDir.path,
+                nativeDir.path,
+                Uhf288RfidReader::class.java.classLoader,
+            ).also { vendorLoader = it }
+        }
+    }
     private val reads = MutableSharedFlow<RfidRead>(extraBufferCapacity = 1024)
     private val appContext = context.applicationContext
     private var library: Any? = null
@@ -46,7 +64,7 @@ class Uhf288RfidReader(context: Context) : RfidReader {
             .getApplicationInfo("com.uhf288.scanlable", 0).sourceDir
         val nativeDir = File(appContext.codeCacheDir, "uhf288-native").apply { mkdirs() }
         extractNativeLibrary(vendor, nativeDir)
-        val loader = DexClassLoader(vendor, appContext.codeCacheDir.path, nativeDir.path, javaClass.classLoader)
+        val loader = getVendorLoader(appContext, vendor, nativeDir)
         val type = loader.loadClass("com.rfid.trans2000.UHFLib")
         library = type.methods.firstNotNullOfOrNull { method ->
             if (method.name == "getInstance" && method.parameterTypes.isEmpty()) {

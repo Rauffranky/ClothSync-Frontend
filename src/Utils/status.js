@@ -1,4 +1,5 @@
 const STATUS_LABELS = Object.freeze({
+  dispatched: "Sent to Laundry",
   in_business: "In Business",
   sent_to_laundry: "Sent to Laundry",
   at_laundry: "In Laundry",

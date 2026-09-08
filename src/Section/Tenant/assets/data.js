@@ -245,13 +245,13 @@ export const normalizeTenantAssetCounts = (counts, totalItems = null) => {
 
     return {
         totalAssets: optionalCount(source.totalAssets ?? source.total ?? totalItems),
-        inBusiness: optionalCount(source.inBusiness ?? source.in_business),
-        sentToLaundry: optionalCount(source.sentToLaundry ?? source.sent_to_laundry),
-        atLaundry: optionalCount(source.atLaundry ?? source.inLaundry ?? source.at_laundry),
-        washed: optionalCount(source.washed),
-        returned: optionalCount(source.returned),
-        delayed: optionalCount(source.delayed),
-        missing: optionalCount(source.missing ?? source.missingLost),
+        inBusiness: optionalCount(source.inBusiness ?? source.inBusinessAssets ?? source.in_business),
+        sentToLaundry: optionalCount(source.sentToLaundry ?? source.sentToLaundryAssets ?? source.sent_to_laundry),
+        atLaundry: optionalCount(source.atLaundry ?? source.inLaundry ?? source.inLaundryAssets ?? source.at_laundry),
+        washed: optionalCount(source.washed ?? source.washedAssets),
+        returned: optionalCount(source.returned ?? source.returnedAssets),
+        delayed: optionalCount(source.delayed ?? source.delayedAssets),
+        missing: optionalCount(source.missing ?? source.missingLost ?? source.missingLostAssets ?? source.missing_lost),
     };
 };
 

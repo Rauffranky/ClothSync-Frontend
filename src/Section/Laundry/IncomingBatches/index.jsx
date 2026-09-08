@@ -11,7 +11,7 @@ import {
   PackageCheck,
   RefreshCw,
 } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Alert from "../../../Components/UI/Alert";
 import Badge from "../../../Components/UI/Badge";
 import Button from "../../../Components/UI/Button";
@@ -35,6 +35,7 @@ import { clearLaundryScannerSession } from "../../../axios/scanners/laundryScann
 import { toast } from "../../../Utils/toast";
 import { getLaundryTenantOptions } from "../../../axios/laundryTenants/laundryTenants";
 import { SOCKET_EVENTS } from "../../../socket/events";
+import { getSocket } from "../../../socket/client";
 import {
   captureLaundryScanEvent,
   clearActiveLaundryScan,
@@ -60,6 +61,10 @@ const batchTabs = [
   { label: "Incoming", value: "incoming" },
   { label: "Received", value: "received" },
   { label: "Completed", value: "completed" },
+];
+const checkoutTabs = [
+  { label: "Available for Check-Out", value: "ready" },
+  { label: "Checked Out", value: "completed" },
 ];
 const stats = [
   {
@@ -237,27 +242,21 @@ const completedColumns = [
 ];
 
 const getInitialLiveScan = () => {
-  const navigation = performance.getEntriesByType?.("navigation")?.[0];
-  if (navigation?.type === "reload") {
-    clearActiveLaundryScan();
-    return null;
-  }
   return getActiveLaundryScan();
 };
 
 const IncomingBatches = ({ checkoutMode = false }) => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const tenantIdFilter = searchParams.get("tenantId") || "";
   const dateFromFilter = searchParams.get("dateFrom") || "";
   const dateToFilter = searchParams.get("dateTo") || "";
-  const availableTabs = checkoutMode
-    ? batchTabs.filter((tab) => tab.value === "completed")
-    : batchTabs.filter((tab) => tab.value !== "completed");
-  const activeTab = checkoutMode
-    ? "completed"
-    : availableTabs.some((tab) => tab.value === requestedTab)
+  const availableTabs = checkoutMode ? checkoutTabs : batchTabs;
+  const activeTab = availableTabs.some((tab) => tab.value === requestedTab)
     ? requestedTab
+    : checkoutMode
+    ? "ready"
     : "incoming";
   const statusFilter = activeTab === "incoming" ? "dispatched" : activeTab;
   const [searchValue, setSearchValue] = useState("");
@@ -286,6 +285,7 @@ const IncomingBatches = ({ checkoutMode = false }) => {
     setRefreshKey((value) => value + 1);
     if (!selectedBatch?.apiId) return;
 
+    setIsDetailLoading(true);
     fetchIncomingBatchDetails(selectedBatch.apiId)
       .then((response) => {
         setSelectedBatch(getIncomingBatchDetails(response));
@@ -298,10 +298,40 @@ const IncomingBatches = ({ checkoutMode = false }) => {
             "Unable to refresh the live batch details",
           ),
         );
+      })
+      .finally(() => {
+        setIsDetailLoading(false);
       });
   }, [selectedBatch]);
 
   useSocketEvents(LIVE_SCAN_EVENTS, refreshFromLiveScan);
+
+  useEffect(() => {
+    const syncContext = (event) => setLiveScan(event.detail);
+    window.addEventListener("laundry-scan-context-changed", syncContext);
+    return () => window.removeEventListener("laundry-scan-context-changed", syncContext);
+  }, []);
+
+  useEffect(() => {
+    const socket = getSocket();
+    const refetchAfterReconnect = () => {
+      setLiveScan(getActiveLaundryScan());
+      setRefreshKey((value) => value + 1);
+      if (!selectedBatch?.apiId) return;
+      setIsDetailLoading(true);
+      fetchIncomingBatchDetails(selectedBatch.apiId)
+        .then((response) => {
+          setSelectedBatch(getIncomingBatchDetails(response));
+          setDetailError("");
+        })
+        .catch((error) => setDetailError(getLaundryBatchErrorMessage(error, "Unable to refresh after reconnect")))
+        .finally(() => {
+          setIsDetailLoading(false);
+        });
+    };
+    socket.on("connect", refetchAfterReconnect);
+    return () => socket.off("connect", refetchAfterReconnect);
+  }, [selectedBatch?.apiId]);
 
   useEffect(() => {
     const handleUndoSuccess = (event) => {
@@ -357,22 +387,12 @@ const IncomingBatches = ({ checkoutMode = false }) => {
     if (affectedBatchIds.length > 1) return;
     if (!batchId || openedLiveBatchRef.current === batchId) return;
     openedLiveBatchRef.current = batchId;
-    setIsDetailLoading(true);
-    fetchIncomingBatchDetails(batchId)
-      .then((response) => {
-        setSelectedBatch(getIncomingBatchDetails(response));
-        setDetailError("");
-      })
-      .catch((error) => {
-        setDetailError(
-          getLaundryBatchErrorMessage(
-            error,
-            "Unable to open the batch selected on the scanner",
-          ),
-        );
-      })
-      .finally(() => setIsDetailLoading(false));
-  }, [liveScan?.affectedBatchIds, liveScan?.batchId]);
+    navigate(
+      checkoutMode
+        ? `/laundry/check-out/${batchId}`
+        : `/laundry/incoming-batches/${batchId}`,
+    );
+  }, [liveScan?.affectedBatchIds, liveScan?.batchId, checkoutMode, navigate]);
 
   useEffect(() => {
     let isActive = true;
@@ -393,7 +413,11 @@ const IncomingBatches = ({ checkoutMode = false }) => {
         .then((response) => {
           if (!isActive) return;
           const collection = getCompletedBatchCollection(response, 10);
-          setRows(collection.rows);
+          const CHECKOUT_STATUSES = ["sent_to_business", "completed"];
+          const filteredRows = collection.rows.filter((row) =>
+            CHECKOUT_STATUSES.includes(row.statusValue),
+          );
+          setRows(filteredRows);
           setCounts(collection.stats);
           setTotalItems(collection.totalItems);
           setTotalPages(collection.totalPages);
@@ -424,7 +448,11 @@ const IncomingBatches = ({ checkoutMode = false }) => {
       ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
     };
     const requests =
-      activeTab === "incoming"
+      checkoutMode && activeTab === "ready"
+        ? ["at_laundry", "washed"].map((status) =>
+            getIncomingBatches({ ...requestParams, status }),
+          )
+        : activeTab === "incoming"
         ? INCOMING_BATCH_STATUSES.map((status) =>
             getIncomingBatches({ ...requestParams, status }),
           )
@@ -476,6 +504,7 @@ const IncomingBatches = ({ checkoutMode = false }) => {
     };
   }, [
     activeTab,
+    checkoutMode,
     currentPage,
     dateFromFilter,
     dateToFilter,
@@ -542,24 +571,14 @@ const IncomingBatches = ({ checkoutMode = false }) => {
     );
   };
 
-  const openBatchDetails = async (batch) => {
-    setSelectedBatch(batch);
-    setIsDetailLoading(true);
-    setDetailError("");
-    try {
-      const response = await fetchIncomingBatchDetails(batch.apiId);
-      const details = getIncomingBatchDetails(response);
-      setSelectedBatch(details);
-    } catch (error) {
-      const message = getLaundryBatchErrorMessage(
-        error,
-        "Unable to load batch details",
-      );
-      setDetailError(message);
-      toast.error(message);
-    } finally {
-      setIsDetailLoading(false);
-    }
+  const openBatchDetails = (batch) => {
+    const id = batch.apiId || batch.id;
+    if (!id) return;
+    navigate(
+      checkoutMode
+        ? `/laundry/check-out/${id}`
+        : `/laundry/incoming-batches/${id}`,
+    );
   };
 
   return (
@@ -568,7 +587,7 @@ const IncomingBatches = ({ checkoutMode = false }) => {
         <h1 className="m-0 text-2xl font-black text-(--theme-text-primary)">
           {checkoutMode ? "Check Out" : "Batches"}
         </h1>
-        {!checkoutMode && liveScan?.sessionId && (
+        {liveScan?.sessionId && (
           <Button
             disabled={isClearingSession}
             loading={isClearingSession}
@@ -579,7 +598,7 @@ const IncomingBatches = ({ checkoutMode = false }) => {
           </Button>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {(checkoutMode ? checkoutStats : stats).map(({ Icon, ...stat }) => (
           <Card key={stat.id} bodyClassName="flex min-h-38 flex-col gap-4">
             <IconWrapper
@@ -616,11 +635,9 @@ const IncomingBatches = ({ checkoutMode = false }) => {
         </Alert>
       )}
       <GlobalUndoBanners inline portal="laundry" />
-      {!checkoutMode && (
-        <div className="w-full md:w-max">
-          <Tabs items={availableTabs} onChange={handleTabChange} value={activeTab} />
-        </div>
-      )}
+      <div className="w-full md:w-max">
+        <Tabs items={availableTabs} onChange={handleTabChange} value={activeTab} />
+      </div>
       <div
         className={
           activeTab === "completed"
@@ -677,25 +694,25 @@ const IncomingBatches = ({ checkoutMode = false }) => {
         )}
       </div>
       <Table
-        actions={
-          activeTab === "completed"
-            ? undefined
-            : (row) => (
-                <Button
-                  leftIcon={<Eye size={13} />}
-                  onClick={() => openBatchDetails(row)}
-                  size="sm"
-                  variant="outline"
-                >
-                  View
-                </Button>
-              )
-        }
+        actions={(row) => (
+          <Button
+            leftIcon={<Eye size={13} />}
+            onClick={() => openBatchDetails(row)}
+            size="sm"
+            variant="outline"
+          >
+            View
+          </Button>
+        )}
         columns={activeTab === "completed" ? completedColumns : columns}
         compact
         data={rows}
         emptyText={
-          activeTab === "completed"
+          checkoutMode
+            ? activeTab === "completed"
+              ? "No checked out batches found"
+              : "No batches are ready for checkout"
+            : activeTab === "completed"
             ? "No completed batches found"
             : activeTab === "received"
             ? "No received batches found"
@@ -716,9 +733,10 @@ const IncomingBatches = ({ checkoutMode = false }) => {
         error={detailError}
         isLoading={isDetailLoading}
         liveScan={liveScan}
+        checkoutMode={checkoutMode}
         onClose={() => setSelectedBatch(null)}
         onReceived={(receipt) => {
-          setSelectedBatch(receipt.batch);
+          setSelectedBatch(receipt?.batch || receipt);
           setLiveScan(null);
           setRefreshKey((value) => value + 1);
         }}

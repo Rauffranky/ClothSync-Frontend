@@ -29,7 +29,7 @@ export const getTenantBulkScanSummary = (sessionId) =>
 
 export const testTenantBulkAdd = (sessionId, data) =>
   api.post(TENANT_BULK_SCAN_ENDPOINTS.BULK_ADD(sessionId), data, {
-    timeout: 15_000,
+    timeout: 120_000,
   });
 
 export const testTenantBulkAddUndo = (sessionId, undoId) =>

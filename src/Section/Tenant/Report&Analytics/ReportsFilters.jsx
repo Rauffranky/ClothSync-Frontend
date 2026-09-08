@@ -30,7 +30,7 @@ const ReportsFilters = ({ filters, onFilter }) => {
         return keys.map((key) => payload?.[key]).find(Array.isArray) || [];
       };
       setCategoryOptions([{ label: "All Categories", value: "all" }, ...getItems(categoryResponse, ["items", "categories", "docs"]).map((item) => ({ label: item.title || item.name || "Unnamed Category", value: item.id || item._id })).filter((item) => item.value)]);
-      setLaundryOptions([{ label: "All Laundries", value: "all" }, ...getItems(laundryResponse, ["items", "laundries", "docs"]).map((item) => ({ label: item.laundry?.name || item.businessName || item.companyName || item.name || "Unnamed Laundry", value: item.id || item._id })).filter((item) => item.value)]);
+      setLaundryOptions([{ label: "All Laundries", value: "all" }, ...getItems(laundryResponse, ["items", "laundries", "docs"]).map((item) => ({ label: item.laundryName || item.laundry?.name || item.laundry?.businessName || item.businessName || item.companyName || item.name || "Unnamed Laundry", value: item.id || item._id })).filter((item) => item.value)]);
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);

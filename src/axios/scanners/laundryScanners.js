@@ -4,6 +4,9 @@ import { LAUNDRY_SCANNER_ENDPOINTS } from "../endpoint";
 export const getLaundryScanners = (params = {}) =>
   api.get(LAUNDRY_SCANNER_ENDPOINTS.LIST, { params, timeout: 15000 });
 
+export const startLaundryScannerSession = (scannerId, batchId, sessionPurpose = "receipt") =>
+  api.post(LAUNDRY_SCANNER_ENDPOINTS.START_SESSION, { scannerId, batchId, sessionPurpose }, { timeout: 15000 });
+
 export const getLaundryScannerDetails = (id) =>
   api.get(LAUNDRY_SCANNER_ENDPOINTS.DETAILS(id), { timeout: 15000 });
 
@@ -40,9 +43,21 @@ export const clearLaundryScannerSession = (sessionId) =>
     timeout: 15000,
   });
 
+export const finishLaundryScannerSession = (sessionId) =>
+  api.put(LAUNDRY_SCANNER_ENDPOINTS.FINISH_SESSION(sessionId), undefined, {
+    timeout: 15000,
+  });
+
+export const getLaundryScannerSessionHistory = (batchId, params = {}) =>
+  api.get(LAUNDRY_SCANNER_ENDPOINTS.SESSION_HISTORY(batchId), {
+    params,
+    timeout: 15000,
+  });
+
 export const undoLaundryScanAction = (sessionId, undoId, config = {}) =>
   api.post(
     LAUNDRY_SCANNER_ENDPOINTS.ACTION_UNDO(sessionId, undoId),
     undefined,
     { timeout: 15000, ...config },
   );
+export const issueLaundryFixedScannerCommand = (id, command) => api.post(LAUNDRY_SCANNER_ENDPOINTS.FIXED_COMMAND(id), { command }, { timeout: 15000 });

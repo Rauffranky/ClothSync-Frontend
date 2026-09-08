@@ -59,7 +59,7 @@ export const normalizeAutomaticScanUndoNotices = (source, portal) => {
 
   if (actions.length > 0) {
     return actions
-      .filter((item) => item?.undo?.id && item?.undo?.expiresAt)
+      .filter((item) => item?.undo?.id && item?.undo?.expiresAt && Number(item.processedTagCount ?? item.processedCount ?? 0) > 0)
       .map((item) => ({
         ...common,
         ...item.undo,
@@ -75,7 +75,7 @@ export const normalizeAutomaticScanUndoNotices = (source, portal) => {
   const undos = Array.isArray(payload.undos) ? payload.undos : [];
   if (undos.length > 0) {
     return undos
-      .filter((undo) => undo?.id && undo?.expiresAt)
+      .filter((undo) => undo?.id && undo?.expiresAt && Number(undo.processedTagCount ?? undo.processedCount ?? processedTagCount) > 0)
       .map((undo) => ({
         ...common,
         ...undo,
@@ -88,7 +88,7 @@ export const normalizeAutomaticScanUndoNotices = (source, portal) => {
   }
 
   const undo = notification.undo || payload.undo;
-  if (!undo?.id || !undo?.expiresAt) return [];
+  if (!undo?.id || !undo?.expiresAt || processedTagCount <= 0) return [];
 
   return [{
     ...common,

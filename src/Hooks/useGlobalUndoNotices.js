@@ -11,11 +11,14 @@ export const mergeUndoNotices = (current, incoming) => {
 };
 
 const useGlobalUndoNotices = () => {
-  const [notices, setNotices] = useState(getActiveBulkScanUndoNotices);
+  const readNotices = () => getActiveBulkScanUndoNotices().filter((notice) =>
+    Number(notice?.processedTagCount ?? notice?.processedCount ?? notice?.tagCount ?? 0) > 0
+  );
+  const [notices, setNotices] = useState(readNotices);
 
   useEffect(() => {
     const handleStorageChange = () => {
-      setNotices(getActiveBulkScanUndoNotices());
+      setNotices(readNotices());
     };
 
     window.addEventListener("bulk-scan-undo-notices-changed", handleStorageChange);
@@ -36,9 +39,11 @@ const useGlobalUndoNotices = () => {
   const updateNotices = useCallback((newNoticesOrUpdater) => {
     const nextNotices =
       typeof newNoticesOrUpdater === "function"
-        ? newNoticesOrUpdater(getActiveBulkScanUndoNotices())
+        ? newNoticesOrUpdater(readNotices())
         : newNoticesOrUpdater;
-    setActiveBulkScanUndoNotices(nextNotices);
+    setActiveBulkScanUndoNotices(nextNotices.filter((notice) =>
+      Number(notice?.processedTagCount ?? notice?.processedCount ?? notice?.tagCount ?? 0) > 0
+    ));
   }, []);
 
   return [notices, updateNotices];

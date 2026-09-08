@@ -93,8 +93,8 @@ fun BatchDto.displayStatus(): String = statusLabel?.takeIf { it.isNotBlank() } ?
 fun BatchDto.displayTotal(): Int = totalItems ?: itemsCount ?: totalTagsCount ?: 0
 fun BatchDto.displayDispatchDate(): String = dispatchedAt ?: dispatchDate ?: createdAt.orEmpty()
 data class BatchListData(val items: List<BatchDto> = emptyList())
-data class StartSessionRequest(val scannerId: String, val batchId: String? = null)
-data class SessionDto(val id: String? = null, val status: String = "active")
+data class StartSessionRequest(val scannerId: String, val batchId: String? = null, val sessionPurpose: String? = null)
+data class SessionDto(val id: String? = null, val status: String = "active", val scannerId: String? = null, val batchId: String? = null, val laundryBatchId: String? = null, val sessionPurpose: String? = null)
 data class StartSessionData(val id: String? = null, val status: String = "active", val session: SessionDto? = null) {
     fun actualSession(): SessionDto? = session?.takeIf { !it.id.isNullOrBlank() }
         ?: id?.takeIf { it.isNotBlank() }?.let { SessionDto(it, status) }
@@ -122,6 +122,7 @@ data class HeartbeatRequest(
     val rfidConnected: Boolean,
     val metadata: Map<String, Any>? = null,
 )
-data class HeartbeatData(val scannerActive: Boolean = true)
+data class RemoteScannerCommand(val id: String? = null, val command: String? = null)
+data class HeartbeatData(val scannerActive: Boolean = true, val command: RemoteScannerCommand? = null)
 
 data class StoredSession(val accessToken: String, val refreshToken: String, val sessionId: String, val portalType: String, val userId: String, val userName: String, val ownerId: String)

@@ -23,6 +23,7 @@ import {
 import GlobalUndoBanners from "../../../Components/Layout/Dashboard/GlobalUndoBanners";
 import useGlobalUndoNotices, { mergeUndoNotices } from "../../../Hooks/useGlobalUndoNotices";
 import { toast } from "../../../Utils/toast";
+import { issueTenantFixedScannerCommand } from "../../../axios/scanners/tenantScanners";
 import BulkScanEntriesTable from "./BulkScanEntriesTable";
 import BulkAddModal from "./BulkAddModal";
 import ExistingTagActionModal from "./ExistingTagActionModal";
@@ -532,7 +533,7 @@ const BulkScanningIndex = () => {
         </Alert>
       )}
 
-      <ScannerStatusCard lastEpc={lastEpc} scanner={scanner} session={session} />
+      <ScannerStatusCard lastEpc={lastEpc} scanner={scanner} session={session} onFixedCommand={async (command) => { try { await issueTenantFixedScannerCommand(scanner?.id, command); toast.success(`Fixed scanner ${command} command sent`); } catch (error) { toast.error(getApiErrorMessage(error, "Unable to send scanner command")); } }} />
       <SummaryCards counts={counts} loading={isLoading} />
 
       <Card className="overflow-hidden" padding="0" rounded="18px">

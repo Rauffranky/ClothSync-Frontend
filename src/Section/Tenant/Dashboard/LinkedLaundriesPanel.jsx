@@ -86,7 +86,7 @@ const LinkedLaundriesPanel = () => {
   const items = data?.laundries?.items;
   const liveLaundries = Array.isArray(items) ? items.map((item) => ({
     id: item.id || item.linkId,
-    name: item.laundry?.name || item.laundry?.businessName || item.name || item.businessName || "Unnamed Laundry",
+    name: item.laundryName || item.laundry?.name || item.laundry?.businessName || item.name || item.businessName || "Unnamed Laundry",
     itemsSent: item.itemsCurrentlySentCount || item.totalItemsCount || 0,
     status: item.status === "active" ? "Linked" : "Unlinked",
     isDefault: Boolean(item.isDefault),

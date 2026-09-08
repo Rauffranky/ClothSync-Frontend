@@ -36,6 +36,7 @@ const LaundryReportAnalyticsPage = lazy(() => import("../Page/Dashboard/Laundry/
 const LaundryScannersPage = lazy(() => import("../Page/Dashboard/Laundry/ScannersPage"));
 const LaundryScannerDetailsPage = lazy(() => import("../Page/Dashboard/Laundry/ScannerDetailsPage"));
 const LaundryIncomingBatchesPage = lazy(() => import("../Page/Dashboard/Laundry/IncomingBatchesPage"));
+const LaundryBatchDetailsPage = lazy(() => import("../Page/Dashboard/Laundry/LaundryBatchDetailsPage"));
 
 //Tenant 
 const AssetsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetsPage"));
@@ -145,10 +146,26 @@ const AppRoutes = () => {
             }
           />
           <Route
+            path="/laundry/incoming-batches/:id"
+            element={
+              <PermissionRoute permissionKey="incoming_batches">
+                <LaundryBatchDetailsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
             path="/laundry/check-out"
             element={
               <PermissionRoute permissionKey="check_out">
                 <LaundryIncomingBatchesPage checkoutMode />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/laundry/check-out/:id"
+            element={
+              <PermissionRoute permissionKey="check_out">
+                <LaundryBatchDetailsPage checkoutMode />
               </PermissionRoute>
             }
           />

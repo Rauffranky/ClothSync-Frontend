@@ -174,8 +174,10 @@ Dashboard routes:
   `/business/tags`, `/business/tags/:id`, `/business/bulk-scanning`,
   `/business/dispatch-batches`, `/business/dispatch-batches/:id`, and `/business/settings`.
   Reports & Analytics is available at `/business/reports-analytics`.
-- Laundry: `/laundry/dashboard`, `/laundry/linked-businesses`, `/laundry/check-out`, connected
-  business details at `/laundry/linked-businesses/:id`, `/laundry/staff`, and
+- Laundry: `/laundry/dashboard`, `/laundry/linked-businesses`,
+  `/laundry/incoming-batches`, `/laundry/incoming-batches/:id`,
+  `/laundry/check-out`, `/laundry/check-out/:id`, connected
+  business details at `/laundry/linked-businesses/:id`, `/laundry/staff`,
   `/laundry/staff-roles`, and `/laundry/settings`.
 - Each portal root redirects to its dashboard.
 
@@ -903,3 +905,10 @@ For every prompt, the AI must:
 
 Never invent missing backend contracts, permissions, files, or completed
 behavior. Prefer direct source evidence over assumptions or generic patterns.
+
+
+## Scanner contract update — 2026-09-07
+
+Local scanner debug builds target `http://192.168.0.103:8000/api/mobile-scanner/`.
+Laundry session start sends `sessionPurpose` (`receipt` by default; `outbound` for separate checkout). The APK reads nested `data.session` responses and discovers portal-created active sessions through `GET /mobile-scanner/scanners/:scannerId/active-session`. Retry preserves the original request ID, session, EPCs and action; unresolved closed-session uploads are retained for reconciliation, never reassigned. Stop/Clear block while the APK has pending uploads. Local queue persistence uses synchronous commit.
+The incoming-batch modal normalizes session-history envelopes, loads active scanner choices for continuation without cached context, and captures the new session response. Received/missing classifications remain distinct. These source changes do not establish complete production or physical RFID verification.

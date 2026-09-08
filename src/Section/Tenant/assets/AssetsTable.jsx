@@ -53,9 +53,11 @@ const getCategoryOptions = (response) => [
 const getLaundryOptions = (response) => [
   { label: "All Laundries", value: "all" },
   ...getItems(response, ["items", "laundries", "docs"]).map((link) => {
-    const laundry = link.laundry || link.laundryId || link;
+    const laundry = (typeof link.laundry === "object" && link.laundry !== null) ? link.laundry : link;
     return {
       label:
+        link.laundryName ||
+        laundry.laundryName ||
         laundry.businessName ||
         laundry.companyName ||
         laundry.name ||

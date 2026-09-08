@@ -51,3 +51,4 @@ export const getTenantScannerLogs = (id, params = {}) =>
     params,
     timeout: 15000,
   });
+export const issueTenantFixedScannerCommand = (id, command) => api.post(TENANT_SCANNER_ENDPOINTS.FIXED_COMMAND(id), { command }, { timeout: 15000 });

@@ -18,7 +18,7 @@ import retrofit2.HttpException
 import org.json.JSONObject
 import javax.inject.Inject
 
-data class UiState(val loading: Boolean = false, val loggedIn: Boolean = false, val portal: String = "", val error: String? = null, val message: String = "Ready", val deviceOutcome: String? = null, val scanners: List<ScannerDto> = emptyList(), val scanner: ScannerDto? = null, val batches: List<BatchDto> = emptyList(), val batch: BatchDto? = null, val sessionId: String = "", val scanning: Boolean = false, val connected: Boolean = false, val manualAction: String = "check_in", val unique: Int = 0, val processed: Int = 0, val rejected: Int = 0, val results: List<ScanResultDto> = emptyList())
+data class UiState(val loading: Boolean = false, val loggedIn: Boolean = false, val portal: String = "", val error: String? = null, val message: String = "Ready", val deviceOutcome: String? = null, val scanners: List<ScannerDto> = emptyList(), val scanner: ScannerDto? = null, val batches: List<BatchDto> = emptyList(), val batch: BatchDto? = null, val sessionId: String = "", val scanning: Boolean = false, val connected: Boolean = false, val manualAction: String = "check_in", val unique: Int = 0, val processed: Int = 0, val rejected: Int = 0, val queued: Int = 0, val rejectedUploadReason: String? = null, val results: List<ScanResultDto> = emptyList())
 
 @HiltViewModel
 class ScannerViewModel @Inject constructor(private val repository: ScannerRepository, private val reader: RfidReader, private val feedback: ScanFeedback, @ApplicationContext private val context: Context) : ViewModel() {
@@ -131,8 +131,18 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
         if (mode !in setOf("entry", "exit", "manual", "auto")) {
             error("Invalid scanner mode. Configure the scanner as Entry, Exit, Manual, or Auto.")
         }
-        sessionScanAction = mode?.takeIf { it == "manual" }?.let { mutable.value.manualAction }
-        val session = repository.start(scannerUuid)
+        sessionScanAction = mode?.takeIf { it == "manual" && BuildConfig.SCANNER_VARIANT != "fixed" }?.let { mutable.value.manualAction }
+        flush()
+        if (repository.queuedScanCount() > 0) {
+            val rejected = repository.permanentlyRejectedUploads().firstOrNull()
+            if (rejected != null) {
+                mutable.update { it.copy(rejectedUploadReason = rejected.lastError) }
+                error("A previous upload was rejected (${rejected.lastError}). Discard it to start a new session.")
+            }
+            error("Pending uploads need retry before a new session")
+        }
+        val purpose = if (mutable.value.portal != "laundry") null else if (mode == "exit" || (mode == "manual" && sessionScanAction == "check_out")) "outbound" else "receipt"
+        val session = repository.activeSession(scannerUuid) ?: repository.start(scannerUuid, mutable.value.batch?.actualId(), purpose)
         val connected = reader.connect()
         if (!connected || !reader.startInventory()) error("RFID reader could not start")
         deduplicator.clear(); unique.clear(); buffer.clear()
@@ -144,19 +154,39 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
     private suspend fun stopSession() {
         reader.stopInventory(); mutable.update { it.copy(scanning = false, message = "Stopping…") }
         flushJob?.join()
-        flush(); heartbeat?.cancel()
+        flush(); if (BuildConfig.SCANNER_VARIANT != "fixed") heartbeat?.cancel()
+        if (repository.queuedScanCount() > 0 || buffer.isNotEmpty()) {
+            mutable.update { it.copy(queued = repository.queuedScanCount(), error = "Pending uploads must be acknowledged before Finish", message = "Stopped reading; uploads still pending") }
+            return
+        }
         runCatching { repository.stop(mutable.value.sessionId) }.onSuccess { mutable.update { it.copy(message = "Session stopped") } }.onFailure(::showError)
         sessionScanAction = null
     }
     fun clearData() = launchLoading {
         if (mutable.value.scanning) error("Stop scanning before clearing data")
+        if (repository.queuedScanCount() > 0) {
+            repository.discardPermanentlyRejectedUploads()
+            if (repository.queuedScanCount() > 0) repository.discardAllQueued()
+        }
         val sessionId = mutable.value.sessionId
-        if (sessionId.isNotBlank()) repository.clear(sessionId)
+        if (sessionId.isNotBlank()) runCatching { repository.clear(sessionId) }
         deduplicator.clear(); unique.clear(); buffer.clear()
-        mutable.update { it.copy(sessionId = "", unique = 0, processed = 0, rejected = 0, results = emptyList(), message = "Scan data cleared") }
+        mutable.update { it.copy(sessionId = "", unique = 0, processed = 0, rejected = 0, queued = 0, rejectedUploadReason = null, results = emptyList(), error = null, message = "Scan data cleared") }
+    }
+    fun discardRejectedUploads() = launchLoading {
+        var removed = repository.discardPermanentlyRejectedUploads()
+        if (removed == 0 && repository.queuedScanCount() > 0) {
+            val count = repository.queuedScanCount()
+            repository.discardAllQueued()
+            removed = count
+        }
+        if (removed == 0) error("No rejected uploads to discard.")
+        mutable.update { it.copy(queued = repository.queuedScanCount(), rejectedUploadReason = null, error = null, message = "$removed rejected upload(s) discarded. You can start a new session.") }
     }
     fun changeScanner() = viewModelScope.launch {
         if (mutable.value.scanning) stopSession()
+        if (repository.queuedScanCount() > 0) repository.discardPermanentlyRejectedUploads()
+        if (repository.queuedScanCount() > 0 || buffer.isNotEmpty()) { showError(IllegalStateException("Pending uploads must be resolved before switching scanner")); return@launch }
         heartbeat?.cancel(); scannerRefresh?.cancel(); reader.disconnect()
         val scanners = runCatching { repository.scanners() }.getOrElse { mutable.value.scanners }
         mutable.update { it.copy(scanner = null, batch = null, scanners = scanners, sessionId = "", connected = false, unique = 0, processed = 0, rejected = 0, results = emptyList(), error = null, message = "Select a scanner") }
@@ -164,17 +194,18 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
     private fun onTag(read: com.clothsync.scanner.rfid.RfidRead) {
         if (!mutable.value.scanning) return
         if (!deduplicator.accept(read.epc, System.currentTimeMillis())) return
-        if (unique.add(read.epc)) {
+        val firstSeenInSession = unique.add(read.epc)
+        // Fixed readers stay active. A tag is sent again after it leaves the
+        // field and returns; portable scanners retain one read per session.
+        val shouldUpload = BuildConfig.SCANNER_VARIANT == "fixed" || firstSeenInSession
+        if (shouldUpload) {
             feedback.acceptedTag()
             buffer += read.epc
             mutable.update { state ->
                 state.copy(
                     unique = unique.size,
-                    results = state.results + ScanResultDto(
-                        epc = read.epc,
-                        accepted = true,
-                        status = "pending",
-                        statusLabel = "Pending",
+                    results = state.results.filterNot { it.epc.equals(read.epc, ignoreCase = true) } + ScanResultDto(
+                        epc = read.epc, accepted = true, status = "pending", statusLabel = "Pending",
                     ),
                 )
             }
@@ -187,11 +218,13 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
         }
     }
     private suspend fun flush() = flushMutex.withLock {
+        repository.retryQueuedScans(mutable.value.scanner?.actualUuid(), mutable.value.batch?.actualId())
         while (buffer.isNotEmpty()) {
             val chunk = buffer.take(25)
-            buffer.subList(0, chunk.size).clear()
-            runCatching { repository.upload(mutable.value.sessionId, chunk, sessionScanAction) }
+            var acknowledged = false
+            runCatching { repository.upload(mutable.value.sessionId, chunk, sessionScanAction, mutable.value.scanner?.actualUuid(), mutable.value.batch?.actualId()) }
                 .onSuccess { response ->
+                    acknowledged = true
                     val counters = response.data?.counters ?: ScanCounters()
                     val batches = response.data?.batchCounters.orEmpty().mapNotNull { it.batchCode }.distinct()
                     val batchMessage = if (batches.isEmpty()) response.message else "${response.message} Batches: ${batches.joinToString()}"
@@ -218,7 +251,19 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
                         )
                     }
                 }
-                .onFailure { error -> mutable.update { it.copy(message = "Upload failed: ${friendly(error)}") } }
+                .onFailure { error ->
+                    reader.stopInventory()
+                    mutable.update { it.copy(scanning = false, message = "Upload pending: ${friendly(error)}") }
+                }
+            if (acknowledged || repository.hasQueuedChunk(mutable.value.sessionId, chunk)) buffer.subList(0, chunk.size).clear()
+            else break
+        }
+        val rejected = repository.permanentlyRejectedUploads().firstOrNull()
+        mutable.update {
+            it.copy(
+                queued = repository.queuedScanCount(),
+                rejectedUploadReason = rejected?.lastError ?: it.rejectedUploadReason,
+            )
         }
     }
     private fun startHeartbeat(scannerId: String) {
@@ -238,6 +283,15 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
                     )
                 }
                 response.onSuccess { heartbeatResponse ->
+                    val command = heartbeatResponse.data?.command
+                    if (BuildConfig.SCANNER_VARIANT == "fixed" && !command?.id.isNullOrBlank()) {
+                        when (command?.command) {
+                            "start" -> if (!mutable.value.scanning) start()
+                            "stop" -> if (mutable.value.scanning) stopSession()
+                            "rescan" -> { deduplicator.clear(); mutable.update { it.copy(message = "Portal requested a new scan cycle") } }
+                        }
+                        repository.acknowledgeCommand(command!!.id!!)
+                    }
                     if (heartbeatResponse.data?.scannerActive == false) {
                         reader.stopInventory()
                         mutable.update { it.copy(scanning = false, connected = false, message = "Scanner was deactivated by the backend") }
@@ -263,6 +317,31 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
         scannerRefresh = viewModelScope.launch {
             while (isActive) {
                 delay(5_000)
+                runCatching {
+                    val currentId = mutable.value.sessionId
+                    if (currentId.isNotBlank()) {
+                        val session = repository.session(currentId)
+                        if (session?.status != "active") {
+                            reader.stopInventory()
+                            mutable.update { it.copy(scanning = false) }
+                            flush()
+                            repository.discardPermanentlyRejectedUploads()
+                            if (repository.queuedScanCount() == 0 && buffer.isEmpty()) {
+                                mutable.update { it.copy(sessionId = "", rejectedUploadReason = null, error = null, message = "Session closed; waiting for continuation") }
+                            } else {
+                                val reason = repository.permanentlyRejectedUploads().firstOrNull()?.lastError ?: "Session closed on backend"
+                                mutable.update { it.copy(rejectedUploadReason = reason, error = "Closed session has pending uploads. Discard or reconcile.") }
+                            }
+                        }
+                    }
+                    if (repository.queuedScanCount() > 0) flush()
+                    if (BuildConfig.SCANNER_VARIANT == "fixed" && !mutable.value.scanning && mutable.value.sessionId.isBlank() && repository.queuedScanCount() == 0 && !mutable.value.loading) {
+                        if (repository.activeSession(scannerId) != null) start()
+                    }
+                }.onFailure { error ->
+                    reader.stopInventory()
+                    mutable.update { it.copy(scanning = false, message = "Connection paused: ${friendly(error)}") }
+                }
                 val scanners = runCatching { repository.scanners() }.getOrNull() ?: continue
                 val refreshed = scanners.firstOrNull { it.actualUuid() == scannerId }
                 if (refreshed == null) {
@@ -286,7 +365,15 @@ class ScannerViewModel @Inject constructor(private val repository: ScannerReposi
             }
         }
     }
-    fun logout() = viewModelScope.launch { if (mutable.value.scanning) stopSession(); heartbeat?.cancel(); scannerRefresh?.cancel(); reader.disconnect(); repository.logout(); mutable.value = UiState() }
+    fun logout() = viewModelScope.launch {
+        if (mutable.value.scanning) stopSession()
+        if (repository.queuedScanCount() > 0) repository.discardPermanentlyRejectedUploads()
+        if (repository.queuedScanCount() > 0 || buffer.isNotEmpty()) {
+            showError(IllegalStateException("Resolve pending uploads before logout"))
+            return@launch
+        }
+        heartbeat?.cancel(); scannerRefresh?.cancel(); reader.disconnect(); repository.logout(); mutable.value = UiState()
+    }
     private fun launchLoading(block: suspend () -> Unit) = viewModelScope.launch { mutable.update { it.copy(loading = true, error = null) }; runCatching { block() }.onFailure(::showError); mutable.update { it.copy(loading = false) } }
     private fun showError(error: Throwable) { mutable.update { it.copy(error = friendly(error), message = friendly(error)) } }
     private fun friendly(error: Throwable): String {

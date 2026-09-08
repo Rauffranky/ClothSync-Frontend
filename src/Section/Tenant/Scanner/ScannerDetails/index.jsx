@@ -18,7 +18,7 @@ import Table from "../../../../Components/UI/Table";
 import Badge from "../../../../Components/UI/Badge";
 import Pagination from "../../../../Components/UI/Pagination";
 import { getApiErrorMessage } from "../../../../axios/api";
-import { getTenantScannerDetails, getTenantScannerLogs } from "../../../../axios/scanners/tenantScanners";
+import { getTenantScannerDetails, getTenantScannerLogs, issueTenantFixedScannerCommand } from "../../../../axios/scanners/tenantScanners";
 import { formatDateTime } from "../../../../Utils/date";
 import { normalizeScanner } from "../data";
 import HeaderCard from "./HeaderCard";
@@ -71,6 +71,7 @@ const ScannerDetailsIndex = ({
   rotateKey = rotateTenantScannerKey,
   revokeKey = revokeTenantScannerKey,
   policyOwnerType = "tenant",
+  issueFixedCommand = issueTenantFixedScannerCommand,
 }) => {
   const { id } = useParams();
   const [scanner, setScanner] = useState(null);
@@ -140,6 +141,10 @@ const ScannerDetailsIndex = ({
     setIsLoading(true);
     setLoadError("");
     setRetryKey((current) => current + 1);
+  };
+  const runFixedCommand = async (command) => {
+    try { await issueFixedCommand(scanner.apiId, command); toast.success(`Fixed scanner ${command} command sent`); }
+    catch (error) { toast.error(getApiErrorMessage(error, "Unable to send fixed scanner command")); }
   };
 
   const handleConfigure = async (values) => {
@@ -257,6 +262,9 @@ const ScannerDetailsIndex = ({
         onReplace={() => setRecoveryMode("replace")}
         onAccess={() => setIsAccessOpen(true)}
       />
+      {String(scanner.type || scanner.scannerType).toLowerCase() === "fixed" ? (
+        <Card padding="16px" rounded="16px"><div className="flex flex-wrap gap-2"><Button onClick={() => runFixedCommand("start")}>Start Scan</Button><Button onClick={() => runFixedCommand("stop")} variant="danger">Stop Scan</Button><Button onClick={() => runFixedCommand("rescan")} variant="secondary">Scan Again</Button></div></Card>
+      ) : null}
 
       {!String(scanner.status).toLowerCase().includes("active") ? (
         <Alert leftIcon={<AlertTriangle size={18} />} variant="warning">

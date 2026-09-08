@@ -20,7 +20,7 @@ const getEventUndoNotice = (data) => {
   const payload = data?.data ?? data ?? {};
   const notif = payload.notification ?? {};
   const undo = notif.undo ?? payload.undo ?? null;
-  if (!undo?.id || !undo?.expiresAt) return null;
+  if (!undo?.id || !undo?.expiresAt || Number(notif.tagCount ?? payload.processedTagCount ?? payload.processedCount ?? 0) <= 0) return null;
   
   return {
     ...undo,

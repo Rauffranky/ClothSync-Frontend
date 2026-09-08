@@ -50,6 +50,7 @@ export const TENANT_SCANNER_ENDPOINTS = Object.freeze({
   ROTATE_KEY: (id) => `/tenant-scanners/rotate-key/${id}`,
   REVOKE_KEY: (id) => `/tenant-scanners/revoke-key/${id}`,
   LOGS: (id) => `/tenant-scanners/show/${id}/logs`,
+  FIXED_COMMAND: (id) => `/tenant-scanners/${id}/fixed-command`,
 });
 
 export const TENANT_TAG_ENDPOINTS = Object.freeze({
@@ -119,6 +120,7 @@ export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
 });
 
 export const LAUNDRY_SCANNER_ENDPOINTS = Object.freeze({
+  START_SESSION: "/laundry-scanners/sessions/start",
   LIST: "/laundry-scanners/show",
   DETAILS: (id) => `/laundry-scanners/show/${id}`,
   LOGS: (id) => `/laundry-scanners/show/${id}/logs`,
@@ -129,8 +131,13 @@ export const LAUNDRY_SCANNER_ENDPOINTS = Object.freeze({
   RECONNECT_DEVICE: (id) => `/laundry-scanners/reconnect-device/${id}`,
   REPLACE_DEVICE: (id) => `/laundry-scanners/replace-device/${id}`,
   ACCESS: (id) => `/laundry-scanners/access/${id}`,
+  FIXED_COMMAND: (id) => `/laundry-scanners/${id}/fixed-command`,
   CLEAR_SESSION: (sessionId) =>
     `/laundry-scanners/sessions/${sessionId}/clear`,
+  FINISH_SESSION: (sessionId) =>
+    `/laundry-scanners/sessions/${sessionId}/finish`,
+  SESSION_HISTORY: (batchId) =>
+    `/laundry-scanners/sessions/history/${batchId}`,
   ACTION_UNDO: (sessionId, undoId) =>
     `/laundry-scanners/sessions/${sessionId}/actions/${undoId}/undo`,
 });

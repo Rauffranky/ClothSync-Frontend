@@ -18,10 +18,18 @@ const getBatchId = (payload) =>
   payload?.batchId ??
   payload?.data?.session?.batchId ??
   payload?.session?.batchId ??
+  payload?.data?.data?.session?.laundryBatchId ??
+  payload?.data?.session?.laundryBatchId ??
+  payload?.session?.laundryBatchId ??
   null;
 
+const getScannerId = (payload) => {
+  const data = payload?.data?.data ?? payload?.data ?? payload ?? {};
+  return data.scannerId ?? data.session?.scannerId ?? null;
+};
+
 const getTagIds = (payload) => {
-  const data = payload?.data ?? payload ?? {};
+  const data = payload?.data?.data ?? payload?.data ?? payload ?? {};
   const records = [
     ...(Array.isArray(data.results) ? data.results : []),
     ...(Array.isArray(data.processedItems) ? data.processedItems : []),
@@ -66,9 +74,15 @@ export const getActiveLaundryScan = () => {
 };
 
 export const captureLaundryScanEvent = (payload) => {
-  const current = getActiveLaundryScan() || {};
+  const previous = getActiveLaundryScan() || {};
+  const incomingId = getSessionId(payload);
+  const data = payload?.data?.data ?? payload?.data ?? payload ?? {};
+  const terminal = ["finished", "cleared"].includes(data.session?.status);
+  if (terminal && previous.sessionId && incomingId !== previous.sessionId) return previous;
+  const current = incomingId && incomingId !== previous.sessionId ? {} : previous;
   const sessionId = getSessionId(payload) || current.sessionId || null;
   const batchId = getBatchId(payload) || current.batchId || null;
+  const scannerId = getScannerId(payload) || current.scannerId || null;
   const affectedBatchIds = [
     ...new Set([...(current.affectedBatchIds || []), ...getAffectedBatchIds(payload)]),
   ];
@@ -76,10 +90,11 @@ export const captureLaundryScanEvent = (payload) => {
     ...new Set([...(current.tagIds || []), ...getTagIds(payload)]),
   ];
   const next = {
-    sessionId,
+    sessionId: terminal ? null : sessionId,
+    scannerId,
     batchId: batchId || (affectedBatchIds.length === 1 ? affectedBatchIds[0] : null),
     affectedBatchIds,
-    tagIds,
+    tagIds: terminal ? [] : tagIds,
   };
 
   try {
@@ -97,6 +112,7 @@ export const captureLaundryScanEvent = (payload) => {
 export const clearActiveLaundryScan = () => {
   try {
     sessionStorage.removeItem(ACTIVE_LAUNDRY_SCAN_KEY);
+    window.dispatchEvent(new CustomEvent("laundry-scan-context-changed", { detail: null }));
   } catch {
     // No-op when browser storage is unavailable.
   }

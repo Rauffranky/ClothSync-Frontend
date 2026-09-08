@@ -1,6 +1,7 @@
 import { Hash, MapPin, RadioTower, Settings, Tag, Timer, Zap } from "lucide-react";
 import Badge from "../../../Components/UI/Badge";
 import Card from "../../../Components/UI/Card";
+import Button from "../../../Components/UI/Button";
 import { formatTimeWithUserPreferences } from "../../../Utils/date";
 import { formatStatusLabel } from "../../../Utils/status";
 
@@ -11,7 +12,7 @@ const getScannerName = (scanner) =>
   scanner?.translations?.en?.scannerName ??
   "-";
 
-const ScannerStatusCard = ({ session, scanner, lastEpc }) => {
+const ScannerStatusCard = ({ session, scanner, lastEpc, onFixedCommand }) => {
   const isConnected = Boolean(scanner || session);
   const fields = [
     { icon: Hash, label: "Scanner ID", value: scanner?.scannerId ?? "-" },
@@ -64,6 +65,9 @@ const ScannerStatusCard = ({ session, scanner, lastEpc }) => {
           </div>
         ))}
       </div>
+      {String(scanner?.scannerType || scanner?.type).toLowerCase() === "fixed" && (
+        <div className="mt-5 flex flex-wrap gap-2"><Button onClick={() => onFixedCommand?.("start")}>Start Scan</Button><Button onClick={() => onFixedCommand?.("stop")} variant="danger">Stop Scan</Button><Button onClick={() => onFixedCommand?.("rescan")} variant="secondary">Scan Again</Button></div>
+      )}
     </Card>
   );
 };
