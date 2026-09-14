@@ -151,6 +151,9 @@ Authentication and landing:
 - `/login` -> `/business/login`; `/signup` -> `/business/signup`.
 - `/superadmin/login`.
 - `/business/login`, `/business/signup`.
+- `/business/verify-email?token=...` verifies a business owner/tenant account email
+  and seamlessly reuses the existing 4-step `BusinessSignup` component (`AuthPage`);
+  `/verify-email` and `/api/tenant-auth/verify-email` are preserved as compatibility aliases.
 - `/business/staff/verify-email?token=...` verifies a staff invitation email
   outside the dashboard shell and redirects successful verification to the
   Business login.
@@ -161,24 +164,27 @@ Authentication and landing:
 - `/laundry/invite?token=...` handles a public laundry invitation outside the
   dashboard shell; `/laundry/handle-invite` and the backend email path
   `/laundry-invite/accept` are compatible aliases.
-- `/` -> landing home through `LandingLayout`.
+- `/` -> landing home through `LandingLayout`; public legal policy routes `/terms-and-conditions` and `/privacy-policy`.
 - `/404`; unmatched routes redirect there.
 
 Dashboard routes:
 
-- Super Admin: `/superadmin/dashboard`.
+- Super Admin: `/superadmin/dashboard`, `/superadmin/terms-and-conditions`, `/superadmin/privacy-policy`, `/superadmin/email-templates`, `/superadmin/businesses`, `/superadmin/business-types`, `/superadmin/complaints`, and `/superadmin/complaints/:id`.
+   Terms & Conditions and Privacy Policy support dual English and Arabic drafting in Super Admin and bilingual rendering on the public landing page. Email Templates provides an accordion interface to edit and toggle bilingual templates via `/api/admin-email-templates/show` and `/update/:id` (including account deactivation and activation templates). When emails are dispatched, `emailServices.js` dynamically pulls active templates from the `emails_templates` table and replaces dynamic variables (e.g., `{{tenantName}}`, `{{email}}`, `{{inviteUrl}}`, `{{otp}}`) with runtime data, falling back to code templates only if inactive or missing. All outbound emails include the official ClothSync logo embedded via CID inline attachment (`cid:clothsync-logo`) styled with the `#0B9086` brand theme. Businesses lists all registered tenant organizations with creation (including dynamic businessType selection), stats, search, status/type filters, details inspection, and activation toggle via `/admin-tenants/show`, `/show/:id`, `/create`, and `/update-status/:id` (which automatically dispatches email notifications to the owner on status change). Business Types (`/superadmin/business-types`) allows Super Admin to create, activate/deactivate, and delete business types via `/api/admin-business-types/*`; these types are dynamically served via `GET /api/business-types/list` across all business registration modals, public/tenant signup profile steps, and filter dropdowns. Complaints (`/superadmin/complaints` and details page `/superadmin/complaints/:id`) provides platform-wide read-only oversight of disputes, quality tickets, and operational complaints between Businesses and Laundries via `GET /admin-complaints`, with Business (`tenantId`), Laundry (`laundryId`), Status, and Priority filter dropdowns, and full evidence image inspection; Super Admin has view-only access and cannot alter complaint status or resolution remarks.
 - Business: `/business/dashboard`, `/business/linked-laundries`,
   `/business/categories`, `/business/categories/:id`, `/business/assets`,
   `/business/assets/:id`, `/business/scanners`, `/business/scanners/:id`,
   `/business/staff`, `/business/staff-roles`,
   `/business/tags`, `/business/tags/:id`, `/business/bulk-scanning`,
-  `/business/dispatch-batches`, `/business/dispatch-batches/:id`, and `/business/settings`.
-  Reports & Analytics is available at `/business/reports-analytics`.
-- Laundry: `/laundry/dashboard`, `/laundry/linked-businesses`,
-  `/laundry/incoming-batches`, `/laundry/incoming-batches/:id`,
-  `/laundry/check-out`, `/laundry/check-out/:id`, connected
-  business details at `/laundry/linked-businesses/:id`, `/laundry/staff`,
-  `/laundry/staff-roles`, and `/laundry/settings`.
+  `/business/dispatch-batches`, `/business/dispatch-batches/:id`, `/business/settings`, `/business/complaints`, `/business/complaints/create`, and `/business/complaints/:id`.
+  Reports & Analytics is available at `/business/reports-analytics`. Complaints (`/business/complaints`, creation page `/business/complaints/create`, and details page `/business/complaints/:id`) allows businesses to send and receive complaints to/from linked partner laundries with Laundry partner filter dropdown (`laundryId`), multiple S3 image uploads, priority tagging, and status tracking via `/tenant-complaints`.
+- Laundry Portal: `/laundry/dashboard`, `/laundry/linked-businesses`,
+  `/laundry/linked-businesses/:id`, `/laundry/incoming-batches`,
+  `/laundry/incoming-batches/:id`, `/laundry/check-out`,
+  `/laundry/check-out/:id`, `/laundry/scanners`, `/laundry/scanners/:id`,
+  `/laundry/reports`, `/laundry/staff`,
+  `/laundry/staff-roles`, `/laundry/settings`, `/laundry/complaints`, `/laundry/complaints/create`, and `/laundry/complaints/:id`.
+  Complaints (`/laundry/complaints`, creation page `/laundry/complaints/create`, and details page `/laundry/complaints/:id`) allows laundries to send and receive complaints to/from linked businesses with Business partner filter dropdown (`tenantId`), multiple S3 image uploads, priority tagging, and status tracking via `/laundry-complaints`.
 - Each portal root redirects to its dashboard.
 
 `src/Components/Layout/Dashboard/nav.js` contains additional future links with no
@@ -532,16 +538,20 @@ Shared client facts:
 
 - Base URL is `import.meta.env.VITE_API_BASE_URL || ""`.
 - Default content type is `application/json`.
-- The request interceptor reads the active Business or Laundry portal's shared
-  `accessToken` from `sessionStorage` and attaches a Bearer authorization header.
-- The response interceptor clears the stored authentication session when an
-  authenticated request returns `401`, then replaces the current URL with the
-  active portal's login route (`/business/login`, `/laundry/login`, or
-  `/superadmin/login`). It does not attempt token refresh.
-- Business and Laundry logout call their portal logout endpoint when an access
-  token exists, then always clear the current-tab session and return to the
-  matching login route. A stale dashboard session with no token is cleared
-  locally without making an unauthenticated logout request.
+- The request interceptor reads the active portal's shared `accessToken` from
+  `sessionStorage`, attaches a Bearer authorization header, and attaches `x-session-id`
+  when a session ID exists.
+- The response interceptor handles `401` and unauthorized responses by attempting
+  silent session refresh via `POST /auth/refresh` using the stored `sessionId` and
+  `refreshToken`. If refresh succeeds, the new access and refresh tokens are stored,
+  and the failed request is retried with the new token. If refresh fails or no
+  refresh token is available, the interceptor clears the stored authentication
+  session and redirects to the active portal's login route (`/business/login`,
+  `/laundry/login`, or `/superadmin/login`).
+- Business, Laundry, and Super Admin logout call their respective backend logout
+  endpoints (`/tenant-auth/logout`, `/laundry-auth/logout`, `/admin-auth/logout`)
+  with the session ID, which revokes the active session in `auth_sessions`, then
+  always clears `sessionStorage` and returns to the matching portal login route.
 - `src/axios/api.js` returns `response.data`, not the full Axios response.
 - Concurrent identical GET requests are deduplicated in the shared API wrapper,
   including the current access-token context. This prevents React development
@@ -746,14 +756,18 @@ responses use the global portal-aware login redirect described above.
 Reuse `src/Components/UI` before creating feature-local replacements:
 
 - Overlays/actions: `ActionDropdown`, `Dropdown`, `Modal`, `SlideOver`, `Tooltip`.
-- Inputs/navigation: `Input`, `Tabs`, `Toggle`, `Pagination`, `BusinessSelector`.
-- Data display: `Table`, `TableSkeleton`, `CardSkeleton`, `Badge`, `Card`,
-  `Alert`, `ProgressBar`, and the shared `Charts` primitives (`ChartCard`,
-  `LineChart`, `BarChart`, `DonutChart`, and `SegmentedBarChart`).
-- Identity/icons: `Avatar`, `InitialsAvatar`, `IconWrapper`.
+- Inputs/navigation: `Input`, `Tabs`, `Toggle`, `Pagination`, `BusinessSelector`,
+  `QuillEditor`.
+- Data display: `Accordion` (`AccordionItem`), `Table`, `TableSkeleton`,
+  `CardSkeleton`, `Badge`, `Card`, `Alert`, `ProgressBar`, and the shared `Charts`
+  primitives (`ChartCard`, `LineChart`, `BarChart`, `DonutChart`, and
+  `SegmentedBarChart`).
+- Identity/icons: `Avatar`, `InitialsAvatar`, `IconWrapper`, and `Logo` (`src/Components/Logo.jsx` renders `src/assets/logo.svg`).
 - Primary action primitive: `Button`.
 
 Important contracts:
+
+- `Logo` (`src/Components/Logo.jsx`) renders the official ClothSync vector brand mark (`src/assets/logo.svg`). It supports custom `className`, `width`, `height`, and `alt`, and is used across Dashboard sidebars, Auth screens, Landing headers/footers, and the Splash screen.
 
 - `Input.onChange` receives `(value, event)`, not only a native event. It supports
   errors/helper text, icons, passwords, multiline, and numeric constraints.

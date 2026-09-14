@@ -11,6 +11,7 @@ import { getFlatPortalItems, portalGroups } from "./nav";
 import { getAuthenticatedTenant } from "../../../axios/auth/tenantAuth";
 import { getLaundrySettingsProfile } from "../../../axios/settings/laundrySettings";
 import { getSettingsProfile } from "../../../Section/Tenant/Settings/data";
+import { getAuthenticatedSuperAdmin } from "../../../axios/auth/superAdminAuth";
 import {
   AUTH_SESSION_USER_UPDATED_EVENT,
   getAuthAccessToken,
@@ -86,6 +87,27 @@ const Header = ({ portalKey, onOpenSidebar }) => {
       })
       .catch(() => {
         // Keep the authenticated profile when the background refresh fails.
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [portalKey]);
+
+  useEffect(() => {
+    if (portalKey !== "superadmin" || !getAuthAccessToken()) return;
+
+    let isActive = true;
+    getAuthenticatedSuperAdmin()
+      .then((response) => {
+        if (!isActive) return;
+        const profile = response?.data ?? response;
+        const mergedProfile = { ...getAuthSessionUser(), ...profile };
+        setTenantProfile(mergedProfile);
+        setAuthSessionUser(mergedProfile);
+      })
+      .catch(() => {
+        // Retain last known session user on failure
       });
 
     return () => {

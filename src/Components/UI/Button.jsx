@@ -4,10 +4,12 @@ import { LoaderCircle } from "lucide-react";
 const buttonVariants = {
   primary: {
     color: "var(--button-primary-text)",
-    background: "var(--gradient-aurora-flow)",
-    borderColor: "transparent",
+    background: "#0B9086",
+    borderColor: "#0B9086",
     boxShadow: "var(--button-primary-shadow)",
     hover: {
+      background: "#097d74",
+      borderColor: "#097d74",
       boxShadow: "var(--button-primary-shadow-hover)",
     },
   },

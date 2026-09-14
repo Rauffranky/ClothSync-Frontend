@@ -44,6 +44,11 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    const sessionId = sessionStorage.getItem("sessionId");
+    if (sessionId) {
+      config.headers["x-session-id"] = sessionId;
+    }
+
     return config;
   },
   (error) => Promise.reject(error),

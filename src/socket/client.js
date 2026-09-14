@@ -2,6 +2,7 @@ import { io } from "socket.io-client";
 import {
   AUTH_SESSION_CHANGED_EVENT,
   getAuthAccessToken,
+  getAuthSessionUser,
 } from "../axios/auth/authSession";
 
 const getSocketUrl = () => {
@@ -18,12 +19,47 @@ const getSocketUrl = () => {
   }
 };
 
+const parseJwt = (token) => {
+  if (!token || typeof token !== "string") return null;
+  try {
+    const base64Url = token.split(".")[1];
+    if (!base64Url) return null;
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+};
+
+const isSocketAllowed = () => {
+  const token = getAuthAccessToken();
+  if (!token) return false;
+
+  const user = getAuthSessionUser();
+  const decoded = parseJwt(token);
+  const role = user?.role || decoded?.role;
+
+  // Realtime sockets are only for tenant and laundry portals; super_admin handshakes are rejected with 400
+  if (role === "super_admin" || role === "admin_sub_admin") {
+    return false;
+  }
+
+  return true;
+};
+
 let socket;
 
 export const getSocket = () => {
   if (!socket) {
     socket = io(getSocketUrl(), {
       autoConnect: false,
+      transports: ["websocket", "polling"],
       auth: (callback) => {
         const token = getAuthAccessToken();
         callback(token ? { token, accessToken: token } : {});
@@ -34,16 +70,25 @@ export const getSocket = () => {
       reconnectionDelayMax: 5_000,
       timeout: 10_000,
     });
+
+    socket.on("connect_error", (err) => {
+      if (
+        err?.message === "common.unauthorized" ||
+        err?.message === "auth.invalidToken" ||
+        err?.message === "auth.tokenMissing"
+      ) {
+        socket.disconnect();
+      }
+    });
   }
 
   return socket;
 };
 
 export const connectSocket = () => {
-  const token = getAuthAccessToken();
   const activeSocket = getSocket();
 
-  if (!token) {
+  if (!isSocketAllowed()) {
     if (activeSocket.connected) activeSocket.disconnect();
     return activeSocket;
   }

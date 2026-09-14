@@ -23,6 +23,7 @@ import {
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import { getApiErrorMessage } from "../../../axios/api";
 import { getLaundryTenants } from "../../../axios/laundryTenants/laundryTenants";
+import { getPublicBusinessTypes } from "../../../axios/adminBusinessTypes/adminBusinessTypes";
 import { formatDateWithUserPreferences } from "../../../Utils/date";
 import { toast } from "../../../Utils/toast";
 import {
@@ -45,9 +46,34 @@ const LinkedBusinessesTable = ({ onSummaryChange, refreshKey = 0 }) => {
   const debouncedSearch = useDebouncedSearch(searchValue);
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [filterTypeOptions, setFilterTypeOptions] = useState(businessTypeOptions);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
+  useEffect(() => {
+    let isActive = true;
+    getPublicBusinessTypes()
+      .then((res) => {
+        if (!isActive) return;
+        const list = res?.data?.data || res?.data || [];
+        if (Array.isArray(list) && list.length > 0) {
+          const dynamicOptions = [
+            { label: "All Business Types", value: "all" },
+            ...list.map((item) => ({
+              label: item.label || item.name,
+              value: item.value || item.code,
+            })),
+          ];
+          setFilterTypeOptions(dynamicOptions);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -225,7 +251,7 @@ const LinkedBusinessesTable = ({ onSummaryChange, refreshKey = 0 }) => {
         />
         <Dropdown
           onChange={(value) => handleFilterChange(setTypeFilter, value)}
-          options={businessTypeOptions}
+          options={filterTypeOptions}
           value={typeFilter}
         />
       </div>

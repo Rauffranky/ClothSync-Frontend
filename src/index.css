@@ -4,12 +4,12 @@
   color-scheme: light;
 
   /* Core palette */
-  --color-aurora-teal: #14b8a6;
+  --color-aurora-teal: #0B9086;
   --color-seafoam: #34d399;
   --color-aqua-mist: #6ee7f2;
   --color-sky-blue: #60a5fa;
   --color-blue-gray: #94a3b8;
-  --color-deep-teal: #1e3a3a;
+  --color-deep-teal: #097d74;
 
   /* Chart colour aliases — used across dashboards & reports */
   --color-aurora-purple: #a78bfa;
@@ -25,35 +25,35 @@
   --color-ink-teal: #0f1f1f;
 
   /* Portal accents */
-  --color-tenant: #14b8a6;
+  --color-tenant: #0B9086;
   --color-laundry-staff: #60a5fa;
   --color-super-admin: #7c3aed;
   --color-super-admin-light: #a78bfa;
   --color-super-admin-soft: #ede9fe;
 
   /* =========================
-     Tenant Portal - Blue
+     Tenant Portal - Primary
   ========================= */
-  --tenant-primary: #3B82F6;
-  --tenant-hover: #2563EB;
+  --tenant-primary: #0B9086;
+  --tenant-hover: #097d74;
   --tenant-light: #DBEAFE;
   --tenant-soft: #EFF6FF;
   --tenant-border: #BFDBFE;
-  --tenant-text: #1D4ED8;
-  --tenant-glow: rgba(59, 130, 246, 0.28);
-  --tenant-gradient: linear-gradient(135deg, #2563EB 0%, #60A5FA 100%);
+  --tenant-text: #0B9086;
+  --tenant-glow: rgba(11, 144, 134, 0.28);
+  --tenant-gradient: #0B9086;
 
   /* =========================
      Laundry Portal - Teal
   ========================= */
-  --laundry-primary: #14B8A6;
-  --laundry-hover: #0F9488;
+  --laundry-primary: #0B9086;
+  --laundry-hover: #097d74;
   --laundry-light: #CCFBF1;
   --laundry-soft: #F0FDFA;
   --laundry-border: #99F6E4;
-  --laundry-text: #0F766E;
-  --laundry-glow: rgba(20, 184, 166, 0.28);
-  --laundry-gradient: linear-gradient(135deg, #14B8A6 0%, #34D399 100%);
+  --laundry-text: #0B9086;
+  --laundry-glow: rgba(11, 144, 134, 0.28);
+  --laundry-gradient: #0B9086;
 
   /* =========================
      Super Admin Portal - Purple
@@ -65,12 +65,12 @@
   --admin-border: #DDD6FE;
   --admin-text: #6D28D9;
   --admin-glow: rgba(139, 92, 246, 0.28);
-  --admin-gradient: linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%);
+  --admin-gradient: #0B9086;
 
   /* Status colors */
   --color-ready: #34d399;
   --color-in-progress: #60a5fa;
-  --color-completed: #14b8a6;
+  --color-completed: #0B9086;
   --color-pending: #f59e0b;
   --color-overdue: #ef4444;
   --color-cancelled: #94a3b8;
@@ -102,25 +102,22 @@
   --bg-dark-start: #06282b;
   --bg-dark-middle: #082d32;
   --bg-dark-end: #071c29;
-  --glow-teal: rgba(20, 184, 166, 0.18);
+  --glow-teal: rgba(11, 144, 134, 0.18);
   --glow-aqua: rgba(110, 231, 242, 0.1);
   --glow-blue: rgba(96, 165, 250, 0.12);
   --color-dark-surface: rgba(8, 42, 47, 0.68);
   --color-dark-surface-strong: rgba(11, 51, 57, 0.82);
   --color-dark-border: rgba(110, 231, 242, 0.14);
-  --color-dark-border-strong: rgba(20, 184, 166, 0.28);
+  --color-dark-border-strong: rgba(11, 144, 134, 0.28);
   --color-dark-text-primary: #e8fbfb;
   --color-dark-text-secondary: #a8c7c9;
   --color-dark-text-muted: #6d9295;
 
-  /* Gradients */
-  --gradient-aurora-flow: linear-gradient(135deg, #14b8a6 0%, #6ee7f2 100%);
-  --gradient-ocean-breeze: linear-gradient(135deg, #6ee7f2 0%, #60a5fa 100%);
-  --gradient-mint-haze: linear-gradient(135deg, #14b8a6 0%, #34d399 100%);
-  --gradient-deep-aurora: linear-gradient(135deg,
-      #1e3a3a 0%,
-      #0f766e 45%,
-      #2563eb 100%);
+  /* Solid primary replacement for gradients */
+  --gradient-aurora-flow: #0B9086;
+  --gradient-ocean-breeze: #0B9086;
+  --gradient-mint-haze: #0B9086;
+  --gradient-deep-aurora: #0B9086;
 
   /* Active theme aliases */
   --theme-bg: var(--color-light-bg);
@@ -171,39 +168,41 @@
     inset 0 -1px 0 rgba(20, 184, 166, 0.035);
 
   /* Button tokens */
-  --button-primary-text: #efffff;
+  --button-primary-bg: #0B9086;
+  --button-primary-bg-hover: #097d74;
+  --button-primary-text: #ffffff;
   --button-primary-shadow:
-    0 12px 22px rgba(20, 184, 166, 0.28),
+    0 10px 20px rgba(11, 144, 134, 0.24),
     inset 0 1px 0 rgba(255, 255, 255, 0.22);
   --button-primary-shadow-hover:
-    0 16px 28px rgba(20, 184, 166, 0.34), 0 0 18px rgba(110, 231, 242, 0.24),
+    0 14px 26px rgba(11, 144, 134, 0.32), 0 0 16px rgba(11, 144, 134, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.26);
-  --button-secondary-bg: rgba(20, 184, 166, 0.08);
-  --button-secondary-bg-hover: rgba(20, 184, 166, 0.13);
-  --button-secondary-border: rgba(20, 184, 166, 0.22);
-  --button-secondary-border-hover: rgba(20, 184, 166, 0.38);
+  --button-secondary-bg: rgba(11, 144, 134, 0.08);
+  --button-secondary-bg-hover: rgba(11, 144, 134, 0.14);
+  --button-secondary-border: rgba(11, 144, 134, 0.22);
+  --button-secondary-border-hover: rgba(11, 144, 134, 0.38);
   --button-secondary-shadow:
-    0 10px 20px rgba(21, 88, 96, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    0 10px 20px rgba(11, 144, 134, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.22);
   --button-secondary-shadow-hover:
-    0 12px 24px rgba(20, 184, 166, 0.14), 0 0 16px rgba(110, 231, 242, 0.14);
+    0 12px 24px rgba(11, 144, 134, 0.14), 0 0 16px rgba(11, 144, 134, 0.14);
   --button-ghost-bg: rgba(255, 255, 255, 0.18);
   --button-ghost-bg-hover: rgba(255, 255, 255, 0.28);
   --button-ghost-shadow:
-    0 8px 18px rgba(21, 88, 96, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 8px 18px rgba(11, 144, 134, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   --button-danger-text: #fff7f7;
-  --button-danger-bg: linear-gradient(135deg, #ef4444 0%, #fb7185 100%);
+  --button-danger-bg: #ef4444;
   --button-danger-shadow:
     0 12px 22px rgba(239, 68, 68, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.22);
   --button-danger-shadow-hover:
-    0 16px 28px rgba(239, 68, 68, 0.34), 0 0 18px rgba(251, 113, 133, 0.24);
-  --button-success-text: #ecfffb;
+    0 16px 28px rgba(239, 68, 68, 0.34), 0 0 18px rgba(239, 68, 68, 0.24);
+  --button-success-text: #ffffff;
   --button-success-shadow:
-    0 12px 22px rgba(52, 211, 153, 0.24),
+    0 12px 22px rgba(11, 144, 134, 0.24),
     inset 0 1px 0 rgba(255, 255, 255, 0.22);
   --button-success-shadow-hover:
-    0 16px 28px rgba(52, 211, 153, 0.32), 0 0 18px rgba(20, 184, 166, 0.24);
+    0 16px 28px rgba(11, 144, 134, 0.32), 0 0 18px rgba(11, 144, 134, 0.24);
   --button-warning-text: #3d2500;
-  --button-warning-bg: linear-gradient(135deg, #f59e0b 0%, #facc15 100%);
+  --button-warning-bg: #f59e0b;
   --button-warning-shadow:
     0 12px 22px rgba(245, 158, 11, 0.24),
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
@@ -1217,3 +1216,86 @@ textarea::-moz-selection {
   color: var(--theme-text-primary) !important;
   border-color: var(--theme-border-soft) !important;
 }
+
+/* ============================================================================
+   Terms & Conditions Rendered Content Styles
+   ============================================================================ */
+.terms-rendered-content {
+  color: var(--theme-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+.terms-rendered-content h1,
+.terms-rendered-content h2,
+.terms-rendered-content h3,
+.terms-rendered-content h4 {
+  color: var(--theme-text-primary);
+  font-weight: 800;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.02em;
+}
+
+.terms-rendered-content h1 {
+  font-size: 1.75rem;
+}
+
+.terms-rendered-content h2 {
+  font-size: 1.35rem;
+  border-bottom: 1px solid var(--theme-border);
+  padding-bottom: 0.5rem;
+}
+
+.terms-rendered-content h3 {
+  font-size: 1.15rem;
+}
+
+.terms-rendered-content p {
+  margin-bottom: 1.15rem;
+}
+
+.terms-rendered-content strong {
+  color: var(--theme-text-primary);
+  font-weight: 700;
+}
+
+.terms-rendered-content ul,
+.terms-rendered-content ol {
+  margin-top: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding-left: 1.75rem;
+}
+
+.terms-rendered-content ul {
+  list-style-type: disc;
+}
+
+.terms-rendered-content ol {
+  list-style-type: decimal;
+}
+
+.terms-rendered-content li {
+  margin-bottom: 0.5rem;
+  padding-left: 0.25rem;
+}
+
+.terms-rendered-content a {
+  color: var(--color-aurora-teal);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+
+.terms-rendered-content a:hover {
+  opacity: 0.85;
+}
+
+.terms-rendered-content blockquote {
+  border-left: 4px solid var(--color-aurora-teal);
+  padding-left: 1rem;
+  margin: 1.25rem 0;
+  font-style: italic;
+  color: var(--theme-text-muted);
+}
+

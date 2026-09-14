@@ -2,18 +2,12 @@ import {
   LayoutDashboard,
   Users,
   ShieldCheck,
-  Megaphone,
   LayoutGrid,
   FileText,
-  Shield,
-  MessageCircle,
+  Mail,
   Settings,
-  AlertTriangle,
-  Calendar,
   DollarSign,
-  Tag,
-  BookOpen,
-  Home,
+  TextInitial,
   Building2,
   TowelRack,
   ChartColumnStacked,
@@ -46,6 +40,7 @@ export const NAV = {
       href: "/superadmin/dashboard",
       Icon: LayoutGrid,
     },
+   
     {
       id: 2,
       label: "Businesses",
@@ -54,93 +49,41 @@ export const NAV = {
     },
     {
       id: 3,
-      label: "Bookings",
-      href: "/superadmin/bookings",
-      Icon: Calendar,
+      label: "Business Types",
+      href: "/superadmin/business-types",
+      Icon: TextInitial,
+    },
+    
+    {
+      id: 4,
+      label: "Email Templates",
+      href: "/superadmin/email-templates",
+      Icon: Mail,
+    },
+     {
+      id: 5,
+      label: "Terms & Conditions",
+      href: "/superadmin/terms-and-conditions",
+      Icon: FileText,
     },
     {
-      items: [
-        { id: 4, label: "Users", href: "/superadmin/users", Icon: Users },
-        {
-          id: 6,
-          label: "Payment",
-          href: "/superadmin/payment-billings",
-          Icon: DollarSign,
-        },
-        {
-          id: 7,
-          label: "Compliance Overview",
-          href: "/superadmin/compliance",
-          Icon: Shield,
-        },
-        {
-          id: 8,
-          label: "Businesses Verification",
-          href: "/superadmin/verification",
-          Icon: ShieldCheck,
-        },
-        {
-          id: 9,
-          label: "Subscriptions & Promotions",
-          href: "/superadmin/promotions",
-          Icon: Tag,
-        },
-        {
-          id: 10,
-          label: "Violations",
-          href: "/superadmin/violations",
-          Icon: AlertTriangle,
-        },
-      ],
+      id: 6,
+      label: "Privacy Policy",
+      href: "/superadmin/privacy-policy",
+      Icon: ShieldCheck,
     },
     {
-      items: [
-        {
-          id: 11,
-          label: "Chat Support",
-          href: "/superadmin/chat-support",
-          Icon: MessageCircle,
-        },
-        {
-          id: 12,
-          label: "Platform Announcements",
-          href: "/superadmin/announcements",
-          Icon: Megaphone,
-        },
-      ],
+      id: 8,
+      label: "Complaints",
+      href: "/superadmin/complaints",
+      Icon: ShieldAlert,
     },
     {
-      items: [
-        {
-          id: 13,
-          label: "Reports & Analytics",
-          href: "/superadmin/analytics",
-          Icon: FileText,
-        },
-      ],
-    },
-    {
-      items: [
-        {
-          id: 14,
-          label: "Resource Hub",
-          href: "/superadmin/resource-hub",
-          Icon: BookOpen,
-        },
-        {
-          id: 15,
-          label: "Settings",
-          href: "/superadmin/settings",
-          Icon: Settings,
-        },
-        {
-          id: 16,
-          label: "Landing Page Management",
-          href: "/superadmin/landing-page",
-          Icon: Home,
-        },
-      ],
-    },
+      id: 7,
+      label: "Settings",
+      href: "/superadmin/settings",
+      Icon: Settings,
+    }
   ],
   business: [
     {
@@ -221,7 +164,12 @@ export const NAV = {
       href: "/business/reports-analytics",
       Icon: ChartNoAxesCombined,
     },
-
+    {
+      id: 112,
+      label: "Complaints",
+      href: "/business/complaints",
+      Icon: ShieldAlert,
+    },
     {
       id: 111,
       label: "Settings",
@@ -311,6 +259,12 @@ export const NAV = {
       href: "/laundry/subscription-billing",
       Icon: DollarSign,
       permissionKey: "subscription_billing",
+    },
+    {
+      id: 213,
+      label: "Complaints",
+      href: "/laundry/complaints",
+      Icon: ShieldAlert,
     },
     {
       id: 212,

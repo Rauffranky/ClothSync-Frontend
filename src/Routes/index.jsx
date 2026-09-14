@@ -14,6 +14,7 @@ import AssetDetailsPage from "../Page/Dashboard/Tenant/AssetDetailsPage";
 const HomePage = lazy(() => import("../Page/Landing/HomePage"));
 const AuthPage = lazy(() => import("../Page/Auth/AuthPage"));
 const StaffEmailVerificationPage = lazy(() => import("../Page/Auth/StaffEmailVerificationPage"));
+const TenantEmailVerificationPage = lazy(() => import("../Page/Auth/TenantEmailVerificationPage"));
 const LaundryStaffEmailVerificationPage = lazy(() => import("../Page/Auth/LaundryStaffEmailVerificationPage"));
 const LaundryInvitationPage = lazy(() => import("../Page/Auth/LaundryInvitationPage"));
 const SuperAdminLoginPage = lazy(() => import("../Page/Auth/SuperAdminLoginPage"));
@@ -21,6 +22,21 @@ const NotFoundPage = lazy(() => import("../Page/Common/NotFoundPage"));
 
 // Portal Dashboard Pages
 const SuperAdminDashboard = lazy(() => import("../Page/Dashboard/SuperAdmin/DashboardPage"));
+const SuperAdminTermsAndConditionsPage = lazy(() => import("../Page/Dashboard/SuperAdmin/TermsAndConditionsPage"));
+const SuperAdminPrivacyPolicyPage = lazy(() => import("../Page/Dashboard/SuperAdmin/PrivacyPolicyPage"));
+const SuperAdminEmailTemplatesPage = lazy(() => import("../Page/Dashboard/SuperAdmin/EmailTemplatesPage"));
+const SuperAdminBusinessesPage = lazy(() => import("../Page/Dashboard/SuperAdmin/BusinessesPage"));
+const SuperAdminBusinessTypesPage = lazy(() => import("../Page/Dashboard/SuperAdmin/BusinessTypesPage"));
+const SuperAdminComplaintsPage = lazy(() => import("../Page/Dashboard/SuperAdmin/ComplaintsPage"));
+const SuperAdminComplaintDetailsPage = lazy(() => import("../Page/Dashboard/SuperAdmin/ComplaintDetailsPage"));
+const BusinessComplaintsPage = lazy(() => import("../Page/Dashboard/Tenant/ComplaintsPage"));
+const BusinessCreateComplaintPage = lazy(() => import("../Page/Dashboard/Tenant/CreateComplaintPage"));
+const BusinessComplaintDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/ComplaintDetailsPage"));
+const LaundryComplaintsPage = lazy(() => import("../Page/Dashboard/Laundry/ComplaintsPage"));
+const LaundryCreateComplaintPage = lazy(() => import("../Page/Dashboard/Laundry/CreateComplaintPage"));
+const LaundryComplaintDetailsPage = lazy(() => import("../Page/Dashboard/Laundry/ComplaintDetailsPage"));
+const LandingTermsAndConditionsPage = lazy(() => import("../Page/Landing/TermsAndConditionsPage"));
+const LandingPrivacyPolicyPage = lazy(() => import("../Page/Landing/PrivacyPolicyPage"));
 const TenantDashboard = lazy(() => import("../Page/Dashboard/Tenant/DashboardPage"));
 const LinkedLaundriesPage = lazy(() => import("../Page/Dashboard/Tenant/LinkedLaundriesPage"));
 const LinkedLaundryDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/LinkedLaundryDetailsPage"));
@@ -65,6 +81,9 @@ const AppRoutes = () => {
         <Route path="/superadmin/login" element={<PublicRoute portal="superadmin"><SuperAdminLoginPage /></PublicRoute>} />
         <Route path="/business/login" element={<PublicRoute portal="business"><AuthPage defaultMode="login" defaultRole="business" /></PublicRoute>} />
         <Route path="/business/signup" element={<PublicRoute portal="business"><AuthPage defaultMode="signup" defaultRole="business" /></PublicRoute>} />
+        <Route path="/business/verify-email" element={<TenantEmailVerificationPage />} />
+        <Route path="/verify-email" element={<TenantEmailVerificationPage />} />
+        <Route path="/api/tenant-auth/verify-email" element={<TenantEmailVerificationPage />} />
         <Route path="/business/staff/verify-email" element={<StaffEmailVerificationPage />} />
         <Route path="/laundry/login" element={<PublicRoute portal="laundry"><AuthPage defaultMode="login" defaultRole="laundry" /></PublicRoute>} />
         <Route path="/laundry/signup" element={<PublicRoute portal="laundry"><AuthPage defaultMode="signup" defaultRole="laundry" /></PublicRoute>} />
@@ -76,6 +95,8 @@ const AppRoutes = () => {
         {/* Landing Routes */}
         <Route element={<LandingLayout />} path="/">
           <Route index element={<HomePage />} />
+          <Route path="terms-and-conditions" element={<LandingTermsAndConditionsPage />} />
+          <Route path="privacy-policy" element={<LandingPrivacyPolicyPage />} />
         </Route>
 
         {/* Portal Routes with DashboardLayout */}
@@ -89,6 +110,13 @@ const AppRoutes = () => {
           {/* Super Admin Portal */}
           <Route path="/superadmin" element={<Navigate to="/superadmin/dashboard" replace />} />
           <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
+          <Route path="/superadmin/terms-and-conditions" element={<SuperAdminTermsAndConditionsPage />} />
+          <Route path="/superadmin/privacy-policy" element={<SuperAdminPrivacyPolicyPage />} />
+          <Route path="/superadmin/email-templates" element={<SuperAdminEmailTemplatesPage />} />
+          <Route path="/superadmin/businesses" element={<SuperAdminBusinessesPage />} />
+          <Route path="/superadmin/business-types" element={<SuperAdminBusinessTypesPage />} />
+          <Route path="/superadmin/complaints" element={<SuperAdminComplaintsPage />} />
+          <Route path="/superadmin/complaints/:id" element={<SuperAdminComplaintDetailsPage />} />
 
           {/* Business/Tenant Portal */}
           <Route path="/business" element={<Navigate to="/business/dashboard" replace />} />
@@ -110,6 +138,9 @@ const AppRoutes = () => {
           <Route path="/business/bulk-scanning" element={<BulkScanningPage />} />
           <Route path="/business/dispatch-batches" element={<DispatchBadgesPage />} />
           <Route path="/business/dispatch-batches/:id" element={<DispatchDetailsPage />} />
+          <Route path="/business/complaints" element={<BusinessComplaintsPage />} />
+          <Route path="/business/complaints/create" element={<BusinessCreateComplaintPage />} />
+          <Route path="/business/complaints/:id" element={<BusinessComplaintDetailsPage />} />
 
           {/* Laundry Portal */}
           <Route path="/laundry" element={<Navigate to="/laundry/dashboard" replace />} />
@@ -216,6 +247,18 @@ const AppRoutes = () => {
                 <LaundryScannerDetailsPage />
               </PermissionRoute>
             }
+          />
+          <Route
+            path="/laundry/complaints"
+            element={<LaundryComplaintsPage />}
+          />
+          <Route
+            path="/laundry/complaints/create"
+            element={<LaundryCreateComplaintPage />}
+          />
+          <Route
+            path="/laundry/complaints/:id"
+            element={<LaundryComplaintDetailsPage />}
           />
         </Route>
 

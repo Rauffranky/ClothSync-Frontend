@@ -98,8 +98,8 @@ const Pagination = ({
               className={[
                 "grid h-9 min-w-9 cursor-pointer place-items-center rounded-xl border px-2 text-sm font-black transition duration-200",
                 item === currentPage
-                  ? "border-(--color-aurora-teal) bg-[linear-gradient(135deg,var(--color-aurora-teal),var(--color-deep-teal))] text-white shadow-[0_12px_24px_rgba(20,184,166,0.28)]"
-                  : "border-(--theme-border-soft) bg-(--button-ghost-bg) text-(--theme-text-secondary) shadow-(--button-ghost-shadow) hover:-translate-y-0.5 hover:border-(--color-aurora-teal) hover:bg-(--button-ghost-bg-hover) hover:text-(--theme-text-primary)",
+                  ? "border-[#0B9086] bg-[#0B9086] text-white shadow-[0_10px_20px_rgba(11,144,134,0.24)]"
+                  : "border-(--theme-border-soft) bg-(--button-ghost-bg) text-(--theme-text-secondary) shadow-(--button-ghost-shadow) hover:-translate-y-0.5 hover:border-[#0B9086] hover:bg-(--button-ghost-bg-hover) hover:text-(--theme-text-primary)",
               ].join(" ")}
             >
               {item + 1}

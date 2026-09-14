@@ -28,6 +28,8 @@ export const resendTenantSignupOtp = ({ email }) =>
 
 export const completeTenantProfile = ({
   userId,
+  fullName,
+  password,
   businessName,
   businessType,
   phone,
@@ -41,6 +43,8 @@ export const completeTenantProfile = ({
 }) =>
   api.post(AUTH_ENDPOINTS.TENANT_COMPLETE_PROFILE, {
     userId,
+    ...(fullName ? { fullName: fullName.trim() } : {}),
+    ...(password ? { password } : {}),
     businessName: businessName.trim(),
     businessType,
     phone,
@@ -86,4 +90,10 @@ export const changeTenantPassword = ({
     currentPassword,
     newPassword,
     confirmNewPassword,
+  });
+
+export const verifyTenantEmail = (token) =>
+  api.get(AUTH_ENDPOINTS.TENANT_VERIFY_EMAIL, {
+    params: { token },
+    timeout: 15000,
   });

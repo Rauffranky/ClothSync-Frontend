@@ -7,7 +7,6 @@ import {
   Check,
   CheckCircle2,
   Mail,
-  Phone,
   MapPin,
   Tag,
   HouseWifi,
@@ -81,8 +80,6 @@ const profileSchema = Yup.object({
   postalCode: Yup.string().trim().required("Postal code is required"),
 });
 
-
-
 const countryOptions = [
   { label: "United States", value: "United States" },
   { label: "Pakistan", value: "Pakistan" },
@@ -104,12 +101,18 @@ const LaundrySignupStepper = ({ currentStep }) => (
       const isActive = index === currentStep;
 
       return (
-        <div className="flex min-w-0 flex-1 items-center last:flex-none" key={step.key}>
+        <div
+          className="flex min-w-0 flex-1 items-center last:flex-none"
+          key={step.key}
+        >
           <div className="flex min-w-0 flex-col items-center gap-2">
             <div
               className="grid h-9 w-9 place-items-center rounded-full border text-sm font-black transition-all duration-200"
               style={{
-                color: isComplete || isActive ? "#ffffff" : "var(--theme-text-muted)",
+                color:
+                  isComplete || isActive
+                    ? "#ffffff"
+                    : "var(--theme-text-muted)",
                 background:
                   isComplete || isActive
                     ? "var(--gradient-aurora-flow)"
@@ -157,11 +160,15 @@ const LaundrySignupStepper = ({ currentStep }) => (
 
 const SummaryRow = ({ label, value, accent = false }) => (
   <div className="flex items-center justify-between gap-4 py-1">
-    <span className="text-sm font-semibold text-(--theme-text-muted)">{label}</span>
+    <span className="text-sm font-semibold text-(--theme-text-muted)">
+      {label}
+    </span>
     <span
       className="text-right text-sm font-black"
       style={{
-        color: accent ? "var(--color-aurora-teal)" : "var(--theme-text-primary)",
+        color: accent
+          ? "var(--color-aurora-teal)"
+          : "var(--theme-text-primary)",
       }}
     >
       {value}
@@ -198,11 +205,16 @@ const LaundrySignup = ({ portal }) => {
         setSignupEmail(values.email.trim());
         setOtpValue("");
         setOtpError("");
-        toast.success(response?.message || "Verification code sent successfully");
+        toast.success(
+          response?.message || "Verification code sent successfully",
+        );
         setCurrentStep(1);
       } catch (error) {
         toast.error(
-          getApiErrorMessage(error, "Unable to create the account. Please try again.")
+          getApiErrorMessage(
+            error,
+            "Unable to create the account. Please try again.",
+          ),
         );
       }
     },
@@ -227,7 +239,9 @@ const LaundrySignup = ({ portal }) => {
           contactPersonName: accountFormik.values.fullName,
           password: accountFormik.values.password,
           confirmPassword: accountFormik.values.confirmPassword,
-          phone: values.phone.startsWith("+") ? values.phone : `+${values.phone}`,
+          phone: values.phone.startsWith("+")
+            ? values.phone
+            : `+${values.phone}`,
           address: values.address,
           city: values.city,
           state: values.state,
@@ -247,7 +261,10 @@ const LaundrySignup = ({ portal }) => {
         setCurrentStep(3); // Go to done step
       } catch (error) {
         toast.error(
-          getApiErrorMessage(error, "Unable to complete profile. Please try again.")
+          getApiErrorMessage(
+            error,
+            "Unable to complete profile. Please try again.",
+          ),
         );
       }
     },
@@ -289,10 +306,10 @@ const LaundrySignup = ({ portal }) => {
       setOtpError("Please enter the complete 6 digit OTP");
       return;
     }
-    
+
     setIsVerifyingOtp(true);
     setOtpError("");
-    
+
     try {
       const response = await verifyLaundrySignupOtp({
         email: signupEmail,
@@ -308,7 +325,10 @@ const LaundrySignup = ({ portal }) => {
       toast.success(response?.message || "Email verified successfully");
       setCurrentStep(2);
     } catch (error) {
-      const message = getApiErrorMessage(error, "Unable to verify the OTP. Please try again.");
+      const message = getApiErrorMessage(
+        error,
+        "Unable to verify the OTP. Please try again.",
+      );
       setOtpError(message);
       toast.error(message);
     } finally {
@@ -325,7 +345,10 @@ const LaundrySignup = ({ portal }) => {
       toast.success(response?.message || "A new verification code was sent");
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Unable to resend the OTP. Please try again.")
+        getApiErrorMessage(
+          error,
+          "Unable to resend the OTP. Please try again.",
+        ),
       );
     } finally {
       setIsResendingOtp(false);
@@ -395,19 +418,23 @@ const LaundrySignup = ({ portal }) => {
             />
             <span>
               I agree to the{" "}
-              <button
-                className="border-0 bg-transparent p-0 font-black text-(--color-aurora-teal)"
-                type="button"
+              <a
+                href="/terms-and-conditions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-black text-(--color-aurora-teal) hover:underline"
               >
                 Terms &amp; Conditions
-              </button>{" "}
+              </a>{" "}
               and{" "}
-              <button
-                className="border-0 bg-transparent p-0 font-black text-(--color-aurora-teal)"
-                type="button"
+              <a
+                href="/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-black text-(--color-aurora-teal) hover:underline"
               >
                 Privacy Policy
-              </button>
+              </a>
             </span>
           </label>
           {getAccountError("acceptedTerms") && (
@@ -551,7 +578,9 @@ const LaundrySignup = ({ portal }) => {
                 width: "100%",
                 height: "46px",
                 borderRadius: "14px",
-                borderColor: getProfileError("phone") ? "var(--color-overdue)" : "var(--theme-border-soft)",
+                borderColor: getProfileError("phone")
+                  ? "var(--color-overdue)"
+                  : "var(--theme-border-soft)",
                 backgroundColor: "var(--theme-surface-strong)",
                 color: "var(--theme-text-primary)",
                 fontSize: "14px",
@@ -561,7 +590,9 @@ const LaundrySignup = ({ portal }) => {
               buttonStyle={{
                 borderTopLeftRadius: "14px",
                 borderBottomLeftRadius: "14px",
-                borderColor: getProfileError("phone") ? "var(--color-overdue)" : "var(--theme-border-soft)",
+                borderColor: getProfileError("phone")
+                  ? "var(--color-overdue)"
+                  : "var(--theme-border-soft)",
                 backgroundColor: "var(--theme-surface-strong)",
               }}
               dropdownStyle={{
@@ -661,11 +692,7 @@ const LaundrySignup = ({ portal }) => {
             label="City"
             value={completedProfile?.city || "Not provided"}
           />
-          <SummaryRow
-            accent
-            label="Account Status"
-            value="Active"
-          />
+          <SummaryRow accent label="Account Status" value="Active" />
         </div>
 
         <div className="text-left">

@@ -11,3 +11,17 @@ export const uploadSingleFile = (file, folder) => {
     headers: { "Content-Type": "multipart/form-data" },
   });
 };
+
+export const uploadMultipleFiles = (files, folder) => {
+  const formData = new FormData();
+  (files || []).forEach((file) => {
+    formData.append("files", file);
+  });
+
+  if (folder) formData.append("folder", folder);
+
+  return api.post(FILE_UPLOAD_ENDPOINTS.MULTIPLE, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};
+

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Menu, Moon, Radio, Sun } from "lucide-react";
+import { Menu, Moon, Sun } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { landingNavigationItems } from "../../../Config/navigation";
 import Button from "../../UI/Button";
 import SlideOver from "../../UI/SlideOver";
+import Logo from "../../Logo";
 import {
   applyThemeMode,
   getThemeMode,
@@ -36,16 +37,12 @@ const Header = () => {
         bg-(--layout-header-bg) border-(--theme-border) shadow-(--layout-panel-shadow)"
       >
         <button
-          className="flex min-w-0 shrink-0 items-center gap-3"
+          className="flex min-w-0 shrink-0 items-center cursor-pointer transition-transform hover:opacity-90 active:scale-95"
           onClick={() => navigate("/")}
           type="button"
+          aria-label="ClothSync Home"
         >
-          <span
-            className="grid h-12 w-12 place-items-center rounded-2xl text-white shadow-[0_0_24px_rgba(20,184,166,0.32)]"
-            style={{ background: "var(--gradient-aurora-flow)" }}
-          >
-            <Radio size={24} />
-          </span>
+          <Logo className="h-10 w-auto" />
         </button>
 
         <nav className="ml-auto hidden items-center gap-1 md:flex">
@@ -111,19 +108,15 @@ const Header = () => {
         direction="bottom"
         headerContent={
           <button
-            className="flex min-w-0 shrink-0 items-center gap-3"
+            className="flex min-w-0 shrink-0 items-center cursor-pointer"
             onClick={() => {
               navigate("/");
               setIsMobileMenuOpen(false);
             }}
             type="button"
+            aria-label="ClothSync Home"
           >
-            <span
-              className="grid h-12 w-12 place-items-center rounded-2xl text-white shadow-[0_0_24px_rgba(20,184,166,0.32)]"
-              style={{ background: "var(--gradient-aurora-flow)" }}
-            >
-              <Radio size={24} />
-            </span>
+            <Logo className="h-9 w-auto" />
           </button>
         }
       >

@@ -1,12 +1,12 @@
 const avatarVariants = {
   info: {
-    background: "var(--gradient-ocean-breeze)",
+    background: "#0B9086",
   },
   purple: {
-    background: "linear-gradient(135deg, #7c3aed, #a78bfa)",
+    background: "#7c3aed",
   },
   success: {
-    background: "var(--gradient-mint-haze)",
+    background: "#0B9086",
   },
   warning: {
     background: "var(--button-warning-bg)",
@@ -15,7 +15,7 @@ const avatarVariants = {
     background: "var(--button-danger-bg)",
   },
   neutral: {
-    background: "linear-gradient(135deg, #64748b, #94a3b8)",
+    background: "#64748b",
   },
 };
 

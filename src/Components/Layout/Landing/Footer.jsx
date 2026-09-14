@@ -1,6 +1,7 @@
-import { Mail, MapPin, Radio, ShieldCheck } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Mail, MapPin, ShieldCheck } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { landingNavigationItems } from "../../../Config/navigation";
+import Logo from "../../Logo";
 
 const Footer = () => {
   const navigate = useNavigate();
@@ -20,21 +21,11 @@ const Footer = () => {
       >
         <div className="grid gap-8 p-6 md:grid-cols-[1.1fr_1fr] md:p-8">
           <div>
-            <div className="flex items-center gap-3">
-              <span
-                className="grid h-12 w-12 place-items-center rounded-2xl text-white shadow-[0_0_24px_rgba(20,184,166,0.32)]"
-                style={{ background: "var(--gradient-aurora-flow)" }}
-              >
-                <Radio size={24} />
-              </span>
-              <div>
-                <h2 className="m-0 text-lg font-black text-(--theme-text-primary)">
-                  RFID Laundry
-                </h2>
-                <p className="m-0 text-xs font-semibold text-(--theme-text-secondary)">
-                  Smart. Clean. Connected.
-                </p>
-              </div>
+            <div className="flex flex-col items-start gap-2">
+              <Logo className="h-10 w-auto" />
+              <p className="m-0 text-xs font-semibold text-(--theme-text-secondary)">
+                Smart. Clean. Connected.
+              </p>
             </div>
 
             <p className="mt-5 max-w-md text-sm font-medium leading-6 text-(--theme-text-secondary)">
@@ -80,9 +71,25 @@ const Footer = () => {
           className="flex flex-col gap-3 border-t px-6 py-4 text-sm font-semibold text-(--theme-text-secondary) md:flex-row md:items-center md:justify-between md:px-8"
           style={{ borderColor: "var(--theme-border)" }}
         >
-          <span>
-            Copyright {new Date().getFullYear()} RFID Laundry Management System.
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <span>
+              Copyright {new Date().getFullYear()} RFID Laundry Management System.
+            </span>
+            <span className="hidden sm:inline">•</span>
+            <Link
+              to="/terms-and-conditions"
+              className="text-xs font-semibold text-(--theme-text-muted) hover:text-(--color-aurora-teal) transition-colors"
+            >
+              Terms & Conditions
+            </Link>
+            <span className="hidden sm:inline">•</span>
+            <Link
+              to="/privacy-policy"
+              className="text-xs font-semibold text-(--theme-text-muted) hover:text-(--color-aurora-teal) transition-colors"
+            >
+              Privacy Policy
+            </Link>
+          </div>
           <span className="flex items-center gap-2">
             <ShieldCheck size={16} className="text-(--color-aurora-teal)" />
             Secure RFID technology for contactless operations.

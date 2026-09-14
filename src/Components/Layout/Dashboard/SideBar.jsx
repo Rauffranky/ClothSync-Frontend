@@ -20,8 +20,11 @@ import {
   getAuthAccessToken,
 } from "../../../axios/auth/authSession";
 import { logoutLaundry } from "../../../axios/auth/laundryAuth";
+import { logoutSuperAdmin } from "../../../axios/auth/superAdminAuth";
 import { getApiErrorMessage } from "../../../axios/api";
 import { toast } from "../../../Utils/toast";
+import Logo from "../../Logo";
+
 import {
   getFirstPermittedHref,
   hasPermission,
@@ -29,7 +32,7 @@ import {
 
 const SideBar = ({
   isOpen = false,
-  onClose = () => { },
+  onClose = () => {},
   isDesktopOpen,
   onDesktopToggle,
   portal = "superadmin",
@@ -37,51 +40,81 @@ const SideBar = ({
   const location = useLocation();
   const menu = useMemo(
     () =>
-      (NAV[portal] || []).flatMap((item) =>
-        Array.isArray(item.items) ? item.items : item,
-      ).filter((item) => hasPermission(item.permissionKey)),
+      (NAV[portal] || [])
+        .flatMap((item) => (Array.isArray(item.items) ? item.items : item))
+        .filter((item) => hasPermission(item.permissionKey)),
     [portal],
   );
   const navigate = useNavigate();
   const [expandedMenus, setExpandedMenus] = useState({});
 
+  const getPortalLabel = (p = "") => {
+    const normalized = String(p).toLowerCase();
+    if (normalized === "business" || normalized === "tenant")
+      return "Business Portal";
+    if (normalized === "laundry") return "Laundry Portal";
+    if (normalized === "superadmin" || normalized === "admin")
+      return "Super Admin Portal";
+    return "Portal";
+  };
+
+  const portalLabel = getPortalLabel(portal);
+
   const renderLogoArea = (isMobile = false) => {
+    if (isMobile) {
+      return (
+        <div
+          onClick={handleLogo}
+          className="cursor-pointer flex flex-col items-start gap-1 py-1 transition-opacity hover:opacity-90"
+        >
+          <Logo className="h-11 w-auto max-w-42.5" />
+          <span className="text-[10px] font-bold tracking-wider uppercase text-(--color-aurora-teal) bg-(--color-aurora-teal)/10 px-2 py-0.5 rounded-md border border-(--color-aurora-teal)/20">
+            {portalLabel}
+          </span>
+        </div>
+      );
+    }
+
     return (
       <div
         onClick={handleLogo}
-        className={isMobile ? "cursor-pointer flex flex-col gap-1" : "cursor-pointer my-3.5"}
+        className={`cursor-pointer flex flex-col items-center justify-center transition-opacity hover:opacity-90 ${
+          isDesktopOpen ? "px-2 gap-1.5" : "px-1"
+        }`}
+        title={portalLabel}
       >
-        <h1 className="text-2xl text-gradient-aurora-flow font-bold">
-          Cloth Sync
-        </h1>
+        <Logo
+          className={
+            isDesktopOpen ? "h-12 w-auto max-w-46.25" : "h-8 w-auto max-w-14.5"
+          }
+        />
+        {isDesktopOpen && (
+          <span className="text-[10.5px] font-bold tracking-wider uppercase text-(--color-aurora-teal) bg-(--color-aurora-teal)/10 px-2.5 py-0.5 rounded-md border border-(--color-aurora-teal)/20 shadow-xs whitespace-nowrap">
+            {portalLabel}
+          </span>
+        )}
       </div>
     );
   };
 
   const handleLogo = () => {
-    navigate(
-      getFirstPermittedHref(NAV[portal]) || `/${portal}/dashboard`,
-    );
+    navigate(getFirstPermittedHref(NAV[portal]) || `/${portal}/dashboard`);
   };
 
   const handleLogout = async () => {
-    if (portal !== "business" && portal !== "laundry") {
-      navigate(`/${portal}/login`, { replace: true });
-      if (isOpen) onClose();
-      return;
-    }
-
     try {
       if (getAuthAccessToken()) {
         if (portal === "business") {
           await logoutTenant();
-        } else {
+        } else if (portal === "laundry") {
           await logoutLaundry();
+        } else if (portal === "superadmin") {
+          await logoutSuperAdmin();
         }
       }
       toast.success("Logout successful");
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to logout from the server"));
+      console.warn("Logout notification error:", error);
     } finally {
       clearAuthSession();
       navigate(`/${portal}/login`, { replace: true });
@@ -107,8 +140,7 @@ const SideBar = ({
       .filter(
         (submenu) =>
           location.pathname === submenu.href ||
-          (!submenu.exact &&
-            location.pathname.startsWith(`${submenu.href}/`)),
+          (!submenu.exact && location.pathname.startsWith(`${submenu.href}/`)),
       )
       .sort((first, second) => second.href.length - first.href.length)[0]?.href;
 
@@ -163,7 +195,7 @@ const SideBar = ({
             {/* Fancy Animated Hover Background */}
             {!isActive && (
               <>
-                <div className="absolute inset-0 bg-gradient-to-r from-(--button-ghost-bg-hover) to-transparent opacity-0 group-hover:opacity-100 transform origin-left scale-x-0 group-hover:scale-x-100 transition-all duration-300 ease-out pointer-events-none -z-10" />
+                <div className="absolute inset-0 bg-(--button-ghost-bg-hover) opacity-0 group-hover:opacity-100 transform origin-left scale-x-0 group-hover:scale-x-100 transition-all duration-300 ease-out pointer-events-none -z-10" />
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-(--color-aurora-teal) shadow-[0_0_8px_var(--color-aurora-teal)] rounded-r-full opacity-0 group-hover:opacity-100 group-hover:h-3/4 transition-all duration-300 ease-out pointer-events-none -z-10" />
               </>
             )}
@@ -326,11 +358,7 @@ const SideBar = ({
           "--sidebar-pad": isDesktopOpen ? "16px" : "8px",
         }}
       >
-
-
-        <div
-          className={`flex items-center justify-center pt-2 pb-1 shrink-0 border-b border-(--theme-border)`}
-        >
+        <div className="flex items-center justify-center py-3 shrink-0 border-b border-(--theme-border)">
           {renderLogoArea(false)}
         </div>
 
@@ -343,7 +371,6 @@ const SideBar = ({
             { id: "logout", label: "Logout", href: "#", Icon: LogOut },
             false,
           )}
-
         </div>
       </aside>
     </>

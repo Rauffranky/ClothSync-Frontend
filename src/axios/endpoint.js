@@ -9,6 +9,7 @@ export const AUTH_ENDPOINTS = Object.freeze({
   TENANT_COMPLETE_PROFILE: "/tenant-auth/complete-profile",
   TENANT_FORGOT_PASSWORD: "/tenant-auth/forgot-password",
   TENANT_VERIFY_FORGOT_PASSWORD_OTP: "/tenant-auth/verify-forgot-password-otp",
+  TENANT_VERIFY_EMAIL: "/tenant-auth/verify-email",
   TENANT_RESET_PASSWORD: "/tenant-auth/reset-password",
   TENANT_CHANGE_PASSWORD: "/tenant-auth/change-password",
 });
@@ -240,4 +241,41 @@ export const LAUNDRY_NOTIFICATION_PREFERENCE_ENDPOINTS = Object.freeze({
 
 export const FILE_UPLOAD_ENDPOINTS = Object.freeze({
   SINGLE: "/file-upload/single",
+  MULTIPLE: "/file-upload/multiple",
 });
+
+export const COMPLAINT_ENDPOINTS = Object.freeze({
+  ADMIN_LIST: "/admin-complaints",
+  ADMIN_DETAILS: (id) => `/admin-complaints/${id}`,
+  ADMIN_UPDATE_STATUS: (id) => `/admin-complaints/${id}/status`,
+  TENANT_LIST: "/tenant-complaints",
+  TENANT_CREATE: "/tenant-complaints",
+  TENANT_DETAILS: (id) => `/tenant-complaints/${id}`,
+  TENANT_UPDATE_STATUS: (id) => `/tenant-complaints/${id}/status`,
+  LAUNDRY_LIST: "/laundry-complaints",
+  LAUNDRY_CREATE: "/laundry-complaints",
+  LAUNDRY_DETAILS: (id) => `/laundry-complaints/${id}`,
+  LAUNDRY_UPDATE_STATUS: (id) => `/laundry-complaints/${id}/status`,
+});
+
+export const ADMIN_TENANT_ENDPOINTS = Object.freeze({
+  LIST: "/admin-tenants/show",
+  DETAILS: (id) => `/admin-tenants/show/${id}`,
+  CREATE: "/admin-tenants/create",
+  UPDATE: (id) => `/admin-tenants/update/${id}`,
+  UPDATE_STATUS: (id) => `/admin-tenants/update-status/${id}`,
+});
+
+export const ADMIN_BUSINESS_TYPE_ENDPOINTS = Object.freeze({
+  PUBLIC_LIST: "/business-types/list",
+  LIST: "/admin-business-types/show",
+  CREATE: "/admin-business-types/create",
+  UPDATE_STATUS: (id) => `/admin-business-types/status/${id}`,
+  DELETE: (id) => `/admin-business-types/delete/${id}`,
+});
+
+export const ADMIN_LAUNDRY_ENDPOINTS = Object.freeze({
+  LIST: "/admin-laundries/show",
+  DETAILS: (id) => `/admin-laundries/show/${id}`,
+});
+

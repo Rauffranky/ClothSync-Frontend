@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import {
@@ -13,7 +13,7 @@ import {
   Tag,
   Zap,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Button from "../Components/UI/Button";
 import Card from "../Components/UI/Card";
 import Dropdown from "../Components/UI/Dropdown";
@@ -29,9 +29,11 @@ import {
   completeTenantProfile,
   resendTenantSignupOtp,
   signupTenant,
+  verifyTenantEmail,
   verifyTenantSignupOtp,
 } from "../axios/auth/tenantAuth";
 import { storeAuthSessionFromResponse } from "../axios/auth/authSession";
+import { getPublicBusinessTypes } from "../axios/adminBusinessTypes/adminBusinessTypes";
 import { toast } from "../Utils/toast";
 
 const SHOW_PRICING_STEP = false;
@@ -123,7 +125,10 @@ const TENANT_SIGNUP_PROGRESS_KEY = "tenant-signup-progress";
 
 const writeTenantSignupProgress = (progress) => {
   try {
-    sessionStorage.setItem(TENANT_SIGNUP_PROGRESS_KEY, JSON.stringify(progress));
+    sessionStorage.setItem(
+      TENANT_SIGNUP_PROGRESS_KEY,
+      JSON.stringify(progress),
+    );
   } catch {
     // Signup remains usable when browser storage is unavailable.
   }
@@ -165,13 +170,13 @@ const readTenantSignupProgress = () => {
         typeof storedProgress?.verifiedTenantUserId === "string"
           ? storedProgress.verifiedTenantUserId
           : "",
-      otpExpiresAt:
-        Number.isFinite(storedProgress?.otpExpiresAt)
-          ? storedProgress.otpExpiresAt
-          : null,
+      otpExpiresAt: Number.isFinite(storedProgress?.otpExpiresAt)
+        ? storedProgress.otpExpiresAt
+        : null,
       profile: {
         ...profileInitialValues,
-        ...(storedProgress?.profile && typeof storedProgress.profile === "object"
+        ...(storedProgress?.profile &&
+        typeof storedProgress.profile === "object"
           ? storedProgress.profile
           : null),
       },
@@ -294,11 +299,15 @@ const getCompletedProfileDisplay = (response, submittedProfile) => {
 
 const SummaryRow = ({ label, value, accent = false }) => (
   <div className="flex items-center justify-between gap-4 py-1">
-    <span className="text-sm font-semibold text-(--theme-text-muted)">{label}</span>
+    <span className="text-sm font-semibold text-(--theme-text-muted)">
+      {label}
+    </span>
     <span
       className="text-right text-sm font-black"
       style={{
-        color: accent ? "var(--color-aurora-teal)" : "var(--theme-text-primary)",
+        color: accent
+          ? "var(--color-aurora-teal)"
+          : "var(--theme-text-primary)",
       }}
     >
       {value}
@@ -306,19 +315,26 @@ const SummaryRow = ({ label, value, accent = false }) => (
   </div>
 );
 
-const BusinessSignupStepper = ({ currentStep }) => (
+const BusinessSignupStepper = ({ currentStep, isTokenVerified = false }) => (
   <div className="mx-auto mb-8 flex w-full max-w-2xl items-center justify-center px-2">
     {businessSignupSteps.map((step, index) => {
-      const isComplete = index < currentStep;
+      const isComplete =
+        index < currentStep || (isTokenVerified && index === 1 && currentStep !== 1);
       const isActive = index === currentStep;
 
       return (
-        <div className="flex min-w-0 flex-1 items-center last:flex-none" key={step.key}>
+        <div
+          className="flex min-w-0 flex-1 items-center last:flex-none"
+          key={step.key}
+        >
           <div className="flex min-w-0 flex-col items-center gap-2">
             <div
               className="grid h-9 w-9 place-items-center rounded-full border text-sm font-black transition-all duration-200"
               style={{
-                color: isComplete || isActive ? "#ffffff" : "var(--theme-text-muted)",
+                color:
+                  isComplete || isActive
+                    ? "#ffffff"
+                    : "var(--theme-text-muted)",
                 background:
                   isComplete || isActive
                     ? "var(--gradient-aurora-flow)"
@@ -366,6 +382,33 @@ const BusinessSignupStepper = ({ currentStep }) => (
 
 const BusinessSignup = ({ portal }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token")?.trim() || "";
+  const [isTokenVerified, setIsTokenVerified] = useState(false);
+  const [isVerifyingToken, setIsVerifyingToken] = useState(Boolean(token));
+  const [dynamicTypeOptions, setDynamicTypeOptions] = useState(businessTypeOptions);
+  const pendingPasswordRef = useRef("");
+
+  useEffect(() => {
+    let isActive = true;
+    getPublicBusinessTypes()
+      .then((res) => {
+        if (!isActive) return;
+        const list = res?.data?.data || res?.data || [];
+        if (Array.isArray(list) && list.length > 0) {
+          const opts = list.map((item) => ({
+            label: item.label || item.name,
+            value: item.value || item.code,
+          }));
+          setDynamicTypeOptions(opts);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
   const [savedProgress] = useState(readTenantSignupProgress);
   const [currentStep, setCurrentStep] = useState(savedProgress.currentStep);
   const [otpSecondsRemaining, setOtpSecondsRemaining] = useState(() =>
@@ -427,13 +470,27 @@ const BusinessSignup = ({ portal }) => {
   const accountFormik = useFormik({
     initialValues: {
       ...accountInitialValues,
-      fullName: savedProgress.fullName,
-      businessEmail: savedProgress.email,
+      fullName: values.fullName || savedProgress.fullName,
+      businessEmail: values.businessEmail || savedProgress.email,
     },
+    enableReinitialize: true,
     validationSchema: accountSignupSchema,
     onSubmit: async (accountValues) => {
       const fullName = accountValues.fullName.trim();
       const email = accountValues.businessEmail.trim();
+
+      if (isTokenVerified && verifiedTenantUserId) {
+        pendingPasswordRef.current = accountValues.password;
+        setValues((current) => ({
+          ...current,
+          ...accountValues,
+          fullName,
+          businessEmail: email,
+          profileEmail: email,
+        }));
+        setCurrentStep(2);
+        return;
+      }
 
       try {
         const response = await signupTenant({
@@ -451,7 +508,9 @@ const BusinessSignup = ({ portal }) => {
           profileEmail: email,
           otp: "",
         }));
-        toast.success(response?.message || "Verification code sent successfully");
+        toast.success(
+          response?.message || "Verification code sent successfully",
+        );
         setOtpError("");
         setVerifiedTenantUserId("");
         setCompletedProfile(null);
@@ -469,11 +528,20 @@ const BusinessSignup = ({ portal }) => {
   });
 
   const profileFormik = useFormik({
-    initialValues: savedProgress.profile,
+    initialValues: {
+      ...savedProgress.profile,
+      businessName:
+        values.businessName || savedProgress.profile.businessName || "",
+      businessType:
+        values.businessType || savedProgress.profile.businessType || "hotel",
+    },
+    enableReinitialize: true,
     validationSchema: profileSchema,
     onSubmit: async (profileValues) => {
       if (!verifiedTenantUserId) {
-        toast.error("Verified tenant user ID is missing. Please verify your email again.");
+        toast.error(
+          "Verified tenant user ID is missing. Please verify your email again.",
+        );
         return;
       }
       const timezone =
@@ -482,9 +550,16 @@ const BusinessSignup = ({ portal }) => {
       try {
         const response = await completeTenantProfile({
           userId: verifiedTenantUserId,
+          fullName: accountFormik.values.fullName || values.fullName,
+          password:
+            pendingPasswordRef.current ||
+            values.password ||
+            accountFormik.values.password,
           businessName: profileValues.businessName,
           businessType: profileValues.businessType,
-          phone: profileValues.businessPhone.startsWith("+") ? profileValues.businessPhone : `+${profileValues.businessPhone}`,
+          phone: profileValues.businessPhone.startsWith("+")
+            ? profileValues.businessPhone
+            : `+${profileValues.businessPhone}`,
           address: profileValues.address,
           city: profileValues.city,
           state: profileValues.state,
@@ -509,7 +584,9 @@ const BusinessSignup = ({ portal }) => {
           timezone,
           avatar: "",
         }));
-        toast.success(response?.message || "Business profile saved successfully");
+        toast.success(
+          response?.message || "Business profile saved successfully",
+        );
         setCurrentStep(businessSignupSteps.length - 1);
       } catch (error) {
         toast.error(
@@ -521,6 +598,61 @@ const BusinessSignup = ({ portal }) => {
       }
     },
   });
+
+  useEffect(() => {
+    if (!token) return undefined;
+
+    let isActive = true;
+
+    verifyTenantEmail(token)
+      .then((res) => {
+        if (!isActive) return;
+        const resData = res?.data?.data || res?.data || {};
+        const verifiedUserId = resData.userId || resData.id;
+        const verifiedEmail = resData.email || "";
+        const verifiedName = resData.fullName || "";
+        const existingBusinessName = resData.businessName || "";
+        const existingBusinessType = resData.businessType || "";
+
+        if (verifiedUserId) {
+          setVerifiedTenantUserId(verifiedUserId);
+        }
+        setValues((prev) => ({
+          ...prev,
+          ...(verifiedEmail
+            ? { businessEmail: verifiedEmail, profileEmail: verifiedEmail }
+            : {}),
+          ...(verifiedName ? { fullName: verifiedName } : {}),
+          ...(existingBusinessName
+            ? { businessName: existingBusinessName }
+            : {}),
+          ...(existingBusinessType
+            ? { businessType: existingBusinessType }
+            : {}),
+        }));
+
+        setIsTokenVerified(true);
+        toast.success(
+          res?.message || "Email verified! Please complete your account setup.",
+        );
+      })
+      .catch((err) => {
+        if (!isActive) return;
+        toast.error(
+          getApiErrorMessage(
+            err,
+            "Verification link is invalid or has expired.",
+          ),
+        );
+      })
+      .finally(() => {
+        if (isActive) setIsVerifyingToken(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [token]);
 
   useEffect(() => {
     writeTenantSignupProgress({
@@ -553,7 +685,9 @@ const BusinessSignup = ({ portal }) => {
   };
 
   const nextStep = () =>
-    setCurrentStep((step) => Math.min(step + 1, businessSignupSteps.length - 1));
+    setCurrentStep((step) =>
+      Math.min(step + 1, businessSignupSteps.length - 1),
+    );
 
   const getAccountFieldError = (field) =>
     accountFormik.touched[field] && accountFormik.errors[field]
@@ -650,10 +784,26 @@ const BusinessSignup = ({ portal }) => {
   const completedBusinessType =
     completedProfile?.businessType || values.businessType;
   const completedBusinessTypeLabel =
-    businessTypeOptions.find((option) => option.value === completedBusinessType)
+    dynamicTypeOptions.find((option) => option.value === completedBusinessType)
       ?.label ?? completedBusinessType;
 
   const renderStepContent = () => {
+    if (isVerifyingToken) {
+      return (
+        <div className="py-12 text-center">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-(--theme-border-soft) bg-(--button-secondary-bg) text-(--color-aurora-teal)">
+            <div className="h-7 w-7 animate-spin rounded-full border-3 border-(--color-aurora-teal) border-t-transparent" />
+          </div>
+          <h2 className="m-0 mt-5 text-xl font-black text-(--theme-text-primary)">
+            Verifying Invitation Link
+          </h2>
+          <p className="m-0 mt-2 text-sm font-semibold text-(--theme-text-secondary)">
+            Please wait while we verify your business account...
+          </p>
+        </div>
+      );
+    }
+
     if (currentStep === 0) {
       return (
         <form className="grid gap-4" onSubmit={accountFormik.handleSubmit}>
@@ -663,17 +813,19 @@ const BusinessSignup = ({ portal }) => {
                 {portal?.title || "Business Admin"}
               </p>
               <h1 className="m-0 mt-1 text-3xl font-black text-(--theme-text-primary)">
-                Create Account
+                {isTokenVerified ? "Set Up Account" : "Create Account"}
               </h1>
             </div>
           </div>
 
-          <Tabs
-            className="mb-3"
-            items={portalTabs}
-            onChange={(nextPortal) => navigate(`/${nextPortal}/signup`)}
-            value={portal?.value || "business"}
-          />
+          {!isTokenVerified && (
+            <Tabs
+              className="mb-3"
+              items={portalTabs}
+              onChange={(nextPortal) => navigate(`/${nextPortal}/signup`)}
+              value={portal?.value || "business"}
+            />
+          )}
           <Input
             label="Full Name"
             placeholder="Jane Smith"
@@ -681,6 +833,8 @@ const BusinessSignup = ({ portal }) => {
             {...bindAccountInput("fullName")}
           />
           <Input
+            disabled={isTokenVerified}
+            helperText={isTokenVerified ? "Verified account email" : undefined}
             label="Business Email"
             placeholder="jane@yourcompany.com"
             required
@@ -721,13 +875,23 @@ const BusinessSignup = ({ portal }) => {
             />
             <span>
               I agree to the{" "}
-              <button className="border-0 bg-transparent p-0 font-black text-(--color-aurora-teal)" type="button">
+              <a
+                href="/terms-and-conditions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-black text-(--color-aurora-teal) hover:underline"
+              >
                 Terms & Conditions
-              </button>{" "}
+              </a>{" "}
               and{" "}
-              <button className="border-0 bg-transparent p-0 font-black text-(--color-aurora-teal)" type="button">
+              <a
+                href="/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-black text-(--color-aurora-teal) hover:underline"
+              >
                 Privacy Policy
-              </button>
+              </a>
             </span>
           </label>
           {getAccountFieldError("acceptedTerms") && (
@@ -745,7 +909,7 @@ const BusinessSignup = ({ portal }) => {
             size="lg"
             type="submit"
           >
-            Create Account
+            {isTokenVerified ? "Continue to Profile" : "Create Account"}
           </Button>
           <p className="m-0 text-center text-sm font-semibold text-(--theme-text-secondary)">
             Already have an account?{" "}
@@ -861,8 +1025,10 @@ const BusinessSignup = ({ portal }) => {
           <Dropdown
             label="Business Type"
             name="businessType"
-            onChange={(value) => profileFormik.setFieldValue("businessType", value)}
-            options={businessTypeOptions}
+            onChange={(value) =>
+              profileFormik.setFieldValue("businessType", value)
+            }
+            options={dynamicTypeOptions}
             value={profileFormik.values.businessType}
           />
           <div className="flex flex-col gap-1.5">
@@ -872,12 +1038,16 @@ const BusinessSignup = ({ portal }) => {
             <PhoneInput
               country={"us"}
               value={profileFormik.values.businessPhone}
-              onChange={(phone) => profileFormik.setFieldValue("businessPhone", phone)}
+              onChange={(phone) =>
+                profileFormik.setFieldValue("businessPhone", phone)
+              }
               inputStyle={{
                 width: "100%",
                 height: "46px",
                 borderRadius: "14px",
-                borderColor: getProfileFieldError("businessPhone") ? "var(--color-overdue)" : "var(--theme-border-soft)",
+                borderColor: getProfileFieldError("businessPhone")
+                  ? "var(--color-overdue)"
+                  : "var(--theme-border-soft)",
                 backgroundColor: "var(--theme-surface-strong)",
                 color: "var(--theme-text-primary)",
                 fontSize: "14px",
@@ -887,7 +1057,9 @@ const BusinessSignup = ({ portal }) => {
               buttonStyle={{
                 borderTopLeftRadius: "14px",
                 borderBottomLeftRadius: "14px",
-                borderColor: getProfileFieldError("businessPhone") ? "var(--color-overdue)" : "var(--theme-border-soft)",
+                borderColor: getProfileFieldError("businessPhone")
+                  ? "var(--color-overdue)"
+                  : "var(--theme-border-soft)",
                 backgroundColor: "var(--theme-surface-strong)",
               }}
               dropdownStyle={{
@@ -930,7 +1102,9 @@ const BusinessSignup = ({ portal }) => {
             <Dropdown
               label="Country"
               name="country"
-              onChange={(value) => profileFormik.setFieldValue("country", value)}
+              onChange={(value) =>
+                profileFormik.setFieldValue("country", value)
+              }
               options={countryOptions}
               value={profileFormik.values.country}
             />
@@ -962,8 +1136,8 @@ const BusinessSignup = ({ portal }) => {
               Choose Your Plan
             </h1>
             <p className="m-0 mt-3 text-sm font-semibold leading-6 text-(--theme-text-secondary)">
-              Select a plan to access the Business Admin portal, or start a 14-day
-              free trial. No credit card required for trials.
+              Select a plan to access the Business Admin portal, or start a
+              14-day free trial. No credit card required for trials.
             </p>
             <div className="mt-6 inline-flex rounded-xl border border-(--theme-border-soft) bg-(--button-ghost-bg) p-1">
               {["monthly", "yearly"].map((cycle) => (
@@ -1004,7 +1178,7 @@ const BusinessSignup = ({ portal }) => {
 
               return (
                 <div
-                  className="relative flex min-h-[480px] flex-col rounded-2xl border p-6 transition-all duration-200"
+                  className="relative flex min-h-120 flex-col rounded-2xl border p-6 transition-all duration-200"
                   key={plan.name}
                   style={{
                     background:
@@ -1031,7 +1205,10 @@ const BusinessSignup = ({ portal }) => {
                   <p className="m-0 mt-5 text-3xl font-black text-(--theme-text-primary)">
                     {plan.price}
                     {plan.price !== "Custom" && (
-                      <span className="text-sm font-bold text-(--theme-text-muted)"> / mo</span>
+                      <span className="text-sm font-bold text-(--theme-text-muted)">
+                        {" "}
+                        / mo
+                      </span>
                     )}
                   </p>
                   <div className="mt-5 rounded-xl border border-(--theme-border-soft) bg-(--button-ghost-bg) p-4">
@@ -1046,7 +1223,10 @@ const BusinessSignup = ({ portal }) => {
                         className="flex items-start gap-2 text-sm font-semibold text-(--theme-text-secondary)"
                         key={feature}
                       >
-                        <Check size={15} className="mt-0.5 shrink-0 text-(--color-aurora-teal)" />
+                        <Check
+                          size={15}
+                          className="mt-0.5 shrink-0 text-(--color-aurora-teal)"
+                        />
                         {feature}
                       </li>
                     ))}
@@ -1058,9 +1238,13 @@ const BusinessSignup = ({ portal }) => {
                         setSelectedPlan(plan.name);
                         nextStep();
                       }}
-                      variant={plan.name === "Enterprise" ? "outline" : "primary"}
+                      variant={
+                        plan.name === "Enterprise" ? "outline" : "primary"
+                      }
                     >
-                      {plan.name === "Enterprise" ? "Contact Sales" : "Start 14-Day Trial"}
+                      {plan.name === "Enterprise"
+                        ? "Contact Sales"
+                        : "Start 14-Day Trial"}
                     </Button>
                     {plan.name !== "Enterprise" && (
                       <Button
@@ -1097,7 +1281,11 @@ const BusinessSignup = ({ portal }) => {
         <div className="rounded-2xl border border-(--theme-border-soft) bg-(--button-ghost-bg) p-4 text-left">
           <SummaryRow
             label="Business Name"
-            value={completedProfile?.businessName || values.businessName || "Not provided"}
+            value={
+              completedProfile?.businessName ||
+              values.businessName ||
+              "Not provided"
+            }
           />
           <SummaryRow
             label="Business Type"
@@ -1151,7 +1339,10 @@ const BusinessSignup = ({ portal }) => {
   return (
     <main className="relative flex min-h-screen items-center justify-center px-4 py-8">
       <div className={`w-full ${isPlanStep ? "max-w-6xl" : "max-w-xl"}`}>
-        <BusinessSignupStepper currentStep={currentStep} />
+        <BusinessSignupStepper
+          currentStep={currentStep}
+          isTokenVerified={isTokenVerified}
+        />
         <Card
           padding={isPlanStep ? "28px" : "32px"}
           rounded={isDoneStep ? "22px" : "18px"}

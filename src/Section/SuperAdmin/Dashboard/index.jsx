@@ -1,75 +1,49 @@
-import Badge from "../../../Components/UI/Badge";
+import { LayoutGrid, Sparkles } from "lucide-react";
 import Card from "../../../Components/UI/Card";
-import Table from "../../../Components/UI/Table";
-const Dashboard = () => {
-  const column = [
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john.doe@example.com",
-      role: "Admin",
-      test: "test",
-      test1: "test",
-      test2: "test",
-      test3: "test",
-      status: (
-        <Badge color="green" className="px-2 py-1 rounded">
-          Active
-        </Badge>
-      ),
-      actions: (
-        <div className="flex space-x-2">
+import IconWrapper from "../../../Components/UI/IconWrapper";
 
-          <button className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
-            Edit
-          </button>
-        </div>
-      ),
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@example.com",
-      role: "User",
-      test: "test",
-      test1: "test",
-      test2: "test",
-      test3: "test",
-    },
-    {
-      id: 3,
-      name: "Michael Johnson",
-      email: "michael.johnson@example.com",
-      role: "User",
-      test: "test",
-      test1: "test",
-      test2: "test",
-      test3: "test",
-    },
-    {
-      id: 4,
-      name: "Emily Davis",
-      email: "emily.davis@example.com",
-      role: "User",
-      test: "test",
-      test1: "test",
-      test2: "test",
-      test3: "test",
-    }
-  ];
+const Dashboard = () => {
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
-    <div>
-      <Card>
-        <h1 className="text-2xl font-bold text-(--color-aurora-teal)">
-          Welcome to the Super Admin Dashboard
-        </h1>
-        <p className="text-(--color-aurora-teal) mt-2">
-          This is the main dashboard for super administrators. Here you can
-          manage users, view analytics, and access various administrative tools.
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-(--theme-text-primary) md:text-3xl">
+            Super Admin Dashboard
+          </h1>
+          <p className="text-sm font-medium text-(--theme-text-secondary)">
+            System-wide platform overview, metrics, and administration.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-xs font-bold text-(--theme-text-muted)">
+          <Sparkles size={15} className="text-(--color-aurora-teal)" />
+          {currentDate}
+        </div>
+      </div>
+
+      {/* Empty Dashboard State Card */}
+      <Card className="flex flex-col items-center justify-center p-12 text-center md:p-20">
+        <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl border border-(--theme-border) bg-(--theme-surface-hover) shadow-[0_12px_28px_rgba(20,184,166,0.12)]">
+          <IconWrapper color="teal" size="lg">
+            <LayoutGrid size={36} className="text-(--color-aurora-teal)" />
+          </IconWrapper>
+        </div>
+        <h2 className="text-xl font-bold text-(--theme-text-primary)">
+          Dashboard is currently empty
+        </h2>
+        <p className="mt-2 max-w-md text-sm font-medium leading-relaxed text-(--theme-text-secondary)">
+          Global analytics, tenant health monitoring, and system metrics will be
+          configured here. Use the navigation sidebar to manage system policies
+          and terms.
         </p>
       </Card>
-      <Table data={column} />
     </div>
   );
 };

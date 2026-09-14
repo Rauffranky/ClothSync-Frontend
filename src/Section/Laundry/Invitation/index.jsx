@@ -10,7 +10,6 @@ import {
   LoaderCircle,
   LockKeyhole,
   MapPin,
-  Phone,
   RefreshCw,
   ShieldAlert,
 } from "lucide-react";
@@ -171,9 +170,7 @@ const LaundryInvitation = () => {
   }, [retryKey, token]);
 
   const getFieldError = (field) =>
-    formik.touched[field] && formik.errors[field]
-      ? formik.errors[field]
-      : "";
+    formik.touched[field] && formik.errors[field] ? formik.errors[field] : "";
 
   const bindInput = (field) => ({
     error: Boolean(getFieldError(field)),
@@ -191,12 +188,12 @@ const LaundryInvitation = () => {
     inviteState.token === token
       ? inviteState
       : {
-        token,
-        status: token ? "loading" : "error",
-        message: token
-          ? "Checking your laundry invitation..."
-          : "Invitation token is missing.",
-      };
+          token,
+          status: token ? "loading" : "error",
+          message: token
+            ? "Checking your laundry invitation..."
+            : "Invitation token is missing.",
+        };
   const isLoading = currentInviteState.status === "loading";
   const isProfileRequired = currentInviteState.status === "profile";
   const isSuccess = currentInviteState.status === "success";
@@ -216,14 +213,15 @@ const LaundryInvitation = () => {
           <div aria-live="polite">
             <div className="text-center">
               <div
-                className={`mx-auto grid h-16 w-16 place-items-center rounded-2xl ${isSuccess
-                  ? "bg-emerald-500/15 text-emerald-500"
-                  : isLoading
-                    ? "bg-sky-500/15 text-sky-500"
-                    : isProfileRequired
-                      ? "bg-teal-500/15 text-(--color-aurora-teal)"
-                      : "bg-red-500/15 text-red-500"
-                  }`}
+                className={`mx-auto grid h-16 w-16 place-items-center rounded-2xl ${
+                  isSuccess
+                    ? "bg-emerald-500/15 text-emerald-500"
+                    : isLoading
+                      ? "bg-sky-500/15 text-sky-500"
+                      : isProfileRequired
+                        ? "bg-teal-500/15 text-(--color-aurora-teal)"
+                        : "bg-red-500/15 text-red-500"
+                }`}
               >
                 {isSuccess ? (
                   <CheckCircle2 size={32} />
@@ -236,9 +234,6 @@ const LaundryInvitation = () => {
                 )}
               </div>
 
-              <p className="m-0 mt-5 text-sm font-bold text-(--color-aurora-teal)">
-                ClothSync Laundry
-              </p>
               <h1 className="m-0 mt-1 text-2xl font-black sm:text-3xl">
                 {isSuccess
                   ? "Invitation Accepted"
@@ -297,8 +292,12 @@ const LaundryInvitation = () => {
                     {...bindInput("confirmPassword")}
                   />
                   <div className="flex flex-col gap-1.5">
-                    <label className="mb-0.5 block text-sm font-semibold" style={{ color: "var(--theme-text-secondary)" }}>
-                      Phone <span style={{ color: "var(--color-overdue)" }}>*</span>
+                    <label
+                      className="mb-0.5 block text-sm font-semibold"
+                      style={{ color: "var(--theme-text-secondary)" }}
+                    >
+                      Phone{" "}
+                      <span style={{ color: "var(--color-overdue)" }}>*</span>
                     </label>
                     <PhoneInput
                       country={"us"}
@@ -307,9 +306,10 @@ const LaundryInvitation = () => {
                       onChange={(phone) => {
                         formik.setFieldValue(
                           "phone",
-                          phone.startsWith("+") || !phone ? phone : `+${phone}`
+                          phone.startsWith("+") || !phone ? phone : `+${phone}`,
                         );
-                        if (formik.status?.submitError) formik.setStatus(undefined);
+                        if (formik.status?.submitError)
+                          formik.setStatus(undefined);
                       }}
                       onBlur={() => formik.setFieldTouched("phone", true)}
                       inputStyle={{
@@ -337,7 +337,10 @@ const LaundryInvitation = () => {
                       }}
                     />
                     {formik.touched.phone && formik.errors.phone && (
-                      <p className="m-0 text-xs" style={{ color: "var(--color-overdue)" }}>
+                      <p
+                        className="m-0 text-xs"
+                        style={{ color: "var(--color-overdue)" }}
+                      >
                         {formik.errors.phone}
                       </p>
                     )}

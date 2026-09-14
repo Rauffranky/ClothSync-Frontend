@@ -54,30 +54,61 @@ export const setAuthSessionUser = (user) => {
 };
 
 export const storeAuthSessionFromResponse = (response) => {
-  const authData = response?.data ?? response;
+  const payload = response?.data ?? response;
+  const authData =
+    payload?.data && typeof payload.data === "object" && !Array.isArray(payload.data)
+      ? payload.data
+      : payload;
+
   const accessToken =
-    authData?.accessToken ?? authData?.access_token ?? authData?.token;
+    authData?.accessToken ??
+    authData?.access_token ??
+    authData?.token ??
+    payload?.accessToken ??
+    payload?.token;
 
   if (accessToken) {
     sessionStorage.setItem(AUTH_SESSION_KEYS.ACCESS_TOKEN, accessToken);
   }
 
-  if (authData?.refreshToken) {
+  const refreshToken =
+    authData?.refreshToken ??
+    authData?.refresh_token ??
+    payload?.refreshToken;
+
+  if (refreshToken) {
+    sessionStorage.setItem(AUTH_SESSION_KEYS.REFRESH_TOKEN, refreshToken);
+  }
+
+  const sessionId =
+    authData?.sessionId ??
+    authData?.session_id ??
+    payload?.sessionId;
+
+  if (sessionId) {
+    sessionStorage.setItem(AUTH_SESSION_KEYS.SESSION_ID, String(sessionId));
+  }
+
+  const accessTokenExpiresAt =
+    authData?.accessTokenExpiresAt ??
+    payload?.accessTokenExpiresAt;
+
+  if (accessTokenExpiresAt) {
     sessionStorage.setItem(
-      AUTH_SESSION_KEYS.REFRESH_TOKEN,
-      authData.refreshToken,
+      AUTH_SESSION_KEYS.ACCESS_TOKEN_EXPIRES_AT,
+      accessTokenExpiresAt,
     );
   }
 
-  if (authData?.sessionId) sessionStorage.setItem(AUTH_SESSION_KEYS.SESSION_ID, authData.sessionId);
-  if (authData?.accessTokenExpiresAt) sessionStorage.setItem(AUTH_SESSION_KEYS.ACCESS_TOKEN_EXPIRES_AT, authData.accessTokenExpiresAt);
   if (accessToken) localStorage.setItem("token", accessToken);
 
   const user =
     authData?.user ??
     authData?.tenant ??
     authData?.laundry ??
-    authData?.superAdmin;
+    authData?.superAdmin ??
+    payload?.user;
+
   if (user) setAuthSessionUser(user);
 
   notifyAuthSessionChanged();
