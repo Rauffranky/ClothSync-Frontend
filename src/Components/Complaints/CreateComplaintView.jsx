@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
-  ArrowLeft,
   Upload,
   X,
   AlertCircle,
@@ -12,6 +11,9 @@ import {
   Info,
   ShieldCheck,
   Paperclip,
+  Tag,
+  FileText,
+  ScanLine,
 } from "lucide-react";
 import Button from "../UI/Button";
 import Card from "../UI/Card";
@@ -36,16 +38,29 @@ const PRIORITY_OPTIONS = [
 
 const CreateComplaintView = ({ role = "tenant" }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const stateData = location.state || {};
   const isTenant = role === "tenant";
   const backRoute = isTenant ? "/business/complaints" : "/laundry/complaints";
   const recipientLabel = isTenant ? "Target Laundry" : "Target Business";
 
   const [recipients, setRecipients] = useState([]);
   const [isLoadingRecipients, setIsLoadingRecipients] = useState(true);
-  const [recipientId, setRecipientId] = useState("");
-  const [subject, setSubject] = useState("");
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState("medium");
+  const [complaintType, setComplaintType] = useState(() => {
+    if (stateData.complaintType) return stateData.complaintType;
+    if (
+      stateData.selectedTags?.length > 0 ||
+      stateData.batchName ||
+      stateData.epc
+    ) {
+      return "tag_discrepancy";
+    }
+    return "general";
+  });
+  const [recipientId, setRecipientId] = useState(stateData.recipientId || "");
+  const [subject, setSubject] = useState(stateData.subject || "");
+  const [description, setDescription] = useState(stateData.description || "");
+  const [priority, setPriority] = useState(stateData.priority || "medium");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [filePreviews, setFilePreviews] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -120,7 +135,9 @@ const CreateComplaintView = ({ role = "tenant" }) => {
                 })
               : [];
             setRecipients(formatted);
-            if (formatted.length === 1) {
+            if (stateData.recipientId) {
+              setRecipientId(stateData.recipientId);
+            } else if (formatted.length === 1) {
               setRecipientId(formatted[0].id);
             }
           }
@@ -129,7 +146,7 @@ const CreateComplaintView = ({ role = "tenant" }) => {
         if (isMounted) {
           console.error("Failed to load recipients:", err);
           toast.error(
-            `Unable to load linked ${isTenant ? "laundries" : "businesses"}.`
+            `Unable to load linked ${isTenant ? "laundries" : "businesses"}.`,
           );
         }
       } finally {
@@ -143,16 +160,16 @@ const CreateComplaintView = ({ role = "tenant" }) => {
     return () => {
       isMounted = false;
     };
-  }, [isTenant]);
+  }, [isTenant, stateData.recipientId]);
 
   const handleFilesSelected = (files) => {
     const validFiles = Array.from(files).filter((file) =>
-      file.type.startsWith("image/")
+      file.type.startsWith("image/"),
     );
 
     if (validFiles.length !== files.length) {
       toast.warning(
-        "Some non-image files were skipped. Only images are supported."
+        "Some non-image files were skipped. Only images are supported.",
       );
     }
 
@@ -214,9 +231,21 @@ const CreateComplaintView = ({ role = "tenant" }) => {
     }
     if (!description.trim() || description.trim().length < 5) {
       toast.error(
-        "Please provide a detailed description (minimum 5 characters)."
+        "Please provide a detailed description (minimum 5 characters).",
       );
       return;
+    }
+
+    if (complaintType === "tag_discrepancy") {
+      const hasTags =
+        (stateData.selectedTags && stateData.selectedTags.length > 0) ||
+        Boolean(stateData.epc);
+      if (!hasTags && !stateData.batchName) {
+        toast.error(
+          "Tag & Batch Discrepancy complaints require at least one linked RFID tag or batch. Please select tags from Bulk Scanning.",
+        );
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -228,7 +257,7 @@ const CreateComplaintView = ({ role = "tenant" }) => {
         setUploadStatusText("Uploading images to secure storage (S3)...");
         const uploadRes = await uploadMultipleFiles(
           selectedFiles,
-          "complaints"
+          "complaints",
         );
         const uploadData = uploadRes?.data || uploadRes;
 
@@ -245,10 +274,24 @@ const CreateComplaintView = ({ role = "tenant" }) => {
 
       const payload = {
         recipientId,
+        complaintType,
         subject: subject.trim(),
         description: description.trim(),
         priority,
         images: uploadedImageUrls,
+        ...(complaintType === "tag_discrepancy" && {
+          ...(stateData.batchName && { batchName: stateData.batchName }),
+          ...(stateData.assetName && { assetName: stateData.assetName }),
+          ...(stateData.epc && { tagEpc: stateData.epc }),
+          ...(stateData.selectedTags && {
+            tags: stateData.selectedTags.map((t) => ({
+              epc: t.epc,
+              assetName: t.assetName,
+              batchName: t.resolvedBatchName || t.batchName,
+              batchType: t.batchType,
+            })),
+          }),
+        }),
       };
 
       if (isTenant) {
@@ -300,23 +343,11 @@ const CreateComplaintView = ({ role = "tenant" }) => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <button
-            type="button"
-            onClick={() => navigate(backRoute)}
-            className="inline-flex items-center gap-2 text-xs font-semibold text-(--theme-text-secondary) hover:text-(--theme-text-primary) transition-colors mb-2 cursor-pointer"
-          >
-            <ArrowLeft size={16} />
-            <span>Back to Complaints</span>
-          </button>
           <h1 className="text-2xl font-bold tracking-tight text-(--theme-text-primary)">
             {isTenant
               ? "Submit Complaint to Laundry"
               : "Submit Complaint to Business"}
           </h1>
-          <p className="text-sm text-(--theme-text-secondary) mt-1">
-            File an official discrepancy ticket with supporting details and
-            photographic evidence.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -336,7 +367,11 @@ const CreateComplaintView = ({ role = "tenant" }) => {
             disabled={
               isSubmitting ||
               isLoadingRecipients ||
-              recipients.length === 0
+              recipients.length === 0 ||
+              (complaintType === "tag_discrepancy" &&
+                !stateData.selectedTags?.length &&
+                !stateData.epc &&
+                !stateData.batchName)
             }
             onClick={handleSubmit}
           >
@@ -349,6 +384,209 @@ const CreateComplaintView = ({ role = "tenant" }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form Fields & Evidence */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Complaint Category Selector (Option 1 vs Option 2) */}
+          <Card className="p-4 bg-(--theme-surface) border border-(--theme-border) shadow-xs">
+            <div className="mb-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-(--theme-text-secondary)">
+                Select Complaint Type
+              </h3>
+              <p className="text-xs text-(--theme-text-muted) mt-0.5">
+                Choose between a general operational issue or a specific RFID tag & batch discrepancy
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Option 1: General Complaint */}
+              <button
+                type="button"
+                onClick={() => setComplaintType("general")}
+                className={`flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  complaintType === "general"
+                    ? "border-(--color-aurora-teal) bg-(--color-aurora-teal)/5 ring-2 ring-(--color-aurora-teal)/20"
+                    : "border-(--theme-border) bg-(--theme-surface-strong)/40 hover:bg-(--theme-surface-strong)/70"
+                }`}
+              >
+                <div
+                  className={`p-2 rounded-lg shrink-0 ${
+                    complaintType === "general"
+                      ? "bg-(--color-aurora-teal) text-white shadow-xs"
+                      : "bg-(--theme-surface) text-(--theme-text-secondary)"
+                  }`}
+                >
+                  <FileText size={18} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-sm font-bold text-(--theme-text-primary)">
+                      1. General Complaint
+                    </span>
+                    {complaintType === "general" && (
+                      <Badge variant="primary" size="sm">
+                        Selected
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-(--theme-text-secondary) mt-1 leading-relaxed">
+                    Delivery, billing, service feedback, or fabric quality issues. No RFID tags needed.
+                  </p>
+                </div>
+              </button>
+
+              {/* Option 2: Tag & Batch Discrepancy */}
+              <button
+                type="button"
+                onClick={() => setComplaintType("tag_discrepancy")}
+                className={`flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  complaintType === "tag_discrepancy"
+                    ? "border-(--color-aurora-teal) bg-(--color-aurora-teal)/5 ring-2 ring-(--color-aurora-teal)/20"
+                    : "border-(--theme-border) bg-(--theme-surface-strong)/40 hover:bg-(--theme-surface-strong)/70"
+                }`}
+              >
+                <div
+                  className={`p-2 rounded-lg shrink-0 ${
+                    complaintType === "tag_discrepancy"
+                      ? "bg-(--color-aurora-teal) text-white shadow-xs"
+                      : "bg-(--theme-surface) text-(--theme-text-secondary)"
+                  }`}
+                >
+                  <ScanLine size={18} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-sm font-bold text-(--theme-text-primary)">
+                      2. Tag & Batch Discrepancy
+                    </span>
+                    {complaintType === "tag_discrepancy" && (
+                      <Badge variant="primary" size="sm">
+                        Selected
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-(--theme-text-secondary) mt-1 leading-relaxed">
+                    RFID tags linked to an Active Batch or Last Linked Batch with missing/mismatched linen.
+                  </p>
+                </div>
+              </button>
+            </div>
+          </Card>
+
+          {/* Tag & Batch Discrepancy: Associated Scanned Tag & Batch Details Card */}
+          {complaintType === "tag_discrepancy" &&
+            (stateData.selectedTags?.length > 0 ||
+              (stateData.batchName && stateData.epc)) && (
+              <Card className="border-l-4 border-l-(--color-aurora-teal) bg-(--theme-surface) p-5 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-(--theme-border) pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-(--color-aurora-teal)/10 text-(--color-aurora-teal)">
+                      <Tag size={16} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-(--theme-text-primary)">
+                        Associated Tag & Batch Details
+                      </h3>
+                      <p className="text-xs text-(--theme-text-muted)">
+                        {stateData.selectedTags?.length || 1} scanned RFID tag(s)
+                        linked to this complaint
+                      </p>
+                    </div>
+                  </div>
+                  {stateData.batchName && (
+                    <Badge
+                      size="sm"
+                      variant={
+                        stateData.batchType === "active" ? "primary" : "purple"
+                      }
+                    >
+                      {stateData.batchType === "active"
+                        ? "Active Batch"
+                        : "Last Linked Batch"}
+                      : {stateData.batchName}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="max-h-52 divide-y divide-(--theme-border)/50 overflow-y-auto pr-1">
+                  {(
+                    stateData.selectedTags || [
+                      {
+                        epc: stateData.epc,
+                        assetName: stateData.assetName,
+                        resolvedBatchName: stateData.batchName,
+                        batchType: stateData.batchType,
+                        businessName: stateData.partnerName,
+                      },
+                    ]
+                  ).map((item, idx) => (
+                    <div
+                      key={item.epc || idx}
+                      className="flex flex-wrap items-center justify-between gap-3 py-2.5 text-xs"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="rounded bg-(--theme-surface-strong)/60 px-2 py-0.5 font-mono text-xs font-bold text-(--theme-text-primary)">
+                          {item.epc}
+                        </span>
+                        <span className="font-semibold text-(--theme-text-primary)">
+                          {item.assetName || "Standard Linen"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-(--theme-text-muted)">
+                          Batch:{" "}
+                          <strong className="text-(--theme-text-primary)">
+                            {item.resolvedBatchName || stateData.batchName}
+                          </strong>
+                        </span>
+                        <Badge
+                          size="sm"
+                          variant={
+                            item.batchType === "active" ? "primary" : "purple"
+                          }
+                        >
+                          {item.batchType === "active" ? "Active" : "Last Linked"}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+          {/* Tag & Batch Discrepancy: Alert when no tags/batch are present */}
+          {complaintType === "tag_discrepancy" &&
+            !stateData.selectedTags?.length &&
+            !stateData.epc &&
+            !stateData.batchName && (
+              <Card className="border-l-4 border-l-(--color-overdue) bg-(--color-overdue)/5 p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-(--color-overdue)/15 text-(--color-overdue) shrink-0">
+                    <AlertCircle size={18} />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-(--theme-text-primary)">
+                      No Scanned RFID Tags Attached
+                    </h4>
+                    <p className="text-xs text-(--theme-text-secondary) leading-relaxed">
+                      Tag & Batch Discrepancy complaints require verified RFID tags linked to an active or past batch.
+                      If a tag is not linked to any business partner or batch, a complaint cannot be filed.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-1 flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<ScanLine size={14} />}
+                    onClick={() =>
+                      navigate(
+                        isTenant ? "/business/bulk-scanning" : "/laundry/bulk-scanning",
+                      )
+                    }
+                  >
+                    Go to Bulk Scanning to Scan Tags
+                  </Button>
+                </div>
+              </Card>
+            )}
+
           {/* Card 1: Form Information */}
           <Card className="p-6 space-y-5">
             <div className="flex items-center gap-2 pb-4 border-b border-(--theme-border)">
@@ -447,7 +685,8 @@ const CreateComplaintView = ({ role = "tenant" }) => {
                     Attach Photographic Evidence
                   </h2>
                   <p className="text-xs text-(--theme-text-secondary)">
-                    Upload photos showing the discrepancies, damage tags, or shipment labels
+                    Upload photos showing the discrepancies, damage tags, or
+                    shipment labels
                   </p>
                 </div>
               </div>
@@ -493,7 +732,10 @@ const CreateComplaintView = ({ role = "tenant" }) => {
               </p>
               <div className="inline-flex items-center gap-1.5 mt-3 text-[11px] text-(--color-aurora-teal) bg-(--color-aurora-teal)/10 px-3 py-1 rounded-full">
                 <ShieldCheck size={14} />
-                <span>High-resolution photos will be securely uploaded to AWS S3 storage</span>
+                <span>
+                  High-resolution photos will be securely uploaded to AWS S3
+                  storage
+                </span>
               </div>
             </div>
 
@@ -554,8 +796,10 @@ const CreateComplaintView = ({ role = "tenant" }) => {
 
             <div className="space-y-3 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-(--theme-text-secondary)">Recipient:</span>
-                <span className="font-semibold text-(--theme-text-primary) truncate max-w-[150px]">
+                <span className="text-(--theme-text-secondary)">
+                  Recipient:
+                </span>
+                <span className="font-semibold text-(--theme-text-primary) truncate max-w-37.5">
                   {selectedRecipientName}
                 </span>
               </div>
@@ -569,7 +813,9 @@ const CreateComplaintView = ({ role = "tenant" }) => {
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-(--theme-text-secondary)">Evidence Photos:</span>
+                <span className="text-(--theme-text-secondary)">
+                  Evidence Photos:
+                </span>
                 <span className="font-semibold text-(--theme-text-primary) flex items-center gap-1">
                   <Paperclip size={12} />
                   {selectedFiles.length} attached
@@ -577,7 +823,21 @@ const CreateComplaintView = ({ role = "tenant" }) => {
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-(--theme-text-secondary)">Initial Status:</span>
+                <span className="text-(--theme-text-secondary)">Type:</span>
+                <Badge
+                  variant={complaintType === "tag_discrepancy" ? "purple" : "primary"}
+                  size="sm"
+                >
+                  {complaintType === "tag_discrepancy"
+                    ? "Tag Discrepancy"
+                    : "General Complaint"}
+                </Badge>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-(--theme-text-secondary)">
+                  Initial Status:
+                </span>
                 <Badge variant="warning" size="sm">
                   Pending Review
                 </Badge>
@@ -601,7 +861,11 @@ const CreateComplaintView = ({ role = "tenant" }) => {
                 disabled={
                   isSubmitting ||
                   isLoadingRecipients ||
-                  recipients.length === 0
+                  recipients.length === 0 ||
+                  (complaintType === "tag_discrepancy" &&
+                    !stateData.selectedTags?.length &&
+                    !stateData.epc &&
+                    !stateData.batchName)
                 }
                 onClick={handleSubmit}
               >
@@ -631,7 +895,9 @@ const CreateComplaintView = ({ role = "tenant" }) => {
               <li>Include the specific Batch ID or Delivery Slip number.</li>
               <li>Specify exact item names and count discrepancies.</li>
               <li>Attach clear photos of damaged fabrics or torn tags.</li>
-              <li>Urgent priority should be reserved for operational blockers.</li>
+              <li>
+                Urgent priority should be reserved for operational blockers.
+              </li>
             </ul>
           </Card>
         </div>

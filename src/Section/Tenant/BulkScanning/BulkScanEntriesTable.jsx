@@ -1,14 +1,12 @@
 import {
   Archive,
-  ChevronDown,
   LogIn,
   LogOut,
-  LoaderCircle,
   MapPin,
   RotateCcw,
 } from "lucide-react";
-import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Badge from "../../../Components/UI/Badge";
+import Button from "../../../Components/UI/Button";
 import Pagination from "../../../Components/UI/Pagination";
 import ProgressBar from "../../../Components/UI/ProgressBar";
 import Table from "../../../Components/UI/Table";
@@ -268,50 +266,83 @@ const BulkScanEntriesTable = ({
   const activePage = Math.max((pagination?.page ?? 1) - 1, 0);
   const selectedRows = rows.filter((row) => selectedIds.has(row.id));
   const eligibleRows = rows.filter(isSelectableTag);
-  const suggestedAction = getSuggestedScanAction(selectedRows.length ? selectedRows : rows);
   const selectedCount = selectedRows.length;
-  const existingTagActions = [
-    {
-      disabled: selectedCount === 0 || previewLoading,
-      icon: LogIn,
-      label: `Check In${suggestedAction === "check_in" ? " — Suggested" : ""}`,
-      onClick: () => onExistingAction?.("check_in", selectedRows),
-    },
-    { disabled: selectedCount === 0 || previewLoading, icon: RotateCcw, label: "Read", onClick: () => onExistingAction?.("read_only", selectedRows) },
-    {
-      disabled: selectedCount === 0 || previewLoading,
-      icon: LogOut,
-      label: `Check Out${suggestedAction === "check_out" ? " — Suggested" : ""}`,
-      onClick: () => onExistingAction?.("check_out", selectedRows),
-    },
-    { disabled: selectedCount !== 1 || previewLoading, icon: RotateCcw, label: "Re-Tag", onClick: () => onRetag?.(selectedRows[0]) },
-    { danger: true, disabled: selectedCount !== 1 || previewLoading, icon: Archive, label: "Retire", onClick: () => onStatusAction?.("retire_discard", selectedRows[0]) },
-    { danger: true, disabled: selectedCount !== 1 || previewLoading, icon: Archive, label: "Mark Lost", onClick: () => onStatusAction?.("mark_lost", selectedRows[0]) },
-  ];
-  const detachedTagActions = [
-    { disabled: selectedCount !== 1 || previewLoading, icon: RotateCcw, label: "Re-Tag", onClick: () => onRetag?.(selectedRows[0]) },
-    { danger: true, disabled: selectedCount !== 1 || previewLoading, icon: Archive, label: "Retire", onClick: () => onStatusAction?.("retire_discard", selectedRows[0]) },
-    { danger: true, disabled: selectedCount !== 1 || previewLoading, icon: Archive, label: "Mark Lost", onClick: () => onStatusAction?.("mark_lost", selectedRows[0]) },
-  ];
-  const actionItems = group === BULK_SCAN_GROUPS.DETACHED ? detachedTagActions : existingTagActions;
   const showTagActions = group === BULK_SCAN_GROUPS.EXISTING_LINKED || group === BULK_SCAN_GROUPS.DETACHED;
 
   return (
     <div className="px-4 pb-4 pt-4">
       {showTagActions && (
-        <div className="mb-3 flex justify-end">
-          <ActionDropdown
-            align="right"
-            disabled={previewLoading}
-            items={actionItems}
-            placement="bottom"
-            triggerAriaLabel={`Open ${group === BULK_SCAN_GROUPS.DETACHED ? "detached" : "existing linked"} tag actions`}
-            triggerIcon={previewLoading
-              ? <LoaderCircle aria-hidden="true" className="animate-spin" size={16} />
-              : <ChevronDown aria-hidden="true" size={16} />}
-          triggerLabel={previewLoading ? "Previewing..." : `Action${selectedCount ? ` (${selectedCount}/${eligibleRows.length})` : ` (0/${eligibleRows.length})`}`}
-            width={220}
-          />
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-(--theme-border) bg-(--theme-surface-hover)/40 px-3 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xs font-bold text-(--theme-text-primary)">
+              {selectedCount} of {eligibleRows.length} tag(s) selected
+            </span>
+            {selectedCount > 0 && (
+              <button
+                className="cursor-pointer text-xs font-semibold text-(--color-aurora-teal) hover:underline"
+                onClick={() => toggleAll(false)}
+                type="button"
+              >
+                Clear Selection
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {group === BULK_SCAN_GROUPS.EXISTING_LINKED && (
+              <>
+                <Button
+                  disabled={selectedCount === 0 || previewLoading}
+                  leftIcon={<LogIn size={14} />}
+                  onClick={() => onExistingAction?.("check_in", selectedRows)}
+                  size="sm"
+                  variant="secondary"
+                >
+                  Check In
+                </Button>
+                <Button
+                  disabled={selectedCount === 0 || previewLoading}
+                  leftIcon={<LogOut size={14} />}
+                  onClick={() => onExistingAction?.("check_out", selectedRows)}
+                  size="sm"
+                  variant="secondary"
+                >
+                  Check Out
+                </Button>
+              </>
+            )}
+
+            <Button
+              disabled={selectedCount !== 1 || previewLoading}
+              leftIcon={<RotateCcw size={14} />}
+              onClick={() => onRetag?.(selectedRows[0])}
+              size="sm"
+              title={selectedCount !== 1 ? "Select exactly 1 tag to re-tag" : undefined}
+              variant="outline"
+            >
+              Re-Tag
+            </Button>
+            <Button
+              disabled={selectedCount !== 1 || previewLoading}
+              leftIcon={<Archive size={14} />}
+              onClick={() => onStatusAction?.("retire_discard", selectedRows[0])}
+              size="sm"
+              title={selectedCount !== 1 ? "Select exactly 1 tag to retire" : undefined}
+              variant="danger"
+            >
+              Retire
+            </Button>
+            <Button
+              disabled={selectedCount !== 1 || previewLoading}
+              leftIcon={<Archive size={14} />}
+              onClick={() => onStatusAction?.("mark_lost", selectedRows[0])}
+              size="sm"
+              title={selectedCount !== 1 ? "Select exactly 1 tag to mark as lost" : undefined}
+              variant="danger"
+            >
+              Mark Lost
+            </Button>
+          </div>
         </div>
       )}
       <Table

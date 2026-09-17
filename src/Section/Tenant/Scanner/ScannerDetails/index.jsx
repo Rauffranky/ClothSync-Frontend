@@ -17,9 +17,10 @@ import Card from "../../../../Components/UI/Card";
 import Table from "../../../../Components/UI/Table";
 import Badge from "../../../../Components/UI/Badge";
 import Pagination from "../../../../Components/UI/Pagination";
+import ToggleSwitch from "../../../../Components/UI/ToggleSwitch";
 import { getApiErrorMessage } from "../../../../axios/api";
 import { getTenantScannerDetails, getTenantScannerLogs, issueTenantFixedScannerCommand } from "../../../../axios/scanners/tenantScanners";
-import { formatDateTime } from "../../../../Utils/date";
+import { formatDateTime, formatTimeWithUserPreferences } from "../../../../Utils/date";
 import { normalizeScanner } from "../data";
 import HeaderCard from "./HeaderCard";
 import AddScannerModal from "../AddScannerModal";
@@ -137,14 +138,54 @@ const ScannerDetailsIndex = ({
     };
   }, [id, retryKey, getScannerDetails]);
 
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanStartTime, setScanStartTime] = useState(null);
+  const [isCommandRunning, setIsCommandRunning] = useState(false);
+
   const retryLoad = () => {
     setIsLoading(true);
     setLoadError("");
     setRetryKey((current) => current + 1);
   };
   const runFixedCommand = async (command) => {
-    try { await issueFixedCommand(scanner.apiId, command); toast.success(`Fixed scanner ${command} command sent`); }
-    catch (error) { toast.error(getApiErrorMessage(error, "Unable to send fixed scanner command")); }
+    setIsCommandRunning(true);
+    try {
+      await issueFixedCommand(scanner.apiId, command);
+      const scannerName = scanner?.scannerName || scanner?.name || "Fixed Scanner";
+      if (command === "start") {
+        const now = new Date();
+        setScanStartTime(now);
+        setIsScanning(true);
+        toast.scannerStart({
+          startTime: now,
+          formattedTime: formatTimeWithUserPreferences(now, true),
+          scannerName,
+        });
+      } else if (command === "stop") {
+        const stopTime = new Date();
+        let totalDuration = "";
+        if (scanStartTime) {
+          const diffSec = Math.max(0, Math.floor((stopTime.getTime() - scanStartTime.getTime()) / 1000));
+          const mins = Math.floor(diffSec / 60);
+          const secs = diffSec % 60;
+          totalDuration = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+        }
+        setIsScanning(false);
+        setScanStartTime(null);
+        toast.scannerStop({
+          stopTime,
+          formattedTime: formatTimeWithUserPreferences(stopTime, true),
+          totalDuration,
+          scannerName,
+        });
+      } else {
+        toast.success(`Fixed scanner ${command} command sent`);
+      }
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to send fixed scanner command"));
+    } finally {
+      setIsCommandRunning(false);
+    }
   };
 
   const handleConfigure = async (values) => {
@@ -263,7 +304,29 @@ const ScannerDetailsIndex = ({
         onAccess={() => setIsAccessOpen(true)}
       />
       {String(scanner.type || scanner.scannerType).toLowerCase() === "fixed" ? (
-        <Card padding="16px" rounded="16px"><div className="flex flex-wrap gap-2"><Button onClick={() => runFixedCommand("start")}>Start Scan</Button><Button onClick={() => runFixedCommand("stop")} variant="danger">Stop Scan</Button><Button onClick={() => runFixedCommand("rescan")} variant="secondary">Scan Again</Button></div></Card>
+        <Card padding="16px" rounded="16px">
+          <div className="flex flex-wrap items-center gap-3">
+            <ToggleSwitch
+              checked={isScanning}
+              checkedLabel="Stop Scan"
+              checkedVariant="danger"
+              disabled={isCommandRunning}
+              loading={isCommandRunning}
+              onChange={(shouldStart) => runFixedCommand(shouldStart ? "start" : "stop")}
+              size="md"
+              uncheckedLabel="Start Scan"
+              uncheckedVariant="primary"
+            />
+            <Button
+              disabled={isCommandRunning}
+              onClick={() => runFixedCommand("rescan")}
+              size="sm"
+              variant="secondary"
+            >
+              Scan Again
+            </Button>
+          </div>
+        </Card>
       ) : null}
 
       {!String(scanner.status).toLowerCase().includes("active") ? (

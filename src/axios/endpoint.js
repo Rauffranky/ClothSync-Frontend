@@ -122,6 +122,7 @@ export const TENANT_BULK_SCAN_ENDPOINTS = Object.freeze({
 
 export const LAUNDRY_SCANNER_ENDPOINTS = Object.freeze({
   START_SESSION: "/laundry-scanners/sessions/start",
+  TEST_SCANNER_SCAN: "/laundry-scanners/test-scanner-scan",
   LIST: "/laundry-scanners/show",
   DETAILS: (id) => `/laundry-scanners/show/${id}`,
   LOGS: (id) => `/laundry-scanners/show/${id}/logs`,
@@ -254,8 +255,10 @@ export const COMPLAINT_ENDPOINTS = Object.freeze({
   TENANT_UPDATE_STATUS: (id) => `/tenant-complaints/${id}/status`,
   LAUNDRY_LIST: "/laundry-complaints",
   LAUNDRY_CREATE: "/laundry-complaints",
+  LAUNDRY_VERIFY_ELIGIBILITY: "/laundry-complaints/verify-eligibility",
   LAUNDRY_DETAILS: (id) => `/laundry-complaints/${id}`,
   LAUNDRY_UPDATE_STATUS: (id) => `/laundry-complaints/${id}/status`,
+  TENANT_VERIFY_ELIGIBILITY: "/tenant-complaints/verify-eligibility",
 });
 
 export const ADMIN_TENANT_ENDPOINTS = Object.freeze({

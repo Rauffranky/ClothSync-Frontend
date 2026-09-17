@@ -3,6 +3,7 @@ import { Timer, X } from "lucide-react";
 import Alert from "../../UI/Alert";
 import Badge from "../../UI/Badge";
 import Button from "../../UI/Button";
+import { getAuthSessionUser } from "../../../axios/auth/authSession";
 
 const BulkScanUndoNotification = ({
   notice,
@@ -37,8 +38,77 @@ const BulkScanUndoNotification = ({
 
   const getDirectionalMessage = () => {
     const qty = notice.processedTagCount ?? notice.processedCount ?? 0;
-    const business = notice.businessName || "Business";
-    const laundry = notice.laundryName || "Laundry";
+    const authUser = getAuthSessionUser();
+    const portal =
+      notice.portal ||
+      (typeof window !== "undefined" && window.location.pathname.startsWith("/laundry")
+        ? "laundry"
+        : "business");
+
+    const authLaundryName =
+      portal === "laundry"
+        ? authUser?.companyName ||
+          authUser?.fullName ||
+          authUser?.name ||
+          authUser?.laundryName
+        : null;
+
+    let laundry =
+      notice.laundryName ||
+      notice.laundry?.companyName ||
+      notice.laundry?.name ||
+      authLaundryName;
+    if (!laundry || laundry === "Laundry") {
+      laundry = authLaundryName || "Laundry";
+    }
+
+    const authBusinessName =
+      portal === "business"
+        ? authUser?.businessName ||
+          authUser?.companyName ||
+          authUser?.fullName ||
+          authUser?.name
+        : null;
+
+    let business =
+      notice.businessName ||
+      notice.business?.businessName ||
+      notice.business?.name;
+
+    if (!business || business === "Business" || business === "Linked Business") {
+      if (portal === "laundry") {
+        try {
+          const rawStored = localStorage.getItem("active-laundry-bulk-scan-entries");
+          if (rawStored) {
+            const entries = JSON.parse(rawStored);
+            if (Array.isArray(entries) && entries.length > 0) {
+              const match = notice.batchCode
+                ? entries.find(
+                    (e) =>
+                      e.batchCode === notice.batchCode ||
+                      e.batchName === notice.batchCode ||
+                      e.resolvedBatchName === notice.batchCode,
+                  )
+                : null;
+              business =
+                match?.businessName ||
+                match?.tenant?.businessName ||
+                entries.find((e) => e.businessName && e.businessName !== "Linked Business")
+                  ?.businessName;
+            }
+          }
+        } catch {
+          // ignore
+        }
+      } else {
+        business = authBusinessName;
+      }
+    }
+
+    if (!business || business === "Business" || business === "Linked Business") {
+      business = authBusinessName || "Business";
+    }
+
 
     if (notice.portal === "laundry" && notice.action === "check_in") {
       return (

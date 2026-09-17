@@ -50,8 +50,11 @@ before changing it.
   events. The automatic response contract reads `data.undo` or
   `data.notification.undo`, `data.notification.action/message`, the relevant
   `checkedInCount`/`checkedOutCount`, and `data.session.id`. Notices are isolated
-  by Business/Laundry portal, persist for their
-  backend expiry window, and use portal-directional messages. Business actions
+  by Business/Laundry portal, persist for their backend expiry window, and use
+  portal-directional messages with exact Business Name and Laundry Name (resolving
+  business and laundry names from scan payloads, batch details, session storage entries,
+  and authenticated session profiles so generic fallback labels like "Business" or "Laundry"
+  are never displayed when the actual partner or portal names are known). Business actions
   undo through `/tenant-bulk-scan/sessions/:sessionId/actions/:undoId/undo`;
   Laundry actions use
   `/laundry-scanners/sessions/:sessionId/actions/:undoId/undo` and refresh the
@@ -179,12 +182,14 @@ Dashboard routes:
   `/business/dispatch-batches`, `/business/dispatch-batches/:id`, `/business/settings`, `/business/complaints`, `/business/complaints/create`, and `/business/complaints/:id`.
   Reports & Analytics is available at `/business/reports-analytics`. Complaints (`/business/complaints`, creation page `/business/complaints/create`, and details page `/business/complaints/:id`) allows businesses to send and receive complaints to/from linked partner laundries with Laundry partner filter dropdown (`laundryId`), multiple S3 image uploads, priority tagging, and status tracking via `/tenant-complaints`.
 - Laundry Portal: `/laundry/dashboard`, `/laundry/linked-businesses`,
-  `/laundry/linked-businesses/:id`, `/laundry/incoming-batches`,
+  `/laundry/linked-businesses/:id`, `/laundry/bulk-scanning`, `/laundry/incoming-batches`,
   `/laundry/incoming-batches/:id`, `/laundry/check-out`,
   `/laundry/check-out/:id`, `/laundry/scanners`, `/laundry/scanners/:id`,
   `/laundry/reports`, `/laundry/staff`,
   `/laundry/staff-roles`, `/laundry/settings`, `/laundry/complaints`, `/laundry/complaints/create`, and `/laundry/complaints/:id`.
-  Complaints (`/laundry/complaints`, creation page `/laundry/complaints/create`, and details page `/laundry/complaints/:id`) allows laundries to send and receive complaints to/from linked businesses with Business partner filter dropdown (`tenantId`), multiple S3 image uploads, priority tagging, and status tracking via `/laundry-complaints`.
+   Bulk Scanning (`/laundry/bulk-scanning`) provides dedicated live RFID scanning UI with top live Scanner Status Card (ID, connection status, mode, start/stop commands), 4 KPI summary cards, 3 scan group tabs (`New Unlinked`, `Existing Linked`, `Detached`) with real-time counters, and live scan entries table with selectable checkboxes (EPC, Partner Business, Category, Batch Association badge, Wash Cycles progress, Tag Wash Count column, Status badge, and clear session action), mirroring the Business Bulk Scanning experience. Scanned entries, active session, and last EPC persist in `sessionStorage` across page refreshes until explicitly cleared. When the scanner toggle is clicked to start or stop, the toggle switch remains strictly disabled with a loading spinner inside the knob (`disabled={isTransitioning}`, `loading={isTransitioning}`, label "Starting..." or "Stopping...") until the physical APK/hardware confirms state change via websocket events (`SCAN_SESSION_STARTED`, `SCAN_SESSION_FINISHED`, or live bulk scan tags). If the physical scanner device is turned off, disconnected, or fails to respond within 15 seconds, the start transition automatically aborts, setting the session to "offline", dismissing the transition toast, notifying the user via error toast, and displaying red `Scanner Offline` badges and status. A themed mint/cyan toast (`toast.scannerStart`) displays the exact start time and live ticking seconds pill (`● mm:ss`) while starting and active; when stopped, it transitions into a danger red stop toast (`toast.scannerStop`) displaying the exact stop time and ticking red duration until the APK closes the session. When tags are selected in Manual mode (`scannerMode: "manual"`), the selection banner, header, and Scanner Status Card expose `Check In ({count})` and `Check Out ({count})` actions (hidden in automatic/entry/exit modes); the `Complaint ({count})` action remains available whenever tags are selected. Check In/Check Out connects via `POST /api/laundry-scanners/test-scanner-scan` with batch grouping, immediate status transitions (`at_laundry` / `sent_to_business`), wash cycle count increments, 2-minute undo support, and realtime socket events.
+  Complaints support two distinct avenues: (1) **Option 1: General Complaint** (`complaintType: "general"`): general operational, delivery, service, billing, or quality issues that do not require RFID tags or batch linking; (2) **Option 2: Tag & Batch Discrepancy Complaint** (`complaintType: "tag_discrepancy"`): requires selected tags linked to a registered partner business and verified against 2 sequential batch conditions: (Condition 1) active in an Active Batch, or (Condition 2) linked in a previous Last Linked Batch. If a tag is unlinked or has no batch association, tag discrepancy complaints are strictly blocked. When verified, navigation to `/laundry/complaints/create` bundles the resolved Batch Name (active vs. last linked), Asset Name, Tag EPC, and Partner recipient details directly into the complaint view and submission payload. Incoming Batches (`/laundry/incoming-batches`, `/laundry/incoming-batches/:id`) and Check-Out (`/laundry/check-out`, `/laundry/check-out/:id`) are strictly view-only points for tracking, inspecting items, viewing metrics, and monitoring progress; all state transitions, scanning triggers, check-in, check-out, and fixed scanner operational commands are centralized exclusively in Bulk Scanning (`/laundry/bulk-scanning`), with direct navigation links provided.
+  Complaints (`/laundry/complaints`, creation page `/laundry/complaints/create`, and details page `/laundry/complaints/:id`) allows laundries to send and receive complaints to/from linked businesses with Business partner filter dropdown (`tenantId`), multiple S3 image uploads, priority tagging, and status tracking via `/laundry-complaints`. The complaints list header provides direct actions for both "General Complaint" and "Tag Discrepancy".
 - Each portal root redirects to its dashboard.
 
 `src/Components/Layout/Dashboard/nav.js` contains additional future links with no
@@ -437,9 +442,15 @@ Confirmed API-backed areas:
   session room before refetching. Session updated/finished/cleared events update
   counters/status or clear table state, and all listeners use matching cleanup
   handlers to prevent duplicates.
+  When scanned tags arrive via live scanner events or when sessions load, both
+  Tenant and Laundry Bulk Scanning screens automatically activate the respective tab
+  (`New Unlinked`, `Existing Linked`, or `Detached`) corresponding to the incoming
+  scanned tags, ensuring users immediately see the scanned items without needing
+  to manually click through tabs. Laundry bulk scanning table renders both `Wash Cycles`
+  (asset wash cycles) and a dedicated `Tag Wash Count` column (`tagWashCount` / `tagWashLimit` with progress bar).
   When the New Unlinked group has rows, the screen shows a readiness alert and
   an Add Bulk to System action. Its non-backdrop-dismissible Formik/Yup modal
-  loads active categories, validates asset name/category/zone/wash limit, and
+  loads active categories, validates asset name, category, wash limit, tag wash limit (`tagWashLimit`), and zone, and
   sends the exact bulk-add payload before refetching entries and exposing the
   returned undo state.
   Backend status identifiers are formatted for display through the shared
@@ -449,8 +460,9 @@ Confirmed API-backed areas:
   `GET /tenant-tags/show`. The asset-status dropdown sends the exact optional
   `assetStatus` query using `in_business`, `sent_to_laundry`, `at_laundry`,
   `washed`, `returned`, `delayed`, `missing`, `retired`, or `inactive`; selecting
-  All omits the parameter. The table normalizes tag/asset/category fields and
-  consumes response counts when supplied instead of rendering mock rows/cards.
+  All omits the parameter. The table normalizes tag/asset/category fields, exposes
+  a dedicated `WASH COUNT` column (`washCount` / `washLimit`), and consumes response
+  counts when supplied instead of rendering mock rows/cards.
   Its five-control toolbar sends debounced `keywords`, `mappingStatus`,
   `categoryId`, `assetStatus`, and `tagStatus` server filters; All values omit
   their parameter, and active category options load from Tenant Categories.
@@ -459,7 +471,9 @@ Confirmed API-backed areas:
   `categoryId`, `zoneName`, `laundryLinkId`, and `status` filters. Category and
   linked-laundry options load from their domain APIs; zone options consume the
   asset response's filter metadata when supplied and otherwise derive from
-  returned rows. Asset rows/cards normalize the live response instead of mock data.
+  returned rows. Asset rows/cards normalize the live response instead of mock data,
+  and display both `Wash Count` (asset lifecycle progress bar) and a dedicated
+  `Tag Wash Count` column (`tagWashCount` / `tagWashLimit` with progress bar).
 - The Business dashboard no longer renders its temporary hardcoded Test Scanner
   Scan/Test Bulk Add controls. Across the authenticated Business portal,
   a real `scan.session.started` or `scanner.scan.bulk` event stores the backend
@@ -756,7 +770,7 @@ responses use the global portal-aware login redirect described above.
 Reuse `src/Components/UI` before creating feature-local replacements:
 
 - Overlays/actions: `ActionDropdown`, `Dropdown`, `Modal`, `SlideOver`, `Tooltip`.
-- Inputs/navigation: `Input`, `Tabs`, `Toggle`, `Pagination`, `BusinessSelector`,
+- Inputs/navigation: `Input`, `Tabs`, `Toggle`, `ToggleSwitch`, `Pagination`, `BusinessSelector`,
   `QuillEditor`.
 - Data display: `Accordion` (`AccordionItem`), `Table`, `TableSkeleton`,
   `CardSkeleton`, `Badge`, `Card`, `Alert`, `ProgressBar`, and the shared `Charts`

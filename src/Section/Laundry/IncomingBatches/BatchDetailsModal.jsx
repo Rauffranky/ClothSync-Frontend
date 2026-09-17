@@ -8,6 +8,7 @@ import Modal from "../../../Components/UI/Modal";
 import Table from "../../../Components/UI/Table";
 import Dropdown from "../../../Components/UI/Dropdown";
 import Pagination from "../../../Components/UI/Pagination";
+import ToggleSwitch from "../../../Components/UI/ToggleSwitch";
 import { receiveLaundryDispatchBatch } from "../../../axios/batches/laundryBatches";
 import {
   clearLaundryScannerSession,
@@ -18,6 +19,7 @@ import {
   issueLaundryFixedScannerCommand,
 } from "../../../axios/scanners/laundryScanners";
 import { toast } from "../../../Utils/toast";
+import { formatTimeWithUserPreferences } from "../../../Utils/date";
 import { captureLaundryScanEvent, clearActiveLaundryScan } from "../../../Utils/laundryScanSession";
 import {
   getLaundryBatchErrorMessage,
@@ -77,7 +79,50 @@ const BatchDetailsModal = ({
   const canStartSession = checkoutMode
     ? ["at_laundry", "washed"].includes(batch?.statusValue)
     : Number(batch?.pendingCount || 0) > 0;
-  const runFixedCommand = async (command) => { if (!fixedScanner) return; try { await issueLaundryFixedScannerCommand(fixedScanner.id, command); toast.success(`Fixed scanner ${command} command sent`); } catch (error) { toast.error(getLaundryBatchErrorMessage(error, "Unable to send scanner command")); } };
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanStartTime, setScanStartTime] = useState(null);
+  const [isCommandRunning, setIsCommandRunning] = useState(false);
+  const runFixedCommand = async (command) => {
+    if (!fixedScanner) return;
+    setIsCommandRunning(true);
+    try {
+      await issueLaundryFixedScannerCommand(fixedScanner.id, command);
+      const scannerName = fixedScanner?.name || fixedScanner?.scannerName || "Fixed Scanner";
+      if (command === "start") {
+        const now = new Date();
+        setScanStartTime(now);
+        setIsScanning(true);
+        toast.scannerStart({
+          startTime: now,
+          formattedTime: formatTimeWithUserPreferences(now, true),
+          scannerName,
+        });
+      } else if (command === "stop") {
+        const stopTime = new Date();
+        let totalDuration = "";
+        if (scanStartTime) {
+          const diffSec = Math.max(0, Math.floor((stopTime.getTime() - scanStartTime.getTime()) / 1000));
+          const mins = Math.floor(diffSec / 60);
+          const secs = diffSec % 60;
+          totalDuration = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+        }
+        setIsScanning(false);
+        setScanStartTime(null);
+        toast.scannerStop({
+          stopTime,
+          formattedTime: formatTimeWithUserPreferences(stopTime, true),
+          totalDuration,
+          scannerName,
+        });
+      } else {
+        toast.success(`Fixed scanner ${command} command sent`);
+      }
+    } catch (error) {
+      toast.error(getLaundryBatchErrorMessage(error, "Unable to send scanner command"));
+    } finally {
+      setIsCommandRunning(false);
+    }
+  };
   const liveScanMatchesBatch =
     liveScan?.sessionId &&
     (!liveScan.batchId || liveScan.batchId === batch?.apiId);
@@ -306,11 +351,22 @@ const BatchDetailsModal = ({
             {scannerError && <p className="mt-2 text-xs text-(--color-overdue)" role="alert">{scannerError}</p>}
 
             {fixedScanner && liveScanMatchesBatch && (
-              <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-(--theme-border-soft) pt-3">
+              <div className="mt-3 flex flex-wrap items-center gap-2.5 border-t border-(--theme-border-soft) pt-3">
                 <span className="text-xs font-bold text-(--theme-text-secondary)">Fixed Scanner:</span>
-                <Button onClick={() => runFixedCommand("start")} size="sm">Start Scan</Button>
-                <Button onClick={() => runFixedCommand("stop")} size="sm" variant="danger">Stop Scan</Button>
-                <Button onClick={() => runFixedCommand("rescan")} size="sm" variant="secondary">Scan Again</Button>
+                <ToggleSwitch
+                  checked={isScanning}
+                  checkedLabel="Stop Scan"
+                  checkedVariant="danger"
+                  disabled={isCommandRunning}
+                  loading={isCommandRunning}
+                  onChange={(shouldStart) => runFixedCommand(shouldStart ? "start" : "stop")}
+                  size="sm"
+                  uncheckedLabel="Start Scan"
+                  uncheckedVariant="primary"
+                />
+                <Button disabled={isCommandRunning} onClick={() => runFixedCommand("rescan")} size="sm" variant="secondary">
+                  Scan Again
+                </Button>
               </div>
             )}
           </div>

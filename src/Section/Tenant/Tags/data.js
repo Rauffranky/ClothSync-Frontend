@@ -173,7 +173,9 @@ export const normalizeTenantTag = (tag = {}) => {
     const category = tag.category || asset?.category || null;
     const assetStatusValue = tag.assetStatus || tag.currentStatus || asset?.status || null;
     const mappingStatus = tag.mappingStatus || tag.mapping || "unlinked";
-    const tagStatus = tag.tagStatus || tag.status || "inactive";
+    const tagStatus = tag.status || tag.tagStatus || "active";
+    const washCount = Number(tag.tagWashCount ?? tag.washCount ?? tag.totalLaundryCycles ?? 0);
+    const washLimit = tag.tagWashLimit != null ? Number(tag.tagWashLimit) : (tag.washLimit != null ? Number(tag.washLimit) : (asset?.washLimit != null ? Number(asset.washLimit) : null));
 
     return {
         ...tag,
@@ -188,6 +190,10 @@ export const normalizeTenantTag = (tag = {}) => {
         assetStatus: assetStatusValue ? formatStatusLabel(assetStatusValue) : "—",
         assetStatusVariant: getAssetStatusVariant(assetStatusValue),
         tagStatus: formatStatusLabel(tagStatus),
+        washCount,
+        tagWashCount: washCount,
+        washLimit,
+        tagWashLimit: washLimit,
         lastScanTime: tag.lastScannedAt ? formatDateTime(tag.lastScannedAt, true, true) : "Never",
         location: tag.lastScannedLocation || tag.location || "",
         createdAt: formatDateWithUserPreferences(tag.createdAt),

@@ -1337,7 +1337,7 @@ const BusinessSignup = ({ portal }) => {
   const isDoneStep = currentStep === businessSignupSteps.length - 1;
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center px-4 py-8">
+    <main className="relative flex min-h-screen flex-col items-center justify-center px-4 py-8">
       <div className={`w-full ${isPlanStep ? "max-w-6xl" : "max-w-xl"}`}>
         <BusinessSignupStepper
           currentStep={currentStep}
@@ -1351,6 +1351,17 @@ const BusinessSignup = ({ portal }) => {
           {renderStepContent()}
         </Card>
       </div>
+      <p className="mt-5 text-center text-xs text-(--theme-text-muted)">
+        Powered by:{" "}
+        <a
+          href="https://code-xperts.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-bold text-(--color-aurora-teal) hover:underline transition-colors"
+        >
+          Code Xperts
+        </a>
+      </p>
     </main>
   );
 };

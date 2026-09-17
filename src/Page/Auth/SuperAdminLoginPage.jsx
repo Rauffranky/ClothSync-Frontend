@@ -188,6 +188,17 @@ const SuperAdminLoginPage = () => {
         <p className="mt-5 text-center text-xs font-medium text-(--theme-text-muted)">
           Restricted access — authorized personnel only.
         </p>
+        <p className="mt-2 text-center text-xs text-(--theme-text-muted)">
+          Powered by:{" "}
+          <a
+            href="https://code-xperts.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-(--color-aurora-teal) hover:underline transition-colors"
+          >
+            Code Xperts
+          </a>
+        </p>
       </div>
     </main>
   );

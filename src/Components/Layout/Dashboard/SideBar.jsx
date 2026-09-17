@@ -334,11 +334,22 @@ const SideBar = ({
 
         <nav className="p-3 flex flex-col justify-between h-[calc(100dvh-64px)] overflow-auto hide-scrollbar">
           <div className="space-y-1">{renderMenuContent(true)}</div>
-          <div className="mt-4">
+          <div className="mt-4 flex flex-col gap-2">
             {renderLink(
               { id: "logout", label: "Logout", href: "#", Icon: LogOut },
               true,
             )}
+            <div className="px-4 pt-1 text-xs text-(--theme-text-muted)">
+              Powered by:{" "}
+              <a
+                href="https://code-xperts.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-(--color-aurora-teal) hover:underline transition-colors"
+              >
+                Code Xperts
+              </a>
+            </div>
           </div>
         </nav>
       </aside>
@@ -370,6 +381,32 @@ const SideBar = ({
           {renderLink(
             { id: "logout", label: "Logout", href: "#", Icon: LogOut },
             false,
+          )}
+          {isDesktopOpen ? (
+            <div className="px-4 pt-1 text-xs text-(--theme-text-muted) whitespace-nowrap overflow-hidden text-ellipsis">
+              Powered by:{" "}
+              <a
+                href="https://code-xperts.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-(--color-aurora-teal) hover:underline transition-colors"
+              >
+                Code Xperts
+              </a>
+            </div>
+          ) : (
+            <div className="flex justify-center pt-1">
+              <GlobalTooltip text="Powered by: Code Xperts" position="right">
+                <a
+                  href="https://code-xperts.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-black tracking-wider text-(--theme-text-muted) hover:text-(--color-aurora-teal) transition-colors"
+                >
+                  CX
+                </a>
+              </GlobalTooltip>
+            </div>
           )}
         </div>
       </aside>

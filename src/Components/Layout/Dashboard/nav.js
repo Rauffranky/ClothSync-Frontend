@@ -165,7 +165,7 @@ export const NAV = {
       Icon: ChartNoAxesCombined,
     },
     {
-      id: 112,
+      id: 113,
       label: "Complaints",
       href: "/business/complaints",
       Icon: ShieldAlert,
@@ -219,6 +219,12 @@ export const NAV = {
       href: "/laundry/check-out",
       Icon: LogOut,
       permissionKey: "check_out",
+    },
+    {
+      id: 206,
+      label: "Bulk Scanning",
+      href: "/laundry/bulk-scanning",
+      Icon: ScanQrCode,
     },
     {
       id: 208,

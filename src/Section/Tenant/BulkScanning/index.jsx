@@ -23,6 +23,7 @@ import {
 import GlobalUndoBanners from "../../../Components/Layout/Dashboard/GlobalUndoBanners";
 import useGlobalUndoNotices, { mergeUndoNotices } from "../../../Hooks/useGlobalUndoNotices";
 import { toast } from "../../../Utils/toast";
+import { formatTimeWithUserPreferences } from "../../../Utils/date";
 import { issueTenantFixedScannerCommand } from "../../../axios/scanners/tenantScanners";
 import BulkScanEntriesTable from "./BulkScanEntriesTable";
 import BulkAddModal from "./BulkAddModal";
@@ -104,9 +105,14 @@ const BulkScanningIndex = () => {
   const [statusAction, setStatusAction] = useState(null);
   const [isLoading, setIsLoading] = useState(Boolean(sessionId));
   const [isClearing, setIsClearing] = useState(false);
+  const [isCommandRunning, setIsCommandRunning] = useState(null);
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [loadError, setLoadError] = useState("");
   const requestIdRef = useRef(0);
+  const activeScanStartTimeRef = useRef(null);
+  const startTransitionTimeRef = useRef(null);
+  const stopTransitionTimeRef = useRef(null);
+  const commandTimeoutRef = useRef(null);
   const rowsRef = useRef([]);
   const actionRequestControllerRef = useRef(null);
 
@@ -239,6 +245,17 @@ const BulkScanningIndex = () => {
     };
 
     const handleBulkScan = (data) => {
+      // As soon as scanning starts in APK, stop start timer and dismiss toast
+      if (startTransitionTimeRef.current) {
+        startTransitionTimeRef.current = null;
+        toast.dismiss("scanner-session-toast");
+      }
+      if (commandTimeoutRef.current) {
+        clearTimeout(commandTimeoutRef.current);
+        commandTimeoutRef.current = null;
+      }
+      setIsCommandRunning(null);
+
       const nextSession = getEventSession(data);
       if (nextSession) applySession(nextSession);
 
@@ -255,12 +272,37 @@ const BulkScanningIndex = () => {
       if (Array.isArray(results) && results[0]?.epc) setLastEpc(results[0].epc);
       if (!Array.isArray(results) || currentPage !== 0) return;
 
-      const matchingEntries = results
-        .filter((result) => {
-          const entry = result.scannedTag ?? result.entry ?? result;
-          return !entry.scanStatus || entry.scanStatus === "pending";
-        })
-        .filter((result) => getLiveScanGroup(result) === activeTab)
+      const pendingResults = results.filter((result) => {
+        const entry = result.scannedTag ?? result.entry ?? result;
+        return !entry.scanStatus || entry.scanStatus === "pending";
+      });
+      if (pendingResults.length === 0) return;
+
+      // Auto-switch to the respective group tab that received the scanned tags
+      const incomingGroups = pendingResults.map(getLiveScanGroup).filter(Boolean);
+      let effectiveTab = activeTab;
+      if (incomingGroups.length > 0) {
+        const groupCounts = {};
+        incomingGroups.forEach((g) => {
+          groupCounts[g] = (groupCounts[g] || 0) + 1;
+        });
+        let targetGroup = incomingGroups[0];
+        let maxCount = 0;
+        Object.entries(groupCounts).forEach(([g, count]) => {
+          if (count > maxCount) {
+            maxCount = count;
+            targetGroup = g;
+          }
+        });
+        if (targetGroup && targetGroup !== activeTab) {
+          effectiveTab = targetGroup;
+          setActiveBulkScanGroup(targetGroup);
+          setActiveTab(targetGroup);
+        }
+      }
+
+      const matchingEntries = pendingResults
+        .filter((result) => getLiveScanGroup(result) === effectiveTab)
         .map((result) => normalizeBulkScanEntry(result.scannedTag ?? result.entry ?? result));
       if (matchingEntries.length === 0) return;
 
@@ -276,7 +318,18 @@ const BulkScanningIndex = () => {
       });
     };
 
-    const handleSessionStarted = (data) => applySession(getEventSession(data));
+    const handleSessionStarted = (data) => {
+      if (commandTimeoutRef.current) {
+        clearTimeout(commandTimeoutRef.current);
+        commandTimeoutRef.current = null;
+      }
+      if (startTransitionTimeRef.current) {
+        startTransitionTimeRef.current = null;
+        toast.dismiss("scanner-session-toast");
+      }
+      setIsCommandRunning(null);
+      applySession(getEventSession(data));
+    };
     const handleSessionUpdated = (data) => applySession(getEventSession(data));
     const handleBulkAdded = (data) => {
       const notice = getEventUndoNotice(data);
@@ -302,9 +355,38 @@ const BulkScanningIndex = () => {
       setLastEpc(null);
       setUndoNotices([]);
     };
+
     const handleSessionFinished = (data) => {
+      if (commandTimeoutRef.current) {
+        clearTimeout(commandTimeoutRef.current);
+        commandTimeoutRef.current = null;
+      }
+      setIsCommandRunning(null);
       const finishedSession = getEventSession(data);
       if (finishedSession) setSession(finishedSession);
+      const stopDoneTime = new Date();
+      const stopStartTime = stopTransitionTimeRef.current;
+      let stopDuration = "";
+      if (stopStartTime) {
+        const diffSec = Math.max(
+          0,
+          Math.floor((stopDoneTime.getTime() - stopStartTime.getTime()) / 1000),
+        );
+        const mins = Math.floor(diffSec / 60);
+        const secs = diffSec % 60;
+        stopDuration = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+      }
+      stopTransitionTimeRef.current = null;
+      startTransitionTimeRef.current = null;
+      activeScanStartTimeRef.current = null;
+      const scannerName = scanner?.name || scanner?.scannerName || "Fixed Scanner";
+      toast.scannerStop({
+        message: "Scanner Stopped",
+        totalDuration: stopDuration,
+        isFinal: true,
+        scannerName,
+        duration: 2500,
+      });
     };
 
     socket.on("connect", rejoinAndRefresh);
@@ -330,7 +412,7 @@ const BulkScanningIndex = () => {
       socket.off(SOCKET_EVENTS.SCAN_SESSION_CLEARED, handleSessionCleared);
       socket.off(SOCKET_EVENTS.SCAN_SESSION_FINISHED, handleSessionFinished);
     };
-  }, [activeTab, currentPage, fetchEntries, handleCountsUpdate, sessionId, setUndoNotices]);
+  }, [activeTab, currentPage, fetchEntries, handleCountsUpdate, scanner?.name, scanner?.scannerName, sessionId, setUndoNotices]);
 
   const tabs = BULK_SCAN_TABS.map((tab) => ({
     ...tab,
@@ -533,7 +615,102 @@ const BulkScanningIndex = () => {
         </Alert>
       )}
 
-      <ScannerStatusCard lastEpc={lastEpc} scanner={scanner} session={session} onFixedCommand={async (command) => { try { await issueTenantFixedScannerCommand(scanner?.id, command); toast.success(`Fixed scanner ${command} command sent`); } catch (error) { toast.error(getApiErrorMessage(error, "Unable to send scanner command")); } }} />
+      <ScannerStatusCard
+        isCommandRunning={isCommandRunning}
+        lastEpc={lastEpc}
+        onFixedCommand={async (command) => {
+          if (commandTimeoutRef.current) {
+            clearTimeout(commandTimeoutRef.current);
+            commandTimeoutRef.current = null;
+          }
+          setIsCommandRunning(command);
+          try {
+            const scannerName = scanner?.name || scanner?.scannerName || "Fixed Scanner";
+            if (command === "start") {
+              const startedAt = new Date().toISOString();
+              activeScanStartTimeRef.current = new Date(startedAt);
+              setSession((prev) => ({
+                ...(prev || {}),
+                status: "starting",
+                startedAt,
+              }));
+              startTransitionTimeRef.current = new Date(startedAt);
+              stopTransitionTimeRef.current = null;
+
+              toast.scannerStart({
+                message: "Starting Scanner...",
+                startTime: startedAt,
+                formattedTime: formatTimeWithUserPreferences(startedAt, true),
+                scannerName,
+                duration: 0,
+              });
+
+              await issueTenantFixedScannerCommand(scanner?.id, "start");
+
+              // 15-second safety fallback: if APK/scanner device is turned off or disconnected
+              commandTimeoutRef.current = setTimeout(() => {
+                setIsCommandRunning(null);
+                toast.dismiss("scanner-session-toast");
+                setSession((prev) => ({
+                  ...(prev || {}),
+                  status: "offline",
+                }));
+                toast.error(
+                  "Scanner is offline or not responding. Please make sure the scanner device is turned on and connected.",
+                );
+              }, 15000);
+            } else if (command === "stop") {
+              const stopStart = new Date();
+              stopTransitionTimeRef.current = stopStart;
+              startTransitionTimeRef.current = null;
+
+              setSession((prev) => ({
+                ...(prev || {}),
+                status: "stopping",
+              }));
+
+              // Red danger live timer counting until APK actually closes the session
+              toast.scannerStop({
+                message: "Stopping Scanner...",
+                startTime: stopStart.toISOString(),
+                formattedTime: formatTimeWithUserPreferences(stopStart, true),
+                scannerName,
+                isFinal: false,
+                duration: 0,
+              });
+
+              await issueTenantFixedScannerCommand(scanner?.id, "stop");
+
+              // 15-second safety fallback if APK/tablet doesn't respond via socket
+              commandTimeoutRef.current = setTimeout(() => {
+                setIsCommandRunning(null);
+                toast.dismiss("scanner-session-toast");
+                setSession((prev) => ({
+                  ...(prev || {}),
+                  status: "stopped",
+                }));
+              }, 15000);
+            } else {
+              await issueTenantFixedScannerCommand(scanner?.id, command);
+              toast.success(`Fixed scanner ${command} command sent`);
+              setIsCommandRunning(null);
+            }
+          } catch (error) {
+            toast.error(getApiErrorMessage(error, "Unable to send scanner command"));
+            setIsCommandRunning(null);
+            setSession((prev) => ({
+              ...(prev || {}),
+              status: "offline",
+            }));
+            if (commandTimeoutRef.current) {
+              clearTimeout(commandTimeoutRef.current);
+              commandTimeoutRef.current = null;
+            }
+          }
+        }}
+        scanner={scanner}
+        session={session}
+      />
       <SummaryCards counts={counts} loading={isLoading} />
 
       <Card className="overflow-hidden" padding="0" rounded="18px">

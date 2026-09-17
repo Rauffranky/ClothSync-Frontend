@@ -2,6 +2,7 @@ import { Hash, MapPin, RadioTower, Settings, Tag, Timer, Zap } from "lucide-reac
 import Badge from "../../../Components/UI/Badge";
 import Card from "../../../Components/UI/Card";
 import Button from "../../../Components/UI/Button";
+import ToggleSwitch from "../../../Components/UI/ToggleSwitch";
 import { formatTimeWithUserPreferences } from "../../../Utils/date";
 import { formatStatusLabel } from "../../../Utils/status";
 
@@ -12,8 +13,31 @@ const getScannerName = (scanner) =>
   scanner?.translations?.en?.scannerName ??
   "-";
 
-const ScannerStatusCard = ({ session, scanner, lastEpc, onFixedCommand }) => {
-  const isConnected = Boolean(scanner || session);
+const ScannerStatusCard = ({
+  session,
+  scanner,
+  lastEpc,
+  onFixedCommand,
+  isCommandRunning,
+}) => {
+  const isStarting = isCommandRunning === "start" || session?.status === "starting";
+  const isStopping = isCommandRunning === "stop" || session?.status === "stopping";
+  const isSessionActive = session?.status === "active";
+
+  const isOffline = Boolean(
+    session?.status === "offline" ||
+    (scanner && (
+      scanner.isOnline === false ||
+      scanner.status === "offline" ||
+      scanner.status === "inactive" ||
+      scanner.signalStatus === "offline"
+    ))
+  );
+
+  const isConnected = Boolean(
+    !isOffline && (isSessionActive || isStarting || isStopping || scanner?.isOnline || scanner?.status === "active" || scanner || session)
+  );
+  const isTransitioning = Boolean(isCommandRunning) || isStarting || isStopping;
   const fields = [
     { icon: Hash, label: "Scanner ID", value: scanner?.scannerId ?? "-" },
     { icon: RadioTower, label: "Scanner Name", value: getScannerName(scanner) },
@@ -22,7 +46,21 @@ const ScannerStatusCard = ({ session, scanner, lastEpc, onFixedCommand }) => {
       label: "Location",
       value: scanner?.location ?? scanner?.zoneName ?? "-",
     },
-    { icon: Zap, label: "Status", value: formatStatusLabel(session?.status) },
+    {
+      icon: Zap,
+      label: "Status",
+      value: isStarting
+        ? "Starting"
+        : isStopping
+        ? "Stopping"
+        : isSessionActive
+        ? "Active"
+        : isOffline
+        ? "Offline"
+        : scanner?.isOnline || scanner?.status === "active"
+        ? "Online"
+        : "Offline",
+    },
     { icon: Settings, label: "Mode", value: formatStatusLabel(scanner?.scannerMode) },
     {
       icon: Timer,
@@ -36,11 +74,40 @@ const ScannerStatusCard = ({ session, scanner, lastEpc, onFixedCommand }) => {
     <Card className="mb-6" padding="24px">
       <div className="mb-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-2.5 w-2.5 rounded-full bg-(--theme-text-primary)" />
+          <div
+            className={`h-2.5 w-2.5 rounded-full ${
+              isStarting || isStopping
+                ? "bg-amber-400 animate-pulse"
+                : isSessionActive
+                ? "bg-(--color-aurora-teal) animate-pulse"
+                : isConnected
+                ? "bg-(--color-aurora-teal)"
+                : "bg-rose-500"
+            }`}
+          />
           <h2 className="text-lg font-black text-(--theme-text-primary)">Scanner Status</h2>
         </div>
-        <Badge dot variant={isConnected ? "success" : "neutral"}>
-          {isConnected ? "Connected" : "Waiting for session"}
+        <Badge
+          dot
+          variant={
+            isStarting || isStopping
+              ? "warning"
+              : isSessionActive
+              ? "success"
+              : isConnected
+              ? "info"
+              : "danger"
+          }
+        >
+          {isStarting
+            ? "Starting Scanner..."
+            : isStopping
+            ? "Stopping Scanner..."
+            : isSessionActive
+            ? "Session Active & Scanning"
+            : isConnected
+            ? "Scanner Connected"
+            : "Scanner Offline"}
         </Badge>
       </div>
 
@@ -59,6 +126,18 @@ const ScannerStatusCard = ({ session, scanner, lastEpc, onFixedCommand }) => {
               >
                 {value}
               </Badge>
+            ) : label === "Status" ? (
+              <p
+                className={`font-black capitalize ${
+                  value === "Active" || value === "Online"
+                    ? "text-emerald-400"
+                    : value === "Starting" || value === "Stopping"
+                    ? "text-amber-400"
+                    : "text-rose-500"
+                }`}
+              >
+                {value}
+              </p>
             ) : (
               <p className="font-black capitalize text-(--theme-text-primary)">{value}</p>
             )}
@@ -66,7 +145,35 @@ const ScannerStatusCard = ({ session, scanner, lastEpc, onFixedCommand }) => {
         ))}
       </div>
       {String(scanner?.scannerType || scanner?.type).toLowerCase() === "fixed" && (
-        <div className="mt-5 flex flex-wrap gap-2"><Button onClick={() => onFixedCommand?.("start")}>Start Scan</Button><Button onClick={() => onFixedCommand?.("stop")} variant="danger">Stop Scan</Button><Button onClick={() => onFixedCommand?.("rescan")} variant="secondary">Scan Again</Button></div>
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <ToggleSwitch
+            checked={isSessionActive || isStarting}
+            checkedLabel={isStarting ? "Starting..." : isStopping ? "Stopping..." : "Stop Scan"}
+            checkedVariant="danger"
+            disabled={isTransitioning}
+            loading={isTransitioning}
+            onChange={(shouldStart) => {
+              if (isTransitioning) return;
+              if (shouldStart) {
+                onFixedCommand?.("start");
+              } else {
+                onFixedCommand?.("stop");
+              }
+            }}
+            size="md"
+            uncheckedLabel="Start Scan"
+            uncheckedVariant="primary"
+          />
+          <Button
+            disabled={isTransitioning}
+            loading={isCommandRunning === "rescan"}
+            onClick={() => onFixedCommand?.("rescan")}
+            size="sm"
+            variant="secondary"
+          >
+            Scan Again
+          </Button>
+        </div>
       )}
     </Card>
   );

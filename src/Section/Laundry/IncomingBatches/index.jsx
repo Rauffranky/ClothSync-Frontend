@@ -10,6 +10,8 @@ import {
   MapPin,
   PackageCheck,
   RefreshCw,
+  ScanQrCode,
+  Search,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Alert from "../../../Components/UI/Alert";
@@ -27,24 +29,18 @@ import GlobalUndoBanners from "../../../Components/Layout/Dashboard/GlobalUndoBa
 import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
 import { useSocketEvents } from "../../../Hooks/useSocketEvent";
 import {
-  getIncomingBatchDetails as fetchIncomingBatchDetails,
   getCompletedLaundryDispatchBatches,
   getIncomingBatches,
 } from "../../../axios/batches/laundryBatches";
-import { clearLaundryScannerSession } from "../../../axios/scanners/laundryScanners";
-import { toast } from "../../../Utils/toast";
 import { getLaundryTenantOptions } from "../../../axios/laundryTenants/laundryTenants";
 import { SOCKET_EVENTS } from "../../../socket/events";
 import { getSocket } from "../../../socket/client";
 import {
   captureLaundryScanEvent,
-  clearActiveLaundryScan,
   getActiveLaundryScan,
 } from "../../../Utils/laundryScanSession";
-import BatchDetailsModal from "./BatchDetailsModal";
 import {
   getIncomingBatchCollection,
-  getIncomingBatchDetails,
   getCompletedBatchCollection,
   getLaundryBatchErrorMessage,
 } from "./data";
@@ -269,40 +265,17 @@ const IncomingBatches = ({ checkoutMode = false }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
-  const [selectedBatch, setSelectedBatch] = useState(null);
-  const [isDetailLoading, setIsDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState("");
   const [liveScan, setLiveScan] = useState(getInitialLiveScan);
   const [businessOptions, setBusinessOptions] = useState([
     { label: "All Businesses", value: "all" },
   ]);
   const [isBusinessFilterLoading, setIsBusinessFilterLoading] = useState(false);
-  const [isClearingSession, setIsClearingSession] = useState(false);
   const openedLiveBatchRef = useRef(null);
 
   const refreshFromLiveScan = useCallback((payload) => {
     setLiveScan(captureLaundryScanEvent(payload));
     setRefreshKey((value) => value + 1);
-    if (!selectedBatch?.apiId) return;
-
-    setIsDetailLoading(true);
-    fetchIncomingBatchDetails(selectedBatch.apiId)
-      .then((response) => {
-        setSelectedBatch(getIncomingBatchDetails(response));
-        setDetailError("");
-      })
-      .catch((error) => {
-        setDetailError(
-          getLaundryBatchErrorMessage(
-            error,
-            "Unable to refresh the live batch details",
-          ),
-        );
-      })
-      .finally(() => {
-        setIsDetailLoading(false);
-      });
-  }, [selectedBatch]);
+  }, []);
 
   useSocketEvents(LIVE_SCAN_EVENTS, refreshFromLiveScan);
 
@@ -317,21 +290,10 @@ const IncomingBatches = ({ checkoutMode = false }) => {
     const refetchAfterReconnect = () => {
       setLiveScan(getActiveLaundryScan());
       setRefreshKey((value) => value + 1);
-      if (!selectedBatch?.apiId) return;
-      setIsDetailLoading(true);
-      fetchIncomingBatchDetails(selectedBatch.apiId)
-        .then((response) => {
-          setSelectedBatch(getIncomingBatchDetails(response));
-          setDetailError("");
-        })
-        .catch((error) => setDetailError(getLaundryBatchErrorMessage(error, "Unable to refresh after reconnect")))
-        .finally(() => {
-          setIsDetailLoading(false);
-        });
     };
     socket.on("connect", refetchAfterReconnect);
     return () => socket.off("connect", refetchAfterReconnect);
-  }, [selectedBatch?.apiId]);
+  }, []);
 
   useEffect(() => {
     const handleUndoSuccess = (event) => {
@@ -527,21 +489,6 @@ const IncomingBatches = ({ checkoutMode = false }) => {
     );
   };
 
-  const handleClearSession = async () => {
-    if (!liveScan?.sessionId || isClearingSession) return;
-    setIsClearingSession(true);
-    try {
-      await clearLaundryScannerSession(liveScan.sessionId);
-      clearActiveLaundryScan();
-      setLiveScan(null);
-      setRefreshKey((value) => value + 1);
-      toast.success("Scan session cleared successfully");
-    } catch (error) {
-      toast.error(getLaundryBatchErrorMessage(error, "Unable to clear scan session"));
-    } finally {
-      setIsClearingSession(false);
-    }
-  };
 
   const setCompletedFilter = (key, value) => {
     setCurrentPage(0);
@@ -583,20 +530,25 @@ const IncomingBatches = ({ checkoutMode = false }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="m-0 text-2xl font-black text-(--theme-text-primary)">
-          {checkoutMode ? "Check Out" : "Batches"}
-        </h1>
-        {liveScan?.sessionId && (
-          <Button
-            disabled={isClearingSession}
-            loading={isClearingSession}
-            onClick={handleClearSession}
-            variant="secondary"
-          >
-            Clear Session
-          </Button>
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="m-0 text-2xl font-black text-(--theme-text-primary)">
+            {checkoutMode ? "Check Out" : "Batches"}
+          </h1>
+          <p className="m-0 mt-1 text-xs text-(--theme-text-muted)">
+            {checkoutMode
+              ? "View and monitor outgoing laundry batches. All RFID scanning and check-out operations are managed from Bulk Scanning."
+              : "View and monitor incoming partner batches. All RFID scanning and check-in operations are managed from Bulk Scanning."}
+          </p>
+        </div>
+        <Button
+          leftIcon={<ScanQrCode size={15} />}
+          onClick={() => navigate("/laundry/bulk-scanning")}
+          size="md"
+          variant="primary"
+        >
+          Open Bulk Scanning
+        </Button>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {(checkoutMode ? checkoutStats : stats).map(({ Icon, ...stat }) => (
@@ -635,112 +587,118 @@ const IncomingBatches = ({ checkoutMode = false }) => {
         </Alert>
       )}
       <GlobalUndoBanners inline portal="laundry" />
-      <div className="w-full md:w-max">
-        <Tabs items={availableTabs} onChange={handleTabChange} value={activeTab} />
-      </div>
-      <div
-        className={
-          activeTab === "completed"
-            ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_240px_190px_190px_auto]"
-            : "w-full sm:w-120 md:w-96 lg:w-80 xl:w-96"
-        }
-      >
-        <Input
-          onChange={(value) => {
-            setSearchValue(value);
-            setCurrentPage(0);
-          }}
-          placeholder="Search by batch..."
-          value={searchValue}
-        />
-        {activeTab === "completed" && (
-          <>
-            <Dropdown
-              disabled={isBusinessFilterLoading}
-              onChange={(value) => setCompletedFilter("tenantId", value)}
-              options={businessOptions}
-              placeholder={
-                isBusinessFilterLoading ? "Loading businesses..." : "All Businesses"
-              }
-              search
-              value={tenantIdFilter || "all"}
+
+      {/* Unified Batches Card */}
+      <Card padding="0" rounded="18px">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-(--theme-border) px-4 py-4">
+          <div className="min-w-0 flex-[1_1_520px] overflow-x-auto overscroll-x-contain">
+            <Tabs
+              className="w-max border-0 bg-transparent p-0 shadow-none"
+              itemClassName="min-w-[150px] overflow-hidden"
+              equalWidth={false}
+              items={availableTabs}
+              onChange={handleTabChange}
+              value={activeTab}
             />
-            <Input
-              leftIcon={<CalendarDays size={16} />}
-              max={dateToFilter || undefined}
-              onChange={(value) => setCompletedFilter("dateFrom", value)}
-              placeholder="Date from"
-              type="date"
-              value={dateFromFilter}
-            />
-            <Input
-              leftIcon={<CalendarDays size={16} />}
-              min={dateFromFilter || undefined}
-              onChange={(value) => setCompletedFilter("dateTo", value)}
-              placeholder="Date to"
-              type="date"
-              value={dateToFilter}
-            />
-            <Button
-              disabled={
-                !searchValue && !tenantIdFilter && !dateFromFilter && !dateToFilter
-              }
-              onClick={clearCompletedFilters}
-              variant="outline"
-            >
-              Clear Filters
-            </Button>
-          </>
-        )}
-      </div>
-      <Table
-        actions={(row) => (
-          <Button
-            leftIcon={<Eye size={13} />}
-            onClick={() => openBatchDetails(row)}
-            size="sm"
-            variant="outline"
+          </div>
+        </div>
+
+        <div className="space-y-4 p-4">
+          <div
+            className={
+              activeTab === "completed"
+                ? "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_240px_190px_190px_auto]"
+                : "w-full sm:w-120 md:w-96 lg:w-80 xl:w-96"
+            }
           >
-            View
-          </Button>
-        )}
-        columns={activeTab === "completed" ? completedColumns : columns}
-        compact
-        data={rows}
-        emptyText={
-          checkoutMode
-            ? activeTab === "completed"
-              ? "No checked out batches found"
-              : "No batches are ready for checkout"
-            : activeTab === "completed"
-            ? "No completed batches found"
-            : activeTab === "received"
-            ? "No received batches found"
-            : "No incoming batches found"
-        }
-        loading={isLoading}
-        rowKey="apiId"
-      />
-      <Pagination
-        forcePage={currentPage}
-        itemsPerPage={ITEMS_PER_PAGE}
-        onPageChange={({ selected }) => setCurrentPage(selected)}
-        pageCount={totalPages}
-        totalItems={totalItems}
-      />
-      <BatchDetailsModal
-        batch={selectedBatch}
-        error={detailError}
-        isLoading={isDetailLoading}
-        liveScan={liveScan}
-        checkoutMode={checkoutMode}
-        onClose={() => setSelectedBatch(null)}
-        onReceived={(receipt) => {
-          setSelectedBatch(receipt?.batch || receipt);
-          setLiveScan(null);
-          setRefreshKey((value) => value + 1);
-        }}
-      />
+            <Input
+              leftIcon={<Search size={16} />}
+              onChange={(value) => {
+                setSearchValue(value);
+                setCurrentPage(0);
+              }}
+              placeholder="Search by batch..."
+              value={searchValue}
+            />
+            {activeTab === "completed" && (
+              <>
+                <Dropdown
+                  disabled={isBusinessFilterLoading}
+                  onChange={(value) => setCompletedFilter("tenantId", value)}
+                  options={businessOptions}
+                  placeholder={
+                    isBusinessFilterLoading ? "Loading businesses..." : "All Businesses"
+                  }
+                  search
+                  value={tenantIdFilter || "all"}
+                />
+                <Input
+                  leftIcon={<CalendarDays size={16} />}
+                  max={dateToFilter || undefined}
+                  onChange={(value) => setCompletedFilter("dateFrom", value)}
+                  placeholder="Date from"
+                  type="date"
+                  value={dateFromFilter}
+                />
+                <Input
+                  leftIcon={<CalendarDays size={16} />}
+                  min={dateFromFilter || undefined}
+                  onChange={(value) => setCompletedFilter("dateTo", value)}
+                  placeholder="Date to"
+                  type="date"
+                  value={dateToFilter}
+                />
+                <Button
+                  disabled={
+                    !searchValue && !tenantIdFilter && !dateFromFilter && !dateToFilter
+                  }
+                  onClick={clearCompletedFilters}
+                  variant="outline"
+                >
+                  Clear Filters
+                </Button>
+              </>
+            )}
+          </div>
+
+          <Table
+            actions={(row) => (
+              <Button
+                leftIcon={<Eye size={13} />}
+                onClick={() => openBatchDetails(row)}
+                size="sm"
+                variant="outline"
+              >
+                View
+              </Button>
+            )}
+            columns={activeTab === "completed" ? completedColumns : columns}
+            compact
+            data={rows}
+            emptyText={
+              checkoutMode
+                ? activeTab === "completed"
+                  ? "No checked out batches found"
+                  : "No batches are ready for checkout"
+                : activeTab === "completed"
+                ? "No completed batches found"
+                : activeTab === "received"
+                ? "No received batches found"
+                : "No incoming batches found"
+            }
+            loading={isLoading}
+            rowKey="apiId"
+          />
+
+          <Pagination
+            forcePage={currentPage}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={({ selected }) => setCurrentPage(selected)}
+            pageCount={totalPages}
+            totalItems={totalItems}
+          />
+        </div>
+      </Card>
     </div>
   );
 };

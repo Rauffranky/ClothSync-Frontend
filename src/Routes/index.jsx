@@ -53,6 +53,7 @@ const LaundryScannersPage = lazy(() => import("../Page/Dashboard/Laundry/Scanner
 const LaundryScannerDetailsPage = lazy(() => import("../Page/Dashboard/Laundry/ScannerDetailsPage"));
 const LaundryIncomingBatchesPage = lazy(() => import("../Page/Dashboard/Laundry/IncomingBatchesPage"));
 const LaundryBatchDetailsPage = lazy(() => import("../Page/Dashboard/Laundry/LaundryBatchDetailsPage"));
+const LaundryBulkScanningPage = lazy(() => import("../Page/Dashboard/Laundry/BulkScanningPage"));
 
 //Tenant 
 const AssetsPage = lazy(() => import("../Page/Dashboard/Tenant/AssetsPage"));
@@ -199,6 +200,10 @@ const AppRoutes = () => {
                 <LaundryBatchDetailsPage checkoutMode />
               </PermissionRoute>
             }
+          />
+          <Route
+            path="/laundry/bulk-scanning"
+            element={<LaundryBulkScanningPage />}
           />
           <Route
             path="/laundry/staff"

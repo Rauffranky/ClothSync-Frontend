@@ -292,6 +292,42 @@ const AssetsTable = ({ onCountsChange }) => {
       },
     },
     {
+      key: "tagWashCount",
+      label: "Tag Wash Count",
+      sortable: true,
+      render: (_, row) => {
+        if (row.tagWashCount === null || row.tagWashCount === undefined) {
+          return <span className="text-(--theme-text-muted)">—</span>;
+        }
+        const limit = row.tagWashLimit;
+        const isCritical = limit ? row.tagWashCount >= limit * 0.9 : false;
+        return (
+          <div className="min-w-16 max-w-20">
+            <div className="flex items-end gap-1 mb-1.5">
+              <span
+                className={`text-sm font-black ${isCritical ? "text-(--color-overdue)" : "text-(--theme-text-primary)"}`}
+              >
+                {row.tagWashCount}
+              </span>
+              {limit != null && (
+                <span className="text-xs font-semibold text-(--theme-text-muted)">
+                  / {limit}
+                </span>
+              )}
+            </div>
+            {limit != null && (
+              <ProgressBar
+                value={row.tagWashCount}
+                max={limit}
+                variant={isCritical ? "danger" : "success"}
+                heightClass="h-1.5"
+              />
+            )}
+          </div>
+        );
+      },
+    },
+    {
       key: "assignedLaundry",
       label: "Assigned Laundry",
       sortable: true,

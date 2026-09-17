@@ -21,6 +21,12 @@ const validationSchema = Yup.object({
     .integer("Wash limit must be a whole number")
     .min(1, "Wash limit must be at least 1")
     .required("Wash limit is required"),
+  tagWashLimit: Yup.number()
+    .typeError("Tag wash limit must be a number")
+    .integer("Tag wash limit must be a whole number")
+    .min(1, "Tag wash limit must be at least 1")
+    .nullable()
+    .transform((val, orig) => (orig === "" ? null : val)),
   description: Yup.string().trim(),
 });
 
@@ -43,6 +49,7 @@ const BulkAddModal = ({ onClose, onSuccess, open, sessionId }) => {
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [categoriesError, setCategoriesError] = useState("");
+  const [isCustomTagWashLimit, setIsCustomTagWashLimit] = useState(false);
 
   const formik = useFormik({
     initialValues: {
@@ -50,19 +57,30 @@ const BulkAddModal = ({ onClose, onSuccess, open, sessionId }) => {
       categoryId: "",
       zoneName: "",
       washLimit: "",
+      tagWashLimit: "",
       description: "",
     },
     validationSchema,
     onSubmit: async (values, { setSubmitting }) => {
       try {
+        const washLimitNum = Number(values.washLimit);
+        const tagWashLimitNum =
+          values.tagWashLimit !== "" &&
+          values.tagWashLimit !== null &&
+          values.tagWashLimit !== undefined
+            ? Number(values.tagWashLimit)
+            : washLimitNum;
+
         const response = await testTenantBulkAdd(sessionId, {
           assetName: values.assetName.trim(),
           categoryId: values.categoryId,
           zoneName: values.zoneName.trim(),
-          washLimit: Number(values.washLimit),
+          washLimit: washLimitNum,
+          tagWashLimit: tagWashLimitNum,
           description: values.description.trim(),
         });
         toast.success(response?.message || "Bulk tags added to the system");
+        setIsCustomTagWashLimit(false);
         formik.resetForm();
         onSuccess(response);
       } catch (error) {
@@ -102,6 +120,7 @@ const BulkAddModal = ({ onClose, onSuccess, open, sessionId }) => {
 
   const closeModal = () => {
     if (formik.isSubmitting) return;
+    setIsCustomTagWashLimit(false);
     formik.resetForm();
     onClose();
   };
@@ -168,22 +187,51 @@ const BulkAddModal = ({ onClose, onSuccess, open, sessionId }) => {
           min={1}
           name="washLimit"
           onBlur={formik.handleBlur}
-          onChange={(value) => formik.setFieldValue("washLimit", value)}
+          onChange={(value) => {
+            formik.setFieldValue("washLimit", value);
+            if (!isCustomTagWashLimit) {
+              formik.setFieldValue("tagWashLimit", value);
+            }
+          }}
+          placeholder="e.g. 50"
           required
           type="number"
           value={formik.values.washLimit}
         />
         <Input
-          error={formik.touched.zoneName ? formik.errors.zoneName : undefined}
-          label="Zone"
-          leftIcon={<MapPin size={16} />}
-          name="zoneName"
+          error={
+            formik.touched.tagWashLimit ? formik.errors.tagWashLimit : undefined
+          }
+          label="Tag Wash Limit"
+          leftIcon={<Tag size={16} />}
+          min={1}
+          name="tagWashLimit"
           onBlur={formik.handleBlur}
-          onChange={(value) => formik.setFieldValue("zoneName", value)}
-          placeholder="e.g. Downtown Hub"
-          required
-          value={formik.values.zoneName}
+          onChange={(value) => {
+            if (value === "" || value === formik.values.washLimit) {
+              setIsCustomTagWashLimit(false);
+            } else {
+              setIsCustomTagWashLimit(true);
+            }
+            formik.setFieldValue("tagWashLimit", value);
+          }}
+          placeholder={formik.values.washLimit || "e.g. 50"}
+          type="number"
+          value={formik.values.tagWashLimit}
         />
+        <div className="sm:col-span-2">
+          <Input
+            error={formik.touched.zoneName ? formik.errors.zoneName : undefined}
+            label="Zone"
+            leftIcon={<MapPin size={16} />}
+            name="zoneName"
+            onBlur={formik.handleBlur}
+            onChange={(value) => formik.setFieldValue("zoneName", value)}
+            placeholder="e.g. Downtown Hub"
+            required
+            value={formik.values.zoneName}
+          />
+        </div>
         <div className="sm:col-span-2">
           <Input
             label="Description / Notes"

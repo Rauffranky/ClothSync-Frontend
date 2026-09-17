@@ -11,6 +11,7 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   ShieldAlert,
+  ScanLine,
 } from "lucide-react";
 import Card from "../../../Components/UI/Card";
 import CardSkeleton from "../../../Components/UI/CardSkeleton";
@@ -419,15 +420,30 @@ const LaundryComplaintsSection = () => {
             />
           </div>
 
-          <Button
-            className="w-full shrink-0 sm:ml-auto sm:w-auto"
-            leftIcon={<Plus size={16} />}
-            onClick={() => navigate("/laundry/complaints/create")}
-            size="md"
-            variant="primary"
-          >
-            Submit Complaint
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 sm:ml-auto w-full sm:w-auto">
+            <Button
+              className="w-full shrink-0 sm:w-auto"
+              leftIcon={<Plus size={16} />}
+              onClick={() =>
+                navigate("/laundry/complaints/create", {
+                  state: { complaintType: "general" },
+                })
+              }
+              size="md"
+              variant="primary"
+            >
+              General Complaint
+            </Button>
+            <Button
+              className="w-full shrink-0 sm:w-auto"
+              leftIcon={<ScanLine size={16} />}
+              onClick={() => navigate("/laundry/bulk-scanning")}
+              size="md"
+              variant="outline"
+            >
+              Tag Discrepancy
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-4 p-4">

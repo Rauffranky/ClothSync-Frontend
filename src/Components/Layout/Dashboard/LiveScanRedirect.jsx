@@ -46,7 +46,7 @@ const LiveScanRedirect = () => {
 
       if (pathname.startsWith("/laundry")) {
         captureLaundryScanEvent(payload);
-        navigate("/laundry/incoming-batches");
+        navigate("/laundry/bulk-scanning");
       }
     },
     [navigate, pathname],

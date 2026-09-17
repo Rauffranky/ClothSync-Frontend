@@ -202,6 +202,23 @@ export const normalizeTenantAsset = (asset = {}) => {
     const tags = Array.isArray(asset.tags) ? asset.tags : [];
     const firstTag = tags[0] || asset.tag || null;
 
+    const tagWashCount =
+        asset.tagWashCount !== undefined && asset.tagWashCount !== null
+            ? Number(asset.tagWashCount)
+            : (firstTag?.totalLaundryCycles !== undefined && firstTag?.totalLaundryCycles !== null
+                ? Number(firstTag.totalLaundryCycles)
+                : (firstTag?.tagWashCount !== undefined && firstTag?.tagWashCount !== null
+                    ? Number(firstTag.tagWashCount)
+                    : null));
+    const tagWashLimit =
+        asset.tagWashLimit !== undefined && asset.tagWashLimit !== null
+            ? Number(asset.tagWashLimit)
+            : (firstTag?.washLimit !== undefined && firstTag?.washLimit !== null
+                ? Number(firstTag.washLimit)
+                : (firstTag?.tagWashLimit !== undefined && firstTag?.tagWashLimit !== null
+                    ? Number(firstTag.tagWashLimit)
+                    : null));
+
     return {
         ...asset,
         apiId: asset.id || asset._id,
@@ -220,6 +237,8 @@ export const normalizeTenantAsset = (asset = {}) => {
         statusVariant: statusVariants[statusValue] || "neutral",
         washCount: Number(asset.washCount) || 0,
         maxWash: Number(asset.washLimit) || 0,
+        tagWashCount,
+        tagWashLimit,
         assignedLaundry:
             getName(laundryLink?.laundry || laundryLink, ["businessName", "companyName", "name"], "—"),
         laundryLinkId: asset.assignedLaundryLinkId || laundryLink?.id || laundryLink?._id,

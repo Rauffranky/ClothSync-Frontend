@@ -61,3 +61,8 @@ export const undoLaundryScanAction = (sessionId, undoId, config = {}) =>
     { timeout: 15000, ...config },
   );
 export const issueLaundryFixedScannerCommand = (id, command) => api.post(LAUNDRY_SCANNER_ENDPOINTS.FIXED_COMMAND(id), { command }, { timeout: 15000 });
+
+export const testLaundryScannerScan = (data) =>
+  api.post(LAUNDRY_SCANNER_ENDPOINTS.TEST_SCANNER_SCAN, data, {
+    timeout: 15000,
+  });

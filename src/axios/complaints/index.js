@@ -38,6 +38,11 @@ export const updateTenantComplaintStatus = async (id, payload) => {
   return response.data;
 };
 
+export const verifyTenantComplaintEligibility = async (payload) => {
+  const response = await api.post(COMPLAINT_ENDPOINTS.TENANT_VERIFY_ELIGIBILITY, payload);
+  return response.data;
+};
+
 // Laundry Portal
 export const getLaundryComplaints = async (params = {}) => {
   const response = await api.get(COMPLAINT_ENDPOINTS.LAUNDRY_LIST, { params });
@@ -46,6 +51,11 @@ export const getLaundryComplaints = async (params = {}) => {
 
 export const createLaundryComplaint = async (payload) => {
   const response = await api.post(COMPLAINT_ENDPOINTS.LAUNDRY_CREATE, payload);
+  return response.data;
+};
+
+export const verifyLaundryComplaintEligibility = async (payload) => {
+  const response = await api.post(COMPLAINT_ENDPOINTS.LAUNDRY_VERIFY_ELIGIBILITY, payload);
   return response.data;
 };
 

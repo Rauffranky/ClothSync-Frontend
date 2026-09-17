@@ -1,4 +1,7 @@
+import { getAuthSessionUser } from "../../../axios/auth/authSession";
+
 export const BULK_SCAN_PAGE_LIMIT = 50;
+
 
 export const BULK_SCAN_GROUPS = Object.freeze({
   NEW_UNLINKED: "new_unlinked",
@@ -219,19 +222,52 @@ export const normalizeActionUndoNotices = (response, defaults = {}) => {
     actionSource: data.actionSource ?? defaults.actionSource ?? null,
     kind: defaults.kind ?? "action",
     message,
+    portal: defaults.portal || "business",
     scannerMode: data.scannerMode ?? defaults.scannerMode ?? null,
   };
   const automaticActions = Array.isArray(data.automaticActions)
     ? data.automaticActions
     : [];
 
+  const getBusinessName = (item) => {
+    const direct =
+      item?.businessName ||
+      item?.business?.businessName ||
+      item?.business?.name ||
+      data.businessName ||
+      data.business?.businessName ||
+      data.business?.name ||
+      null;
+    if (direct && direct !== "Business") return direct;
+    const authUser = getAuthSessionUser();
+    return (
+      authUser?.businessName ||
+      authUser?.companyName ||
+      authUser?.fullName ||
+      authUser?.name ||
+      direct ||
+      null
+    );
+  };
+
   const getLaundryName = (item) => {
-    if (item.laundry?.name) return item.laundry.name;
-    if (Array.isArray(item.laundries) && item.laundries.length > 0) {
-      const names = item.laundries.map((l) => l.name).filter(Boolean);
+    const direct =
+      item?.laundryName ||
+      item?.laundry?.name ||
+      item?.laundry?.companyName ||
+      data.laundryName ||
+      data.laundry?.name ||
+      data.laundry?.companyName;
+    if (direct && direct !== "Laundry") return direct;
+    if (Array.isArray(item?.laundries) && item.laundries.length > 0) {
+      const names = item.laundries.map((l) => l.name || l.companyName).filter(Boolean);
       return names.length > 0 ? names.join(", ") : "original laundries";
     }
-    return null;
+    if (Array.isArray(data.laundries) && data.laundries.length > 0) {
+      const names = data.laundries.map((l) => l.name || l.companyName).filter(Boolean);
+      return names.length > 0 ? names.join(", ") : "original laundries";
+    }
+    return direct || null;
   };
 
   if (automaticActions.length > 0) {
@@ -243,7 +279,7 @@ export const normalizeActionUndoNotices = (response, defaults = {}) => {
         action: item.action ?? null,
         batchCode: item.batch?.batchCode ?? null,
         laundryName: getLaundryName(item),
-        businessName: item.business?.name ?? null,
+        businessName: getBusinessName(item),
         processedCount: item.processedCount ?? 0,
         processedTagCount: item.processedTagCount ?? item.processedCount ?? 0,
       }));
@@ -257,8 +293,8 @@ export const normalizeActionUndoNotices = (response, defaults = {}) => {
         ...common,
         ...undo,
         action: undo.action ?? data.action ?? null,
-        laundryName: getLaundryName(data),
-        businessName: data.business?.name ?? null,
+        laundryName: getLaundryName(undo),
+        businessName: getBusinessName(undo),
         processedTagCount: data.processedTagCount ?? data.processedCount ?? 0,
       }));
   }
@@ -270,7 +306,7 @@ export const normalizeActionUndoNotices = (response, defaults = {}) => {
     action: data.action ?? defaults.action ?? null,
     batchCode: data.batch?.batchCode ?? null,
     laundryName: getLaundryName(data),
-    businessName: data.business?.name ?? null,
+    businessName: getBusinessName(data),
     processedCount: data.processedCount ?? data.processedTagCount ?? 0,
     processedTagCount: data.processedTagCount ?? data.processedCount ?? 0,
   }];

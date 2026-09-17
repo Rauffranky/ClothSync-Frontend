@@ -33,6 +33,10 @@ export const hasPermission = (
   // their full portal access; staff responses include the matrix explicitly.
   if (!permissions) return true;
 
+  if (sectionKey === "bulk_scanning") {
+    return permissions.bulk_scanning ? permissions.bulk_scanning[action] === true : true;
+  }
+
   return permissions[sectionKey]?.[action] === true;
 };
 

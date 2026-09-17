@@ -1,4 +1,4 @@
-import { ArrowLeft, Building2, Calendar, MapPin, Radio, Tag } from "lucide-react";
+import { ArrowLeft, Building2, Calendar, MapPin, ScanQrCode, Tag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Badge from "../../../../Components/UI/Badge";
 import Button from "../../../../Components/UI/Button";
@@ -7,17 +7,13 @@ import Card from "../../../../Components/UI/Card";
 const BatchHeader = ({
   batch,
   checkoutMode,
-  selectedScanner,
-  fixedScanner,
-  liveScanMatchesBatch,
-  onFixedCommand,
 }) => {
   const navigate = useNavigate();
   const backPath = checkoutMode ? "/laundry/check-out" : "/laundry/incoming-batches";
 
   return (
     <div className="space-y-4">
-      {/* Top bar with back button and fixed scanner controls if active */}
+      {/* Top bar with back button and link to bulk scanning */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
           className="w-fit"
@@ -29,34 +25,14 @@ const BatchHeader = ({
           {checkoutMode ? "Back to Check-Out" : "Back to Batches"}
         </Button>
 
-        {fixedScanner && liveScanMatchesBatch && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-(--theme-text-secondary)">
-              Fixed Scanner Control:
-            </span>
-            <Button
-              onClick={() => onFixedCommand?.("start")}
-              size="sm"
-              variant="primary"
-            >
-              Start Scan
-            </Button>
-            <Button
-              onClick={() => onFixedCommand?.("stop")}
-              size="sm"
-              variant="danger"
-            >
-              Stop Scan
-            </Button>
-            <Button
-              onClick={() => onFixedCommand?.("rescan")}
-              size="sm"
-              variant="secondary"
-            >
-              Scan Again
-            </Button>
-          </div>
-        )}
+        <Button
+          leftIcon={<ScanQrCode size={15} />}
+          onClick={() => navigate("/laundry/bulk-scanning")}
+          size="sm"
+          variant="primary"
+        >
+          Go to Bulk Scanning
+        </Button>
       </div>
 
       {/* Main Title & Meta Card */}
@@ -79,25 +55,14 @@ const BatchHeader = ({
 
             <p className="text-sm font-medium text-(--theme-text-secondary)">
               {checkoutMode
-                ? "Verify and check out items returning to the business."
-                : "Inspect incoming batch items, scan RFID tags, and confirm receipts."}
+                ? "View and inspect outgoing batch items and return progress. All scanning operations are performed in Bulk Scanning."
+                : "View and inspect incoming batch items and check-in status. All RFID scanning operations are performed in Bulk Scanning."}
             </p>
           </div>
 
-          {selectedScanner && (
-            <div className="flex items-center gap-2 rounded-xl border border-(--theme-border) bg-(--theme-surface-hover) px-3 py-2 text-xs">
-              <Radio className="text-(--color-aurora-teal)" size={16} />
-              <div>
-                <span className="text-(--theme-text-muted)">Active Scanner: </span>
-                <span className="font-bold text-(--theme-text-primary)">
-                  {selectedScanner.name || selectedScanner.scannerId}
-                </span>
-                <span className="ml-1 capitalize text-(--theme-text-muted)">
-                  ({selectedScanner.scannerType || "portable"})
-                </span>
-              </div>
-            </div>
-          )}
+          <Badge dot size="md" variant="neutral">
+            View-Only Tracking
+          </Badge>
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-4 border-t border-(--theme-border-soft) pt-4 sm:grid-cols-4">

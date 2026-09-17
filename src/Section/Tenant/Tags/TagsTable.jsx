@@ -285,6 +285,26 @@ const TagsTable = ({ onCountsChange }) => {
       },
     },
     {
+      align: "center",
+      key: "washCount",
+      label: "WASH COUNT",
+      sortable: true,
+      render: (_, row) => {
+        const count = Number(row.washCount ?? row.tagWashCount ?? row.totalLaundryCycles ?? 0);
+        const limit = row.washLimit ?? row.tagWashLimit;
+        return (
+          <div className="font-bold text-(--theme-text-primary)">
+            {count}
+            {limit != null ? (
+              <span className="text-xs font-semibold text-(--theme-text-muted)">
+                {" "}/ {limit}
+              </span>
+            ) : null}
+          </div>
+        );
+      },
+    },
+    {
       key: "lastScanTime",
       label: "LAST SCANNED",
       sortable: true,

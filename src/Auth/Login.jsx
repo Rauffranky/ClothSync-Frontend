@@ -248,7 +248,7 @@ const Login = ({ portal }) => {
   };
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center">
+    <main className="relative flex min-h-screen flex-col items-center justify-center p-4">
       <Card padding="30px">
         <form className="w-120 max-w-full" onSubmit={formik.handleSubmit}>
           <div className="mb-6 flex items-start">
@@ -392,6 +392,17 @@ const Login = ({ portal }) => {
           )}
         </form>
       </Card>
+      <p className="mt-5 text-center text-xs text-(--theme-text-muted)">
+        Powered by:{" "}
+        <a
+          href="https://code-xperts.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-bold text-(--color-aurora-teal) hover:underline transition-colors"
+        >
+          Code Xperts
+        </a>
+      </p>
     </main>
   );
 };
