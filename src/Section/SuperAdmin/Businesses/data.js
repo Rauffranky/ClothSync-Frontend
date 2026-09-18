@@ -6,7 +6,8 @@ export const businessStatusOptions = [
   { label: "All Statuses", value: "all" },
   { label: "Active", value: "active" },
   { label: "Inactive", value: "inactive" },
-  { label: "Pending", value: "pending" },
+  { label: "Verified", value: "verified" },
+  { label: "Unverified", value: "unverified" },
 ];
 
 export const BUSINESS_TYPES = [
@@ -38,16 +39,27 @@ export const formatCreationSource = (source) => {
 };
 
 export const normalizeBusiness = (tenant) => {
-  const rawStatus = String(tenant?.status || "inactive").toLowerCase();
-  let statusLabel = "Inactive";
-  let statusVariant = "danger";
+  const isVerified = tenant?.isVerified !== undefined
+    ? Boolean(tenant?.isVerified)
+    : Boolean(tenant?.emailVerifiedAt || tenant?.user?.emailVerifiedAt);
 
-  if (rawStatus === "active") {
-    statusLabel = "Active";
-    statusVariant = "success";
+  const rawStatus = String(tenant?.status || "").toLowerCase();
+
+  let statusLabel = "Active";
+  let statusVariant = "success";
+
+  if (!isVerified || rawStatus === "unverified") {
+    statusLabel = "Unverified";
+    statusVariant = "warning";
+  } else if (rawStatus === "inactive" || rawStatus === "suspend" || rawStatus === "deleted") {
+    statusLabel = "Inactive";
+    statusVariant = "danger";
   } else if (rawStatus === "pending") {
     statusLabel = "Pending";
     statusVariant = "warning";
+  } else {
+    statusLabel = "Active";
+    statusVariant = "success";
   }
 
   const locationParts = [tenant?.city, tenant?.state, tenant?.country].filter(Boolean);
@@ -63,6 +75,8 @@ export const normalizeBusiness = (tenant) => {
     phone: tenant?.phone || "—",
     rawBusinessType: tenant?.businessType,
     businessType: formatBusinessType(tenant?.businessType),
+    isVerified,
+    verificationStatus: isVerified ? "Verified" : "Unverified",
     status: statusLabel,
     rawStatus,
     statusVariant,
@@ -107,7 +121,14 @@ export const getBusinessPaginatedCollection = (response) => {
     apiCounts.active !== undefined
       ? Number(apiCounts.active)
       : items.filter(
-          (item) => String(item?.status).toLowerCase() === "active",
+          (item) => String(item?.status).toLowerCase() === "active" && (item?.isVerified || item?.emailVerifiedAt),
+        ).length;
+
+  const unverifiedCount =
+    apiCounts.unverified !== undefined
+      ? Number(apiCounts.unverified)
+      : items.filter(
+          (item) => item?.isVerified === false || String(item?.status).toLowerCase() === "unverified" || !item?.emailVerifiedAt,
         ).length;
 
   const inactiveCount =
@@ -124,6 +145,7 @@ export const getBusinessPaginatedCollection = (response) => {
     summary: {
       total: totalCount,
       active: activeCount,
+      unverified: unverifiedCount,
       inactive: inactiveCount,
     },
   };

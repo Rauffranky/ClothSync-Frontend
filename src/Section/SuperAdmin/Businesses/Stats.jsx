@@ -1,9 +1,4 @@
-import {
-  Building2,
-  CircleCheck,
-  CircleX,
-  Users,
-} from "lucide-react";
+import { Building2, CircleCheck, CircleX, ShieldAlert } from "lucide-react";
 import Card from "../../../Components/UI/Card";
 import CardSkeleton from "../../../Components/UI/CardSkeleton";
 
@@ -18,23 +13,23 @@ const summaryStats = [
   {
     key: "active",
     label: "Active Businesses",
-    helper: "operational tenants",
+    helper: "operational & verified",
     icon: CircleCheck,
     color: "var(--color-ready)",
   },
   {
-    key: "inactive",
-    label: "Inactive Businesses",
-    helper: "disabled / pending",
-    icon: CircleX,
-    color: "var(--color-overdue)",
+    key: "unverified",
+    label: "Unverified",
+    helper: "pending email verification",
+    icon: ShieldAlert,
+    color: "#f59e0b",
   },
   {
-    key: "pageCount",
-    label: "Current View",
-    helper: "loaded on this page",
-    icon: Users,
-    color: "var(--color-sky-blue)",
+    key: "inactive",
+    label: "Inactive Businesses",
+    helper: "deactivated tenants",
+    icon: CircleX,
+    color: "var(--color-overdue)",
   },
 ];
 

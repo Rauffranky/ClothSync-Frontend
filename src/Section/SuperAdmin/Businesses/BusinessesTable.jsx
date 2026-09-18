@@ -2,10 +2,13 @@ import {
   Building2,
   CircleCheck,
   CircleX,
+  Clock,
   Eye,
   Mail,
   MapPin,
   Phone,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Badge from "../../../Components/UI/Badge";
@@ -100,6 +103,27 @@ const BusinessesTable = ({
       ),
     },
     {
+      key: "isVerified",
+      label: "Verification",
+      align: "center",
+      sortable: true,
+      render: (_, row) => (
+        <Badge
+          leftIcon={
+            row.isVerified ? (
+              <ShieldCheck size={12} />
+            ) : (
+              <ShieldAlert size={12} />
+            )
+          }
+          size="sm"
+          variant={row.isVerified ? "success" : "warning"}
+        >
+          {row.isVerified ? "Verified" : "Unverified"}
+        </Badge>
+      ),
+    },
+    {
       key: "status",
       label: "Status",
       align: "center",
@@ -109,6 +133,8 @@ const BusinessesTable = ({
           leftIcon={
             row.status === "Active" ? (
               <CircleCheck size={12} />
+            ) : row.status === "Unverified" ? (
+              <Clock size={12} />
             ) : (
               <CircleX size={12} />
             )
@@ -134,29 +160,34 @@ const BusinessesTable = ({
       key: "actions",
       label: "Actions",
       align: "center",
-      render: (_, row) => (
-        <ActionDropdown
-          align="right"
-          items={[
-            {
-              label: "View Details",
-              icon: Eye,
-              onClick: () => onViewDetails?.(row),
-            },
-            {
-              label: row.status === "Active" ? "Deactivate" : "Activate",
-              icon: row.status === "Active" ? CircleX : CircleCheck,
-              danger: row.status === "Active",
-              onClick: () =>
-                onStatusAction?.({
-                  action: row.status === "Active" ? "inactive" : "active",
-                  business: row,
-                }),
-            },
-          ]}
-          width={180}
-        />
-      ),
+      render: (_, row) => {
+        const isVerified = row.isVerified;
+        return (
+          <ActionDropdown
+            align="right"
+            items={[
+              {
+                label: "View Details",
+                icon: Eye,
+                onClick: () => onViewDetails?.(row),
+              },
+              {
+                label: row.status === "Active" ? "Deactivate" : "Activate",
+                icon: row.status === "Active" ? CircleX : CircleCheck,
+                danger: row.status === "Active",
+                disabled: !isVerified && row.status !== "Active",
+                tooltip: !isVerified ? "Cannot activate unverified business" : undefined,
+                onClick: () =>
+                  onStatusAction?.({
+                    action: row.status === "Active" ? "inactive" : "active",
+                    business: row,
+                  }),
+              },
+            ]}
+            width={180}
+          />
+        );
+      },
     },
   ];
 

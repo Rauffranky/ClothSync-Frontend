@@ -9,6 +9,8 @@ import {
   MapPin,
   Phone,
   Shield,
+  ShieldAlert,
+  ShieldCheck,
   User,
 } from "lucide-react";
 import Badge from "../../../Components/UI/Badge";
@@ -65,6 +67,19 @@ const BusinessDetailsModal = ({ business, onClose }) => {
               </h3>
               <Badge
                 leftIcon={
+                  business.isVerified ? (
+                    <ShieldCheck size={12} />
+                  ) : (
+                    <ShieldAlert size={12} />
+                  )
+                }
+                size="sm"
+                variant={business.isVerified ? "success" : "warning"}
+              >
+                {business.isVerified ? "Verified" : "Unverified"}
+              </Badge>
+              <Badge
+                leftIcon={
                   business.status === "Active" ? (
                     <CircleCheck size={12} />
                   ) : (
@@ -94,6 +109,12 @@ const BusinessDetailsModal = ({ business, onClose }) => {
             icon={Mail}
             label="Email Address"
             value={business.email}
+          />
+          <DetailItem
+            icon={business.isVerified ? ShieldCheck : ShieldAlert}
+            label="Email Verification"
+            value={business.isVerified ? "Verified" : "Unverified (Pending OTP)"}
+            color={business.isVerified ? "var(--color-ready)" : "var(--color-warning, #f59e0b)"}
           />
           <DetailItem
             icon={Phone}
