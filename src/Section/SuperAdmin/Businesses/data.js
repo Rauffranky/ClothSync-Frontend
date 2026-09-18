@@ -57,9 +57,6 @@ export const normalizeBusiness = (tenant) => {
   } else if (rawStatus === "pending") {
     statusLabel = "Pending";
     statusVariant = "warning";
-  } else {
-    statusLabel = "Active";
-    statusVariant = "success";
   }
 
   const locationParts = [tenant?.city, tenant?.state, tenant?.country].filter(Boolean);
