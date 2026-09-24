@@ -9,8 +9,7 @@ import {
 } from "lucide-react";
 import Card from "../../../Components/UI/Card";
 import IconWrapper from "../../../Components/UI/IconWrapper";
-import { useEffect, useState } from "react";
-import { getTenantAssetSummary } from "../../../axios/assets/tenantAssets";
+import { useDashboardData } from "./DashboardContext";
 
 const stats = [
   {
@@ -116,40 +115,30 @@ const StatCard = ({ stat }) => {
 };
 
 const StatsGrid = () => {
-  const [summary, setSummary] = useState(null);
-
-  useEffect(() => {
-    let active = true;
-    getTenantAssetSummary()
-      .then((response) => {
-        if (!active) return;
-        setSummary(response?.data?.data ?? response?.data ?? null);
-      })
-      .catch(() => {
-        if (active) setSummary(null);
-      });
-    return () => { active = false; };
-  }, []);
+  const data = useDashboardData();
+  const summary = data?.assets;
 
   const liveStats = stats.map((stat) => ({
     ...stat,
-    value: summary ? ({
-      "total-assets": summary.totalAssets,
-      "at-facility": summary.inBusiness,
-      "sent-to-laundry": summary.sentToLaundry,
-      "in-laundry": summary.atLaundry,
-      returning: summary.washed,
-      returned: summary.returned,
-      missing: summary.missing,
-    }[stat.id] ?? 0) : "—",
+    value: summary
+      ? ({
+          "total-assets": summary.totalAssets ?? 0,
+          "at-facility": summary.inBusiness ?? 0,
+          "sent-to-laundry": summary.sentToLaundry ?? 0,
+          "in-laundry": summary.atLaundry ?? 0,
+          returning: summary.washed ?? 0,
+          returned: summary.returned ?? 0,
+          missing: summary.missing ?? 0,
+        }[stat.id] ?? 0)
+      : "—",
   }));
 
   return (
-  <div className="grid grid-cols-2 gap-3 sm:grid-cols-7">
-    {liveStats.map((stat) => (
-      <StatCard key={stat.id} stat={stat} />
-    ))}
-  </div>
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-7">
+      {liveStats.map((stat) => (
+        <StatCard key={stat.id} stat={stat} />
+      ))}
+    </div>
   );
 };
 
