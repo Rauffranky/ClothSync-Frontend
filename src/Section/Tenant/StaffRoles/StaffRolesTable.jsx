@@ -1,14 +1,8 @@
-import {
-  Eye,
-  MoreHorizontal,
-  Pencil,
-  Power,
-  UsersRound,
-} from "lucide-react";
+import { Eye, MoreHorizontal, Pencil, Power, UsersRound } from "lucide-react";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Badge from "../../../Components/UI/Badge";
 import Table from "../../../Components/UI/Table";
-import { formatDateWithUserPreferences } from "../../../Utils/date";
+import { formatDateTime } from "../../../Utils/date";
 
 const StaffRolesTable = ({
   loading = false,
@@ -68,7 +62,7 @@ const StaffRolesTable = ({
       label: "Last Updated",
       render: (value) => (
         <span className="font-mono text-xs font-semibold text-(--theme-text-muted)">
-          {formatDateWithUserPreferences(value)}
+          {formatDateTime(value)}
         </span>
       ),
     },

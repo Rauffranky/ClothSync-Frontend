@@ -36,6 +36,7 @@ import { getTenantStaffOptions } from "../../../../axios/staff/tenantStaff";
 import { getTenantStaffRoles } from "../../../../axios/staffRoles/tenantStaffRoles";
 import ScannerHardwareRecoveryModal from "./ScannerHardwareRecoveryModal";
 import ScannerAccessModal from "./ScannerAccessModal";
+import GlobalTooltip from "../../../../Components/UI/Tooltip";
 import { toast } from "../../../../Utils/toast";
 
 const summaryItems = [
@@ -189,13 +190,20 @@ const ScannerDetailsIndex = ({
   };
 
   const handleConfigure = async (values) => {
+    const operatorIds = Array.isArray(values.assignedOperatorIds)
+      ? values.assignedOperatorIds.filter(Boolean)
+      : values.assignedOperatorId
+      ? [values.assignedOperatorId]
+      : [];
+
     const response = await configureScanner(scanner.apiId, {
       scannerType: values.scannerType.toLowerCase(),
       scannerMode: values.scannerMode.toLowerCase(),
       location: values.location.trim(),
       zoneName: values.zoneName.trim(),
       status: values.status.toLowerCase(),
-      assignedOperatorId: values.assignedOperatorId || null,
+      assignedOperatorId: operatorIds[0] || null,
+      assignedOperatorIds: operatorIds,
       translations: {
         en: {
           name: values.scannerName.trim(),
@@ -276,6 +284,23 @@ const ScannerDetailsIndex = ({
 
   const assignedOperator = scanner.assignedOperator || {};
   const assignedOperatorUser = assignedOperator.user || {};
+  const assignedOperators =
+    Array.isArray(scanner.assignedOperators) && scanner.assignedOperators.length > 0
+      ? scanner.assignedOperators
+      : assignedOperator.id ||
+        assignedOperatorUser.name ||
+        assignedOperatorUser.fullName
+      ? [
+          {
+            id: assignedOperator.id,
+            name:
+              assignedOperatorUser.name ||
+              assignedOperatorUser.fullName ||
+              assignedOperator.name,
+            email: assignedOperatorUser.email || assignedOperator.email,
+          },
+        ]
+      : [];
   const createdByUser = scanner.createdByUser || {};
   const creatorRole = createdByUser.role
     ? String(createdByUser.role)
@@ -339,7 +364,12 @@ const ScannerDetailsIndex = ({
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {summaryItems.map((item) => {
           const Icon = item.icon;
-          const value = scanner[item.key];
+          const isOperatorCard = item.key === "operator";
+          const operatorCount = assignedOperators.length;
+          const label =
+            isOperatorCard && operatorCount > 1
+              ? `Operators (${operatorCount})`
+              : item.label;
 
           return (
             <Card key={item.key} padding="16px 18px" rounded="16px">
@@ -347,13 +377,62 @@ const ScannerDetailsIndex = ({
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-(--theme-border-soft) bg-(--button-ghost-bg)">
                   <Icon size={16} className="text-(--color-aurora-teal)" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="m-0 text-[11px] font-black uppercase tracking-[0.12em] text-(--theme-text-muted)">
-                    {item.label}
+                    {label}
                   </p>
-                  <p className="m-0 mt-1 text-sm font-bold text-(--theme-text-primary)">
-                    {value ?? "-"}
-                  </p>
+                  {isOperatorCard ? (
+                    operatorCount === 0 ? (
+                      <p className="m-0 mt-1 text-sm font-bold text-(--color-overdue)">
+                        Unassigned
+                      </p>
+                    ) : operatorCount === 1 ? (
+                      <p className="m-0 mt-1 truncate text-sm font-bold text-(--theme-text-primary)">
+                        {assignedOperators[0]?.name || "-"}
+                      </p>
+                    ) : (
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        {assignedOperators.slice(0, 3).map((op, idx) => (
+                          <span
+                            key={op.id || idx}
+                            className="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-bold"
+                            style={{
+                              color: "var(--color-aurora-teal)",
+                              background: "rgba(20, 184, 166, 0.12)",
+                              border: "1px solid rgba(20, 184, 166, 0.24)",
+                            }}
+                          >
+                            {op.name}
+                          </span>
+                        ))}
+                        {operatorCount > 3 && (
+                          <GlobalTooltip
+                            position="top"
+                            text={assignedOperators
+                              .slice(3)
+                              .map((o) => o.name)
+                              .filter(Boolean)
+                              .join(", ")}
+                          >
+                            <span
+                              className="inline-flex cursor-pointer items-center rounded-lg px-2 py-0.5 text-xs font-bold"
+                              style={{
+                                color: "var(--theme-text-secondary)",
+                                background: "var(--theme-surface-strong)",
+                                border: "1px solid var(--theme-border-soft)",
+                              }}
+                            >
+                              +{operatorCount - 3} more
+                            </span>
+                          </GlobalTooltip>
+                        )}
+                      </div>
+                    )
+                  ) : (
+                    <p className="m-0 mt-1 text-sm font-bold text-(--theme-text-primary)">
+                      {scanner[item.key] ?? "-"}
+                    </p>
+                  )}
                 </div>
               </div>
             </Card>
@@ -404,16 +483,55 @@ const ScannerDetailsIndex = ({
           <div className="mb-5 flex items-center gap-3">
             <UserRound size={19} className="text-(--color-aurora-teal)" />
             <h2 className="m-0 text-lg font-black text-(--theme-text-primary)">
-              Assigned Operator
+              {assignedOperators.length > 1
+                ? `Assigned Operators (${assignedOperators.length})`
+                : "Assigned Operator"}
             </h2>
           </div>
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <DetailField
-              label="Name"
-              value={assignedOperatorUser.name || assignedOperatorUser.fullName}
-            />
-            <DetailField label="Email" value={assignedOperatorUser.email} />
-          </dl>
+          {assignedOperators.length > 0 ? (
+            <div className="space-y-4">
+              {assignedOperators.map((operator, index) => {
+                const opName =
+                  operator.name ||
+                  operator.user?.name ||
+                  operator.user?.fullName ||
+                  "-";
+                const opEmail = operator.email || operator.user?.email || "-";
+
+                return (
+                  <dl
+                    key={operator.id || index}
+                    className={`grid gap-4 sm:grid-cols-2 ${
+                      index > 0
+                        ? "border-t border-(--theme-border-soft) pt-4"
+                        : ""
+                    }`}
+                  >
+                    <DetailField
+                      label={
+                        assignedOperators.length > 1
+                          ? `Operator ${index + 1} Name`
+                          : "Name"
+                      }
+                      value={opName}
+                    />
+                    <DetailField
+                      label={
+                        assignedOperators.length > 1
+                          ? `Operator ${index + 1} Email`
+                          : "Email"
+                      }
+                      value={opEmail}
+                    />
+                  </dl>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="m-0 text-sm font-medium text-(--theme-text-muted)">
+              No operator assigned.
+            </p>
+          )}
         </Card>
 
         <Card padding="20px" rounded="18px">
@@ -467,6 +585,14 @@ const ScannerDetailsIndex = ({
           scannerMode: scanner.mode,
           location: scanner.scannerLocation,
           zoneName: scanner.zoneName,
+          assignedOperatorId: scanner.assignedOperatorId,
+          assignedOperatorIds:
+            Array.isArray(scanner.assignedOperatorIds) &&
+            scanner.assignedOperatorIds.length > 0
+              ? scanner.assignedOperatorIds
+              : scanner.assignedOperatorId
+              ? [scanner.assignedOperatorId]
+              : [],
           customNotes: scanner.customNotes,
         }}
         isOpen={isConfigureOpen}

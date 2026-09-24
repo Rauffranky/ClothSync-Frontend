@@ -1,4 +1,3 @@
-import { formatDateWithUserPreferences } from "../../../Utils/date";
 
 export const CATEGORY_ITEMS_PER_PAGE = 5;
 
@@ -55,12 +54,8 @@ export const normalizeCategory = (category) => {
     usage: isUsed ? "In Use" : "Not in Use",
     usageState: isUsed ? "used" : "unused",
     assets: assetCount,
-    created: formatDateWithUserPreferences(
-      category?.createdAt || category?.created,
-    ),
-    lastUpdated: formatDateWithUserPreferences(
-      category?.updatedAt || category?.lastUpdated,
-    ),
+    created: category?.createdAt || category?.created,
+    lastUpdated: category?.updatedAt || category?.lastUpdated,
   };
 };
 

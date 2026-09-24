@@ -32,6 +32,7 @@ const initialFormState = {
   location: "",
   zoneName: "",
   assignedOperatorId: "",
+  assignedOperatorIds: [],
   status: "Active",
   customNotes: "",
 };
@@ -58,6 +59,10 @@ const scannerApiValidationSchema = scannerValidationSchema.shape({
     .trim()
     .transform((value) => (value === "" ? undefined : value))
     .uuid("Assigned operator ID must be a valid UUID")
+    .notRequired(),
+  assignedOperatorIds: yup
+    .array()
+    .of(yup.string().uuid("Assigned operator ID must be a valid UUID"))
     .notRequired(),
 });
 
@@ -102,7 +107,17 @@ const AddScannerModal = ({
   const resolvedInitialValues = {
     ...initialFormState,
     ...initialValues,
-    assignedOperatorId: initialValues?.assignedOperatorId ?? "",
+    assignedOperatorId:
+      initialValues?.assignedOperatorId ??
+      (Array.isArray(initialValues?.assignedOperatorIds) &&
+      initialValues.assignedOperatorIds.length > 0
+        ? initialValues.assignedOperatorIds[0]
+        : ""),
+    assignedOperatorIds: Array.isArray(initialValues?.assignedOperatorIds)
+      ? initialValues.assignedOperatorIds
+      : initialValues?.assignedOperatorId
+      ? [initialValues.assignedOperatorId]
+      : [],
   };
 
   const formik = useFormik({
@@ -113,12 +128,20 @@ const AddScannerModal = ({
         ? scannerEditValidationSchema
         : scannerApiValidationSchema,
     onSubmit: async (values, { resetForm, setSubmitting }) => {
+      const rawOperatorIds = Array.isArray(values.assignedOperatorIds)
+        ? values.assignedOperatorIds
+        : values.assignedOperatorId
+        ? [values.assignedOperatorId]
+        : [];
+      const operatorIds = rawOperatorIds.filter(Boolean);
+
       const payload = {
         scannerName: values.scannerName.trim(),
         scannerId: values.scannerId.trim(),
         scannerType: values.scannerType,
         scannerMode: values.scannerMode,
-        assignedOperatorId: values.assignedOperatorId.trim(),
+        assignedOperatorId: operatorIds[0] || null,
+        assignedOperatorIds: operatorIds,
         status: values.status,
         location: values.location.trim(),
         zoneName: values.zoneName.trim(),
@@ -143,7 +166,9 @@ const AddScannerModal = ({
   const [isStaffLoading, setIsStaffLoading] = useState(true);
   const [staffLoadError, setStaffLoadError] = useState("");
   const [staffLoadKey, setStaffLoadKey] = useState(0);
+  const selectedOperatorIds = formik.values.assignedOperatorIds || [];
   const selectedOperatorId = formik.values.assignedOperatorId;
+  const selectedOperatorIdsJoined = selectedOperatorIds.join(",");
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -171,20 +196,20 @@ const AddScannerModal = ({
           }));
 
         setStaffOptions((currentOptions) => {
-          const selectedOption = currentOptions.find(
+          const selectedIdStrings = new Set([
+            ...selectedOperatorIds.map((id) => String(id)),
+            ...(selectedOperatorId ? [String(selectedOperatorId)] : []),
+          ]);
+
+          const retainedOptions = currentOptions.filter(
             (option) =>
-              String(option.value) ===
-              String(selectedOperatorId),
-          );
-          const selectedIsIncluded = options.some(
-            (option) =>
-              String(option.value) ===
-              String(selectedOperatorId),
+              selectedIdStrings.has(String(option.value)) &&
+              !options.some(
+                (newOpt) => String(newOpt.value) === String(option.value),
+              ),
           );
 
-          return selectedOption && !selectedIsIncluded
-            ? [selectedOption, ...options]
-            : options;
+          return [...retainedOptions, ...options];
         });
         setStaffLoadError("");
       })
@@ -207,6 +232,7 @@ const AddScannerModal = ({
     getStaffOptions,
     isOpen,
     selectedOperatorId,
+    selectedOperatorIdsJoined,
     staffLoadKey,
   ]);
 
@@ -487,12 +513,20 @@ const AddScannerModal = ({
         <div className="grid gap-5 md:grid-cols-2">
           <div>
             <Dropdown
+              checkbox
               disabled={isStaffLoading || Boolean(staffLoadError)}
               label="Select Staff"
-              name="assignedOperatorId"
-              onChange={(value) =>
-                setField("assignedOperatorId", value || "")
-              }
+              multiple
+              name="assignedOperatorIds"
+              onChange={(values) => {
+                const nextValues = Array.isArray(values)
+                  ? values
+                  : values
+                  ? [values]
+                  : [];
+                setField("assignedOperatorIds", nextValues);
+                setField("assignedOperatorId", nextValues[0] || "");
+              }}
               onSearchChange={handleStaffSearchChange}
               options={staffOptions}
               placeholder={
@@ -506,15 +540,18 @@ const AddScannerModal = ({
               }
               search
               triggerStyle={
+                hasFieldError("assignedOperatorIds") ||
                 hasFieldError("assignedOperatorId")
                   ? { borderColor: "var(--color-overdue)" }
                   : undefined
               }
-              value={formik.values.assignedOperatorId || null}
+              value={formik.values.assignedOperatorIds || []}
             />
-            {getFieldError("assignedOperatorId") && (
+            {(getFieldError("assignedOperatorIds") ||
+              getFieldError("assignedOperatorId")) && (
               <p className="mt-2 text-xs font-semibold text-(--color-overdue)">
-                {getFieldError("assignedOperatorId")}
+                {getFieldError("assignedOperatorIds") ||
+                  getFieldError("assignedOperatorId")}
               </p>
             )}
             {staffLoadError && (

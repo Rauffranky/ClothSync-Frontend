@@ -1,11 +1,4 @@
-import {
-  Boxes,
-  Building2,
-  CircleAlert,
-  CircleCheck,
-  Clock3,
-  Truck,
-} from "lucide-react";
+import { Boxes, Building2, CircleCheck, Clock3, Truck } from "lucide-react";
 import Card from "../../../Components/UI/Card";
 import CardSkeleton from "../../../Components/UI/CardSkeleton";
 import IconWrapper from "../../../Components/UI/IconWrapper";
@@ -41,21 +34,15 @@ const stats = [
     icon: Boxes,
     variant: "purple",
   },
-  {
-    key: "openExceptions",
-    label: "Open Exceptions",
-    icon: CircleAlert,
-    variant: "danger",
-  },
 ];
 
 const LinkedBusinessStats = ({ loading = false, summary = null }) => (
-  <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+  <section className="grid gap-2 sm:grid-cols-4 lg:grid-cols-5">
     {stats.map((item) =>
       loading ? (
         <CardSkeleton key={item.key} />
       ) : (
-        <Card key={item.key} padding="18px">
+        <Card key={item.key} padding="16px">
           <IconWrapper icon={item.icon} variant={item.variant} />
           <p className="m-0 mt-4 text-3xl font-black leading-none text-(--theme-text-primary)">
             {summary?.[item.key] ?? "-"}

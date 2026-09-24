@@ -29,8 +29,11 @@ import Table from "../../../Components/UI/Table";
 import Pagination from "../../../Components/UI/Pagination";
 import Badge from "../../../Components/UI/Badge";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
+import InitialsAvatar from "../../../Components/UI/InitialsAvatar";
+import GlobalTooltip from "../../../Components/UI/Tooltip";
 import AddScannerModal from "./AddScannerModal";
 import ScannerStatusModal from "./ScannerStatusModal";
+
 import {
   getSearchQuery,
   useDebouncedSearch,
@@ -44,6 +47,17 @@ import {
   updateTenantScannerStatus,
 } from "../../../axios/scanners/tenantScanners";
 import { toast } from "../../../Utils/toast";
+
+const getOperatorInitials = (name) => {
+  if (!name) return "O";
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+};
 
 const ITEMS_PER_PAGE = 10;
 
@@ -244,10 +258,7 @@ const ScannerTable = ({
 
     try {
       setIsStatusSubmitting(true);
-      const response = await updateScannerStatus(
-        scanner.apiId,
-        nextStatus,
-      );
+      const response = await updateScannerStatus(scanner.apiId, nextStatus);
       toast.success(
         response?.message ||
           `Scanner ${nextStatus === "active" ? "activated" : "deactivated"} successfully`,
@@ -276,6 +287,13 @@ const ScannerTable = ({
         location: scanner.scannerLocation,
         zoneName: scanner.zoneName,
         assignedOperatorId: scanner.assignedOperatorId,
+        assignedOperatorIds:
+          Array.isArray(scanner.assignedOperatorIds) &&
+          scanner.assignedOperatorIds.length > 0
+            ? scanner.assignedOperatorIds
+            : scanner.assignedOperatorId
+              ? [scanner.assignedOperatorId]
+              : [],
         customNotes: scanner.customNotes,
       },
     });
@@ -296,12 +314,19 @@ const ScannerTable = ({
       throw error;
     }
 
+    const operatorIds = Array.isArray(updatedScanner.assignedOperatorIds)
+      ? updatedScanner.assignedOperatorIds.filter(Boolean)
+      : updatedScanner.assignedOperatorId
+        ? [updatedScanner.assignedOperatorId]
+        : [];
+
     const payload = {
       scannerType: updatedScanner.scannerType.toLowerCase(),
       scannerMode: updatedScanner.scannerMode.toLowerCase(),
       location: updatedScanner.location,
       zoneName: updatedScanner.zoneName,
-      assignedOperatorId: updatedScanner.assignedOperatorId || null,
+      assignedOperatorId: operatorIds[0] || null,
+      assignedOperatorIds: operatorIds,
       status: updatedScanner.status.toLowerCase(),
       translations: {
         en: {
@@ -418,14 +443,78 @@ const ScannerTable = ({
       key: "operator",
       label: "Operator",
       sortable: true,
-      render: (_, row) => (
-        <span
-          className={`text-sm font-medium ${row.operator ? "text-(--theme-text-secondary)" : "text-(--color-overdue) flex items-center gap-1.5"}`}
-        >
-          {!row.operator && <AlertTriangle size={14} />}
-          {row.operator || "Unassigned"}
-        </span>
-      ),
+      render: (_, row) => {
+        const operators =
+          Array.isArray(row.assignedOperators) &&
+          row.assignedOperators.length > 0
+            ? row.assignedOperators
+            : row.operator
+              ? [{ name: row.operator }]
+              : [];
+
+        if (operators.length === 0) {
+          return (
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-(--color-overdue)">
+              <AlertTriangle size={13} />
+              Unassigned
+            </span>
+          );
+        }
+
+        const primaryName = operators[0]?.name || row.operator || "Operator";
+        const hasMultiple = operators.length > 1;
+        const allNames = operators
+          .map((o) => o.name)
+          .filter(Boolean)
+          .join(", ");
+
+        if (!hasMultiple) {
+          return (
+            <div className="flex items-center gap-2">
+              <InitialsAvatar
+                className="h-6 w-6 text-[10px]"
+                initials={getOperatorInitials(primaryName)}
+                size="sm"
+                variant="info"
+              />
+              <span className="truncate text-sm font-semibold text-(--theme-text-primary)">
+                {primaryName}
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-2">
+              {operators.slice(0, 2).map((op, idx) => (
+                <InitialsAvatar
+                  className="h-6 w-6 text-[10px] ring-2 ring-(--theme-surface)"
+                  initials={getOperatorInitials(op.name)}
+                  key={op.id || idx}
+                  size="sm"
+                  variant={idx === 0 ? "info" : "purple"}
+                />
+              ))}
+            </div>
+            <span className="max-w-27.5 truncate text-sm font-semibold text-(--theme-text-primary)">
+              {primaryName}
+            </span>
+            <GlobalTooltip position="top" text={allNames}>
+              <span
+                className="inline-flex cursor-pointer items-center rounded-full px-2 py-0.5 text-xs font-bold transition-all hover:brightness-110"
+                style={{
+                  color: "var(--color-aurora-teal)",
+                  background: "rgba(20, 184, 166, 0.14)",
+                  border: "1px solid rgba(20, 184, 166, 0.28)",
+                }}
+              >
+                +{operators.length - 1}
+              </span>
+            </GlobalTooltip>
+          </div>
+        );
+      },
     },
     {
       key: "status",

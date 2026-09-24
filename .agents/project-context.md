@@ -256,13 +256,13 @@ Confirmed API-backed areas:
   `PUT /laundry-scanners/update/:scannerId` and
   `PUT /tenant-scanners/update/:scannerId` endpoints with `scannerType`,
   `scannerMode`, top-level `location` and `zoneName`, optional
-  `assignedOperatorId`, `status`, and an English translation containing `name`,
+  `assignedOperatorId` (primary operator UUID) along with `assignedOperatorIds` (array of staff UUIDs), `status`, and an English translation containing `name`,
   `zoneName`, `location`, and `notes`.
-  Scanner Add/Edit staff selectors and the scanner operator filter use
+  Scanner Add/Edit staff selectors support selecting multiple staff members with checkboxes and chips; they and the scanner operator filter use
   `GET /tenant-staff/options` or `GET /laundry-staff/options` with
   `status=active`, `limit=100`, and optional `keywords`; they map
-  `data.items[].fullName`/`id` to dropdown labels/values. Clearing an assignment
-  sends `assignedOperatorId: null`.
+  `data.items[].fullName`/`id` to dropdown labels/values. Clearing assignments
+  sends `assignedOperatorId: null` and `assignedOperatorIds: []`.
 - Laundry Incoming Batches is implemented at `/laundry/incoming-batches` behind
   the `incoming_batches` view permission. It lists dispatched batches through
   `GET /laundry-batches/incoming` with server pagination, optional `keywords`,

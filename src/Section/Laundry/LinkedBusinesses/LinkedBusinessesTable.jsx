@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Eye,
-  MapPin,
-  RefreshCw,
-  Search,
-  TriangleAlert,
-} from "lucide-react";
+import { Eye, MapPin, RefreshCw, Search, TriangleAlert } from "lucide-react";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Alert from "../../../Components/UI/Alert";
 import Badge from "../../../Components/UI/Badge";
@@ -24,7 +18,7 @@ import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import { getApiErrorMessage } from "../../../axios/api";
 import { getLaundryTenants } from "../../../axios/laundryTenants/laundryTenants";
 import { getPublicBusinessTypes } from "../../../axios/adminBusinessTypes/adminBusinessTypes";
-import { formatDateWithUserPreferences } from "../../../Utils/date";
+import { formatDateTime } from "../../../Utils/date";
 import { toast } from "../../../Utils/toast";
 import {
   businessTypeOptions,
@@ -46,7 +40,8 @@ const LinkedBusinessesTable = ({ onSummaryChange, refreshKey = 0 }) => {
   const debouncedSearch = useDebouncedSearch(searchValue);
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [filterTypeOptions, setFilterTypeOptions] = useState(businessTypeOptions);
+  const [filterTypeOptions, setFilterTypeOptions] =
+    useState(businessTypeOptions);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -134,13 +129,27 @@ const LinkedBusinessesTable = ({ onSummaryChange, refreshKey = 0 }) => {
         key: "name",
         label: "Business",
         render: (_, row) => (
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 items-center gap-2">
             <InitialsAvatar initials={row.initials} />
             <div className="min-w-0">
-              <p className="m-0 truncate font-black text-(--theme-text-primary)">
+              <p className="m-0 truncate text-(--theme-text-primary)">
                 {row.name}
               </p>
             </div>
+          </div>
+        ),
+      },
+      {
+        key: "contactName",
+        label: "Contact",
+        render: (_, row) => (
+          <div className="min-w-0">
+            <p className="m-0 truncate font-bold text-(--theme-text-primary)">
+              {row.contactName}
+            </p>
+            <p className="m-0 mt-0.5 truncate text-xs font-semibold text-(--theme-text-muted)">
+              {row.contactEmail}
+            </p>
           </div>
         ),
       },
@@ -193,7 +202,7 @@ const LinkedBusinessesTable = ({ onSummaryChange, refreshKey = 0 }) => {
         label: "Last Activity",
         render: (value) => (
           <span className="text-xs font-semibold text-(--theme-text-muted)">
-            {value ? formatDateWithUserPreferences(value) : "-"}
+            {value ? formatDateTime(value) : "-"}
           </span>
         ),
       },

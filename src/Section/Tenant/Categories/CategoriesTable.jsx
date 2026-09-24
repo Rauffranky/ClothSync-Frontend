@@ -3,6 +3,7 @@ import { CircleCheck, CircleX, Eye, Pencil, Tag } from "lucide-react";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Badge from "../../../Components/UI/Badge";
 import Table from "../../../Components/UI/Table";
+import { formatDateTime } from "../../../Utils/date";
 
 const CategoriesTable = ({
   data = [],
@@ -97,8 +98,8 @@ const CategoriesTable = ({
       label: "Created",
       sortable: true,
       render: (value) => (
-        <span className="text-sm font-bold text-(--theme-text-secondary)">
-          {value}
+        <span className="text-xs font-semibold text-(--theme-text-muted)">
+          {value ? formatDateTime(value) : "-"}
         </span>
       ),
     },
@@ -107,8 +108,8 @@ const CategoriesTable = ({
       label: "Last Updated",
       sortable: true,
       render: (value) => (
-        <span className="text-sm font-bold text-(--theme-text-secondary)">
-          {value}
+        <span className="text-xs font-semibold text-(--theme-text-muted)">
+          {value ? formatDateTime(value) : "-"}
         </span>
       ),
     },

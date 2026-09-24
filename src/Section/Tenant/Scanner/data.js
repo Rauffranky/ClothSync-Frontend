@@ -61,6 +61,9 @@ export const normalizeScanner = (scanner, index = 0) => {
         location:
             translation?.zoneName || scanner?.zoneName || scanner?.locationName || "-",
         operator:
+            (Array.isArray(scanner?.assignedOperators) && scanner.assignedOperators.length > 0
+                ? scanner.assignedOperators[0]?.name || scanner.assignedOperators[0]?.user?.fullName
+                : null) ||
             assignedOperatorUser?.fullName ||
             assignedOperatorUser?.name ||
             assignedOperator?.fullName ||
@@ -72,6 +75,30 @@ export const normalizeScanner = (scanner, index = 0) => {
             assignedOperator?.id ||
             assignedOperator?._id ||
             "",
+        assignedOperatorIds: Array.isArray(scanner?.assignedOperatorIds)
+            ? scanner.assignedOperatorIds
+            : scanner?.assignedOperatorId
+            ? [scanner.assignedOperatorId]
+            : assignedOperator?.id
+            ? [assignedOperator.id]
+            : [],
+        assignedOperators: Array.isArray(scanner?.assignedOperators)
+            ? scanner.assignedOperators
+            : (assignedOperatorUser?.fullName || assignedOperatorUser?.name || assignedOperator?.id)
+            ? [
+                {
+                    id: assignedOperator?.id || scanner?.assignedOperatorId,
+                    name:
+                        assignedOperatorUser?.fullName ||
+                        assignedOperatorUser?.name ||
+                        assignedOperator?.fullName ||
+                        assignedOperator?.name ||
+                        "Operator",
+                    email: assignedOperatorUser?.email || null,
+                    user: assignedOperatorUser,
+                },
+              ]
+            : [],
         status: formatStatusLabel(scanner?.status, ""),
         signalStatus: scanner?.signalStatus || "online",
         firmwareVersion: scanner?.firmwareVersion || "",
