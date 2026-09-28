@@ -251,10 +251,20 @@ const columns = [
     label: "ITEMS SENT",
     sortable: true,
     render: (_, row) => {
-      const val = row.itemsSent ?? row.itemCount ?? (row.asset ? 1 : 0);
+      const rawVal = row.batch?.itemsSent ?? row.itemsSent;
+      const val =
+        rawVal !== undefined && rawVal !== null && rawVal !== ""
+          ? rawVal
+          : "—";
       return (
-        <span className="text-sm font-black text-(--theme-text-primary)">
-          {typeof val === "object" ? "0" : String(val)}
+        <span
+          className={`text-sm ${
+            val !== "—"
+              ? "font-black text-(--theme-text-primary)"
+              : "font-bold text-(--theme-text-muted)"
+          }`}
+        >
+          {typeof val === "object" ? "—" : String(val)}
         </span>
       );
     },
@@ -265,7 +275,8 @@ const columns = [
     label: "DELAYED",
     sortable: true,
     render: (_, row) => {
-      const rawVal = row.delayedCount ?? row.delayed ?? "—";
+      const rawVal =
+        row.batch?.delayed ?? row.delayedCount ?? row.delayed ?? "—";
       const val = typeof rawVal === "object" ? "—" : String(rawVal);
       const isDelayed = val !== "—" && val !== 0 && val !== "0";
       return (

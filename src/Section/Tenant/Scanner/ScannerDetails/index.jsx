@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import {
   AlertTriangle,
   Cpu,
@@ -309,13 +309,89 @@ const ScannerDetailsIndex = ({
     : null;
 
   const logColumns = [
-    { key: "tag", label: "Tag", accessor: (log) => log.tagId || log.tag?.epc || log.epc || "-", className: "font-mono text-xs", sortable: false },
+    {
+      key: "tag",
+      label: "Tag",
+      accessor: (log) => log.tag?.tagCode || log.tagCode || log.tag?.epc || log.epc || "-",
+      render: (_, log) => {
+        const tagCode = log.tag?.tagCode || log.tagCode;
+        const epc = log.tag?.epc || log.epc;
+        const tagId = log.tag?.id || log.tagId;
+        return (
+          <div className="flex flex-col">
+            {tagCode ? (
+              <span className="font-bold text-(--color-sky-blue)">
+                {tagId ? (
+                  <Link to={`/business/tags/${tagId}`} className="hover:underline">
+                    {tagCode}
+                  </Link>
+                ) : (
+                  tagCode
+                )}
+              </span>
+            ) : null}
+            <span className={`font-mono text-xs ${tagCode ? "text-(--theme-text-muted)" : "text-(--theme-text-primary)"}`}>
+              {epc || "-"}
+            </span>
+          </div>
+        );
+      },
+      sortable: false,
+    },
+    {
+      key: "asset",
+      label: "Asset",
+      accessor: (log) => log.asset?.name || log.assetName || "-",
+      render: (_, log) => {
+        const assetName = log.asset?.name || log.assetName;
+        const assetCode = log.asset?.assetCode || log.assetCode;
+        const assetId = log.asset?.id || log.assetId;
+        if (!assetName && !assetCode) return <span className="text-(--theme-text-muted)">—</span>;
+        return (
+          <div className="flex flex-col">
+            {assetName ? (
+              <span className="font-semibold text-(--theme-text-primary)">
+                {assetId ? (
+                  <Link to={`/business/assets/${assetId}`} className="hover:underline">
+                    {assetName}
+                  </Link>
+                ) : (
+                  assetName
+                )}
+              </span>
+            ) : null}
+            {assetCode ? (
+              <span className="font-mono text-xs text-(--theme-text-muted)">
+                {assetCode}
+              </span>
+            ) : null}
+          </div>
+        );
+      },
+      sortable: false,
+    },
     { key: "mode", label: "Mode", accessor: (log) => log.mode || log.scanMode || "-", sortable: false },
     {
-      key: "status", label: "Status", accessor: (log) => log.status || log.scanStatus || "-", sortable: false,
-      render: (value) => <Badge size="sm" variant={String(value).toLowerCase().includes("failed") ? "danger" : "info"}>{String(value).replace(/[_-]+/g, " ")}</Badge>,
+      key: "status",
+      label: "Status",
+      accessor: (log) => log.status || log.scanStatus || "-",
+      sortable: false,
+      render: (value) => {
+        const valStr = String(value || "").toLowerCase();
+        const variant =
+          valStr.includes("failed") || valStr.includes("exception")
+            ? "danger"
+            : valStr.includes("unlinked")
+            ? "warning"
+            : "info";
+        return (
+          <Badge size="sm" variant={variant}>
+            {String(value).replace(/[_-]+/g, " ")}
+          </Badge>
+        );
+      },
     },
-    { key: "batch", label: "Batch", accessor: (log) => log.batchId || log.batch?.id || log.batch?.batchNumber || "-", sortable: false },
+    { key: "batch", label: "Batch", accessor: (log) => log.batchId || log.batch?.id || log.batch?.batchNumber || log.batch?.batchCode || "-", sortable: false },
     { key: "activity", label: "Activity", accessor: (log) => formatDateTime(log.createdAt || log.scannedAt || log.lastActivityAt, true) || "-", sortable: false },
   ];
 

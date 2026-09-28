@@ -186,6 +186,7 @@ export const TENANT_LAUNDRY_ENDPOINTS = Object.freeze({
   ACCEPT_INVITE: "/tenant-laundries/accept-invite",
   SET_DEFAULT: (id) => `/tenant-laundries/set-default/${id}`,
   UNLINK: (id) => `/tenant-laundries/unlink/${id}`,
+  ACTIVITY_LOGS: (id) => `/tenant-laundries/show/${id}/activity-logs`,
 });
 
 export const LAUNDRY_TENANT_ENDPOINTS = Object.freeze({

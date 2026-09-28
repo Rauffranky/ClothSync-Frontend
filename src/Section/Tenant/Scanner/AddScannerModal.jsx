@@ -227,6 +227,7 @@ const AddScannerModal = ({
     return () => {
       isActive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     debouncedStaffSearch,
     getStaffOptions,

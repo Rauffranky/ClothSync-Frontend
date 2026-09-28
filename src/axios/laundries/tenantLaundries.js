@@ -45,3 +45,7 @@ export const setTenantLaundryAsDefault = (id) =>
 
 export const unlinkTenantLaundry = (id) =>
   api.put(TENANT_LAUNDRY_ENDPOINTS.UNLINK(id));
+
+export const getTenantLaundryActivityLogs = (id, params) =>
+  api.get(TENANT_LAUNDRY_ENDPOINTS.ACTIVITY_LOGS(id), { params });
+
