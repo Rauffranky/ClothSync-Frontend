@@ -446,7 +446,7 @@ const ComplaintDetailsView = ({ role = "tenant" }) => {
           {/* Status & Actions Card */}
           <Card className="p-5 space-y-4">
             <h3 className="text-sm font-bold text-(--theme-text-primary) pb-3 border-b border-(--theme-border)">
-              {isSuperAdmin ? "Status Overview" : "Status & Actions"}
+              Status & Actions
             </h3>
 
             <div className="space-y-3">
@@ -459,68 +459,58 @@ const ComplaintDetailsView = ({ role = "tenant" }) => {
                 </Badge>
               </div>
 
-              {!isSuperAdmin && (
-                <>
-                  <div>
-                    <Input
-                      label="Resolution Notes (Optional)"
-                      multiline
-                      rows={3}
-                      value={resolutionNotes}
-                      onChange={(val) => setResolutionNotes(val)}
-                      placeholder="Provide closing notes or resolution explanation..."
-                      disabled={isUpdatingStatus}
-                    />
-                  </div>
+              <div>
+                <Input
+                  label="Resolution Notes (Optional)"
+                  multiline
+                  rows={3}
+                  value={resolutionNotes}
+                  onChange={(val) => setResolutionNotes(val)}
+                  placeholder="Provide closing notes or resolution explanation..."
+                  disabled={isUpdatingStatus}
+                />
+              </div>
 
-                  <div className="space-y-2 pt-2">
-                    {complaint.status !== "in_review" && (
-                      <Button
-                        variant="outline"
-                        size="md"
-                        fullWidth
-                        leftIcon={<Clock size={15} />}
-                        loading={isUpdatingStatus}
-                        onClick={() => handleStatusChange("in_review")}
-                      >
-                        Mark In Review
-                      </Button>
-                    )}
+              <div className="space-y-2 pt-2">
+                {complaint.status !== "in_review" && (
+                  <Button
+                    variant="outline"
+                    size="md"
+                    fullWidth
+                    leftIcon={<Clock size={15} />}
+                    loading={isUpdatingStatus}
+                    onClick={() => handleStatusChange("in_review")}
+                  >
+                    Mark In Review
+                  </Button>
+                )}
 
-                    {complaint.status !== "resolved" && (
-                      <Button
-                        variant="primary"
-                        size="md"
-                        fullWidth
-                        leftIcon={<CheckCircle size={15} />}
-                        loading={isUpdatingStatus}
-                        onClick={() => handleStatusChange("resolved")}
-                      >
-                        Mark Resolved
-                      </Button>
-                    )}
+                {complaint.status !== "resolved" && (
+                  <Button
+                    variant="primary"
+                    size="md"
+                    fullWidth
+                    leftIcon={<CheckCircle size={15} />}
+                    loading={isUpdatingStatus}
+                    onClick={() => handleStatusChange("resolved")}
+                  >
+                    Mark Resolved
+                  </Button>
+                )}
 
-                    {complaint.status !== "rejected" && (
-                      <Button
-                        variant="ghost"
-                        size="md"
-                        fullWidth
-                        leftIcon={<AlertTriangle size={15} />}
-                        loading={isUpdatingStatus}
-                        onClick={() => handleStatusChange("rejected")}
-                      >
-                        Reject Complaint
-                      </Button>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {isSuperAdmin && (
-                <p className="text-xs text-(--theme-text-muted) leading-relaxed pt-1">
-                  Super Admin has view-only access. Complaint status and dispute resolution are managed directly between the business and laundry partners.
-                </p>
-              )}
+                {complaint.status !== "rejected" && (
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    fullWidth
+                    leftIcon={<AlertTriangle size={15} />}
+                    loading={isUpdatingStatus}
+                    onClick={() => handleStatusChange("rejected")}
+                  >
+                    Reject Complaint
+                  </Button>
+                )}
+              </div>
             </div>
           </Card>
         </div>

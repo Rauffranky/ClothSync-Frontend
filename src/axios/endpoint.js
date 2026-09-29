@@ -285,5 +285,8 @@ export const ADMIN_BUSINESS_TYPE_ENDPOINTS = Object.freeze({
 export const ADMIN_LAUNDRY_ENDPOINTS = Object.freeze({
   LIST: "/admin-laundries/show",
   DETAILS: (id) => `/admin-laundries/show/${id}`,
+  CREATE: "/admin-laundries/create",
+  UPDATE: (id) => `/admin-laundries/update/${id}`,
+  UPDATE_STATUS: (id) => `/admin-laundries/update-status/${id}`,
 });
 

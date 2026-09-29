@@ -48,6 +48,12 @@ export const NAV = {
       Icon: Building2,
     },
     {
+      id: 9,
+      label: "Laundries",
+      href: "/superadmin/laundries",
+      Icon: TowelRack,
+    },
+    {
       id: 3,
       label: "Business Types",
       href: "/superadmin/business-types",

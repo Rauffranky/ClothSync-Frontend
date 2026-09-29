@@ -27,6 +27,16 @@ export const hasPermission = (
   if (!sectionKey) return true;
   if (!PERMISSION_ACTIONS.includes(action)) return false;
 
+  // Super Admin has full unrestricted platform-wide access
+  if (
+    user?.role === "super_admin" ||
+    user?.role === "superadmin" ||
+    user?.isSuperAdmin ||
+    user?.portal === "superadmin"
+  ) {
+    return true;
+  }
+
   const permissions = getUserPermissions(user);
 
   // Owners/admins currently do not receive a permissions matrix. Preserve

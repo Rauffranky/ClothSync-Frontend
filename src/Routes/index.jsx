@@ -26,6 +26,7 @@ const SuperAdminTermsAndConditionsPage = lazy(() => import("../Page/Dashboard/Su
 const SuperAdminPrivacyPolicyPage = lazy(() => import("../Page/Dashboard/SuperAdmin/PrivacyPolicyPage"));
 const SuperAdminEmailTemplatesPage = lazy(() => import("../Page/Dashboard/SuperAdmin/EmailTemplatesPage"));
 const SuperAdminBusinessesPage = lazy(() => import("../Page/Dashboard/SuperAdmin/BusinessesPage"));
+const SuperAdminLaundriesPage = lazy(() => import("../Page/Dashboard/SuperAdmin/LaundriesPage"));
 const SuperAdminBusinessTypesPage = lazy(() => import("../Page/Dashboard/SuperAdmin/BusinessTypesPage"));
 const SuperAdminComplaintsPage = lazy(() => import("../Page/Dashboard/SuperAdmin/ComplaintsPage"));
 const SuperAdminComplaintDetailsPage = lazy(() => import("../Page/Dashboard/SuperAdmin/ComplaintDetailsPage"));
@@ -115,6 +116,7 @@ const AppRoutes = () => {
           <Route path="/superadmin/privacy-policy" element={<SuperAdminPrivacyPolicyPage />} />
           <Route path="/superadmin/email-templates" element={<SuperAdminEmailTemplatesPage />} />
           <Route path="/superadmin/businesses" element={<SuperAdminBusinessesPage />} />
+          <Route path="/superadmin/laundries" element={<SuperAdminLaundriesPage />} />
           <Route path="/superadmin/business-types" element={<SuperAdminBusinessTypesPage />} />
           <Route path="/superadmin/complaints" element={<SuperAdminComplaintsPage />} />
           <Route path="/superadmin/complaints/:id" element={<SuperAdminComplaintDetailsPage />} />

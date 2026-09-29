@@ -92,11 +92,15 @@ const GlobalTooltip = ({
   }
 
   const isLongText = typeof text === "string" && text.length > 35;
+  const isFullWidth = className.includes("w-full");
 
   return (
-    <div ref={triggerRef} className={`relative inline-flex ${className}`}>
+    <div
+      ref={triggerRef}
+      className={`relative ${isFullWidth ? "w-full block" : "inline-flex"} ${className}`}
+    >
       <div
-        className="inline-flex"
+        className={isFullWidth ? "w-full block" : "inline-flex"}
         onMouseEnter={showTooltip}
         onMouseLeave={() => setIsVisible(false)}
         onFocus={showTooltip}
