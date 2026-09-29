@@ -104,6 +104,9 @@ export const getTenantSessions = () =>
 export const revokeTenantSession = (sessionId) =>
   api.delete(AUTH_ENDPOINTS.TENANT_REVOKE_SESSION(sessionId));
 
+export const deleteTenantSession = (sessionId) =>
+  api.delete(AUTH_ENDPOINTS.TENANT_DELETE_SESSION(sessionId));
+
 export const revokeAllTenantSessions = () =>
   api.delete(AUTH_ENDPOINTS.TENANT_REVOKE_ALL_SESSIONS);
 

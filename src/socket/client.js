@@ -3,7 +3,9 @@ import {
   AUTH_SESSION_CHANGED_EVENT,
   getAuthAccessToken,
   getAuthSessionUser,
+  clearAuthSession,
 } from "../axios/auth/authSession";
+import { toast } from "../Utils/toast";
 
 const getSocketUrl = () => {
   const configuredUrl = import.meta.env.VITE_SOCKET_URL?.trim();
@@ -75,9 +77,27 @@ export const getSocket = () => {
       if (
         err?.message === "common.unauthorized" ||
         err?.message === "auth.invalidToken" ||
-        err?.message === "auth.tokenMissing"
+        err?.message === "auth.tokenMissing" ||
+        err?.message === "auth.sessionRevoked"
       ) {
         socket.disconnect();
+      }
+    });
+
+    socket.on("auth.session_revoked", (payload) => {
+      const currentSessionId = sessionStorage.getItem("sessionId");
+      if (payload?.all || (payload?.sessionId && String(payload.sessionId) === String(currentSessionId))) {
+        clearAuthSession();
+        toast.error("Your session was terminated from another device");
+        const path = typeof window !== "undefined" ? window.location.pathname : "";
+        const loginPath = path.startsWith("/laundry")
+          ? "/laundry/login"
+          : path.startsWith("/superadmin")
+          ? "/superadmin/login"
+          : "/business/login";
+        if (typeof window !== "undefined" && window.location.pathname !== loginPath) {
+          window.location.replace(loginPath);
+        }
       }
     });
   }
@@ -117,11 +137,38 @@ export const startSocketConnection = () => {
     syncConnectionWithAuth,
   );
 
+  let lastCheckTime = 0;
+  const handleWindowFocus = () => {
+    if (!getAuthAccessToken()) return;
+    connectSocket();
+
+    const now = Date.now();
+    if (now - lastCheckTime < 3000) return; // Debounce checks within 3 seconds
+    lastCheckTime = now;
+
+    const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+    let endpoint = "";
+    if (pathname.startsWith("/laundry")) endpoint = "/laundry-auth/me";
+    else if (pathname.startsWith("/superadmin")) endpoint = "/admin-auth/me";
+    else if (pathname.startsWith("/business")) endpoint = "/tenant-auth/me";
+
+    if (endpoint) {
+      import("../axios/interceptor").then(({ default: apiClient }) => {
+        apiClient.get(endpoint).catch(() => {});
+      });
+    }
+  };
+
+  window.addEventListener("focus", handleWindowFocus);
+  document.addEventListener("visibilitychange", handleWindowFocus);
+
   return () => {
     window.removeEventListener(
       AUTH_SESSION_CHANGED_EVENT,
       syncConnectionWithAuth,
     );
+    window.removeEventListener("focus", handleWindowFocus);
+    document.removeEventListener("visibilitychange", handleWindowFocus);
     disconnectSocket();
   };
 };

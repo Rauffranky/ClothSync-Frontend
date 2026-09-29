@@ -240,12 +240,13 @@ const PrivacyPolicySection = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex min-h-87.5 items-center justify-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-(--color-aurora-teal) border-t-transparent" />
-              <span className="text-sm font-medium text-(--theme-text-secondary)">
-                Loading privacy policy content...
-              </span>
+          <div className="space-y-4 min-h-87.5 animate-pulse p-4 rounded-xl border border-(--theme-border-soft) bg-(--theme-surface)" aria-label="Loading privacy policy content">
+            <div className="h-10 w-full rounded-lg bg-(--theme-surface-strong)" />
+            <div className="space-y-3 pt-2">
+              <div className="h-4 w-3/4 rounded bg-(--theme-surface-strong)" />
+              <div className="h-4 w-5/6 rounded bg-(--theme-surface-strong)" />
+              <div className="h-4 w-2/3 rounded bg-(--theme-surface-strong)" />
+              <div className="h-4 w-1/2 rounded bg-(--theme-surface-strong)" />
             </div>
           </div>
         ) : (

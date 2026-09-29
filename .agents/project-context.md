@@ -736,8 +736,16 @@ Current endpoints:
   live list, summary counts, and backend `page`/`limit` pagination. A row keeps
   the backend batch UUID for detail navigation while displaying its batch code.
   `GET /tenant-dispatch-batches/show/:batchId/activity-logs` powers the detail
-  Activity Log tab with server pagination at a limit of 20. The shared service
-  also exposes `PUT /tenant-dispatch-batches/items-status/:batchId` and
+  Activity Log tab with server pagination at a limit of 20. It returns enriched
+  audit records containing event lifecycle categories (`batch_dispatched`,
+  `batch_created`, `rfid_scan_completed`, `in_laundry`, `sent_to_business`,
+  `batch_completed`, `exceptions`), resolved actor identities (`actor.fullName`,
+  staff avatars, or automated system tags), occurred timestamps, narrative descriptions,
+  and structured metadata (destination laundry partner, laundry city/location,
+  scanner station, verified items count, batch code, session ID, and exception data).
+  The UI renders a clean header, color-coded status badges, and structured detail
+  chips for each audit step. The shared service also exposes
+  `PUT /tenant-dispatch-batches/items-status/:batchId` and
   `PUT /tenant-dispatch-batches/return/:batchId`; UI mutations require their
   exact request-body contracts before they can be safely invoked.
 - `PUT /tenant-laundries/unlink/:id`, where `id` is the linked-laundry
@@ -950,3 +958,24 @@ The incoming-batch modal normalizes session-history envelopes, loads active scan
 - Clean presentation: internal UUID Log IDs removed from modal footer; extraneous top filter bars and bracketed `(Auto)` indicators removed from `Action / Mode`.
 - Backend (`scannerLogic.js` and `scannerLogHelper.js`) accurately isolates `internal_scan` (status: `in_business`, no batch) from laundry checkout dispatches (`sent_to_laundry`), and returns full Tag and Asset wash metrics.
 - Dependency audit: patched high/moderate third-party vulnerabilities in both repositories via non-breaking `npm audit fix`.
+
+## Active Sessions Management & Revocation — 2026-09-29
+
+- Backend session endpoints added under `/api/tenant-auth/sessions`:
+  - `GET /tenant-auth/sessions`: retrieves all active login sessions for authenticated user from `auth_sessions` table, parses user agent (browser, OS, device type: desktop/mobile/tablet), IP address, last active time, and marks current session accurately via `sessionId` match.
+  - `DELETE /tenant-auth/sessions/:id`: revokes specific session and broadcasts realtime `auth.session_revoked` event via Socket.IO to `user:${userId}` room.
+  - `DELETE /tenant-auth/sessions`: logs out all active sessions for user and broadcasts realtime `auth.session_revoked` (`{ all: true }`).
+  - Login logic & `issueAuthSession` updated to embed `sessionId` into the JWT token payload.
+  - `authMiddleware.js` (`tenantAuthenticate`, `superAdminAuthenticate`, `laundryAuthenticate`) updated to validate `sessionId` against `AuthSessions` in the database. When a session is revoked or expired, subsequent requests immediately return `401 Unauthorized` with `auth.sessionRevoked`.
+  - Normal logout (`/logout`) in `tenantPanel`, `laundryPanel`, and `adminPanel` updated to revoke the session in `AuthSessions` with `status: 'revoked'` and `revokedAt: new Date()`, preventing logged-out sessions from persisting as active.
+- Frontend `SecurityTab.jsx` (`/business/settings` -> Security):
+  - Displays both Active and Inactive (logged out / revoked) sessions. Inactive sessions show an "Inactive" badge and muted card styling instead of being abruptly deleted, allowing audit trail visibility.
+  - Replaced text "Log out" button with modern icon action buttons:
+    - `LogOut` icon button: logs out the active device, instantly transitioning it to "Inactive". Wrapped in `GlobalTooltip` ("Log out device").
+    - `Trash2` icon button: permanently deletes the session record from database and removes it from the UI. Wrapped in `GlobalTooltip` ("Delete session").
+  - On hover over action icons, tooltips display their exact names and action descriptions.
+  - Global "Log out all devices" action wrapped in `GlobalTooltip` ("Log out all other active devices").
+  - Frontend `src/socket/client.js` listens to `auth.session_revoked` to evict terminated browser sessions in real-time and added window focus / visibility verification.
+
+
+

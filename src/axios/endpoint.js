@@ -14,6 +14,7 @@ export const AUTH_ENDPOINTS = Object.freeze({
   TENANT_CHANGE_PASSWORD: "/tenant-auth/change-password",
   TENANT_SESSIONS: "/tenant-auth/sessions",
   TENANT_REVOKE_SESSION: (sessionId) => `/tenant-auth/sessions/${sessionId}`,
+  TENANT_DELETE_SESSION: (sessionId) => `/tenant-auth/sessions/${sessionId}?action=delete`,
   TENANT_REVOKE_ALL_SESSIONS: "/tenant-auth/sessions",
 });
 

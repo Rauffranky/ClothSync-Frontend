@@ -91,9 +91,12 @@ const GlobalTooltip = ({
     return children;
   }
 
+  const isLongText = typeof text === "string" && text.length > 35;
+
   return (
-    <div ref={triggerRef} className={`relative inline-block ${className}`}>
+    <div ref={triggerRef} className={`relative inline-flex ${className}`}>
       <div
+        className="inline-flex"
         onMouseEnter={showTooltip}
         onMouseLeave={() => setIsVisible(false)}
         onFocus={showTooltip}
@@ -104,27 +107,30 @@ const GlobalTooltip = ({
         {children}
       </div>
 
-      {isVisible && text && createPortal(
-        <div
-          style={tooltipStyle}
-          className={`
-            fixed z-[10000] max-w-80 px-3 py-2 rounded-lg whitespace-normal break-words
-            bg-(--theme-surface-strong) text-(--theme-text-primary) text-sm font-medium
-            shadow-(--layout-panel-shadow) border border-(--theme-border)
-            pointer-events-none
-            animate-in fade-in duration-200
-          `}
-        >
-          {text}
+      {isVisible &&
+        text &&
+        createPortal(
           <div
+            style={tooltipStyle}
             className={`
-              absolute w-2 h-2 bg-(--theme-surface-strong) border-(--theme-border) transform
+            fixed z-10000 px-3 py-1.5 rounded-lg text-xs font-semibold leading-tight
+            ${isLongText ? "max-w-xs whitespace-normal wrap-break-word" : "whitespace-nowrap"}
+            bg-(--theme-surface-strong) text-(--theme-text-primary) border border-(--theme-border)
+            shadow-(--layout-panel-shadow)
+            pointer-events-none select-none
+            animate-in fade-in zoom-in-95 duration-150
+          `}
+          >
+            {text}
+            <div
+              className={`
+              absolute w-2 h-2 bg-(--theme-surface-strong) border-(--theme-border) transform rotate-45
               ${getArrowClasses()}
             `}
-          />
-        </div>,
-        document.body,
-      )}
+            />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

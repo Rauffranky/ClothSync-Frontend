@@ -446,14 +446,20 @@ const EmailTemplatesSection = () => {
 
       {/* Templates Accordion List */}
       {isLoading ? (
-        <Card className="flex min-h-80 items-center justify-center p-8">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-(--color-aurora-teal) border-t-transparent" />
-            <span className="text-sm font-medium text-(--theme-text-secondary)">
-              Loading email templates from system...
-            </span>
-          </div>
-        </Card>
+        <div className="space-y-4 animate-pulse" aria-label="Loading email templates">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-6 w-6 rounded-md bg-(--theme-border-soft)" />
+                  <div className="h-5 w-48 rounded bg-(--theme-border-soft)" />
+                </div>
+                <div className="h-6 w-20 rounded-md bg-(--theme-border-soft)" />
+              </div>
+              <div className="h-4 w-3/4 rounded bg-(--theme-border-soft)" />
+            </Card>
+          ))}
+        </div>
       ) : templates.length === 0 ? (
         <Card className="flex flex-col items-center justify-center p-12 text-center">
           <AlertCircle size={40} className="text-(--color-pending) mb-3" />
