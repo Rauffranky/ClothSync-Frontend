@@ -13,7 +13,27 @@ import Alert from "../../../../../Components/UI/Alert";
 import Badge from "../../../../../Components/UI/Badge";
 import Card from "../../../../../Components/UI/Card";
 import IconWrapper from "../../../../../Components/UI/IconWrapper";
-import ProgressBar from "../../../../../Components/UI/ProgressBar";
+import { DonutChart } from "../../../../../Components/UI/Charts";
+
+const CATEGORY_COLORS = [
+  "var(--color-aurora-teal)",
+  "var(--color-super-admin-light)",
+  "var(--color-sky-blue)",
+  "var(--color-pending)",
+  "var(--color-ready)",
+  "#6366f1",
+  "#ec4899",
+  "#14b8a6",
+];
+
+const VARIANT_COLOR_MAP = {
+  teal: "var(--color-aurora-teal)",
+  purple: "var(--color-super-admin-light)",
+  indigo: "#6366f1",
+  sky: "var(--color-sky-blue)",
+  amber: "var(--color-pending)",
+  green: "var(--color-ready)",
+};
 
 const OverviewTab = ({ details }) => {
   const categoryBreakdown = details?.categoryBreakdown || [];
@@ -21,51 +41,53 @@ const OverviewTab = ({ details }) => {
   const latestActivity = details?.latestActivity || [];
   const totalItems = details?.summary?.totalItems || 0;
 
+  const categoryChartData = categoryBreakdown.map((item, index) => ({
+    label: item.category,
+    value: Number(item.count) || 0,
+    color:
+      VARIANT_COLOR_MAP[item.variant] ||
+      CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+    centerLabel: "items",
+  }));
+
   return (
     <div className="space-y-6 pt-4">
       {/* 3 Column Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Card 1: Category Breakdown */}
-        <Card padding="20px 22px" rounded="20px">
-          <div className="flex items-center gap-2.5 mb-5">
-            <IconWrapper
-              icon={Folder}
-              variant="teal"
-              sizeClassName="h-8 w-8"
-              iconSize={16}
-              roundedClassName="rounded-lg"
-            />
-            <h3 className="text-base font-bold text-(--theme-text-primary)">
-              Category Breakdown
-            </h3>
+        <Card padding="20px 22px" rounded="20px" className="flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2.5 mb-4">
+              <IconWrapper
+                icon={Folder}
+                variant="teal"
+                sizeClassName="h-8 w-8"
+                iconSize={16}
+                roundedClassName="rounded-lg"
+              />
+              <h3 className="text-base font-bold text-(--theme-text-primary)">
+                Category Breakdown
+              </h3>
+            </div>
+
+            <div className="py-2">
+              <DonutChart
+                ariaLabel="Category Breakdown"
+                data={categoryChartData}
+                centerLabel="Total Items"
+                size={140}
+                strokeWidth={20}
+                showLegend={true}
+                emptyText="No categories available"
+              />
+            </div>
           </div>
 
-          <div className="space-y-4">
-            {categoryBreakdown.map((item) => (
-              <div key={item.category} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-(--theme-text-primary)">
-                    {item.category}
-                  </span>
-                  <span className="text-(--theme-text-secondary)">
-                    {item.count} items
-                  </span>
-                </div>
-                <ProgressBar
-                  value={item.count}
-                  max={totalItems}
-                  variant={item.variant || "teal"}
-                  heightClass="h-2"
-                />
-              </div>
-            ))}
-
-            <div className="pt-3 border-t border-(--theme-border) flex items-center justify-between text-sm font-bold">
-              <span className="text-(--theme-text-secondary)">Total</span>
-              <span className="text-(--theme-text-primary)">
-                {totalItems} items
-              </span>
-            </div>
+          <div className="pt-3 border-t border-(--theme-border) flex items-center justify-between text-sm font-bold">
+            <span className="text-(--theme-text-secondary)">Total</span>
+            <span className="text-(--theme-text-primary)">
+              {totalItems} items
+            </span>
           </div>
         </Card>
 

@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   AlertTriangle,
+  ArrowDownLeft,
+  ArrowUpRight,
   Cpu,
+  Eye,
   FileText,
   Gauge,
   History,
@@ -11,13 +14,46 @@ import {
   RefreshCw,
   UserRound,
 } from "lucide-react";
+import ScannerLogDetailModal from "./ScannerLogDetailModal";
 import Alert from "../../../../Components/UI/Alert";
 import Button from "../../../../Components/UI/Button";
 import Card from "../../../../Components/UI/Card";
 import Table from "../../../../Components/UI/Table";
 import Badge from "../../../../Components/UI/Badge";
 import Pagination from "../../../../Components/UI/Pagination";
+import ProgressBar from "../../../../Components/UI/ProgressBar";
 import ToggleSwitch from "../../../../Components/UI/ToggleSwitch";
+
+const WashCountCell = ({ count, limit }) => {
+  if (count === null || count === undefined) {
+    return <span className="text-(--theme-text-muted)">—</span>;
+  }
+  const isCritical = limit ? count >= limit * 0.9 : false;
+  return (
+    <div className="min-w-16 max-w-20">
+      <div className="mb-1 flex items-end gap-1">
+        <span
+          className={`text-xs font-black ${isCritical ? "text-(--color-overdue)" : "text-(--theme-text-primary)"}`}
+        >
+          {count}
+        </span>
+        {limit != null && (
+          <span className="text-[11px] font-semibold text-(--theme-text-muted)">
+            / {limit}
+          </span>
+        )}
+      </div>
+      {limit != null && limit > 0 && (
+        <ProgressBar
+          heightClass="h-1.5"
+          max={limit}
+          value={count}
+          variant={isCritical ? "danger" : "teal"}
+        />
+      )}
+    </div>
+  );
+};
 import { getApiErrorMessage } from "../../../../axios/api";
 import { getTenantScannerDetails, getTenantScannerLogs, issueTenantFixedScannerCommand } from "../../../../axios/scanners/tenantScanners";
 import { formatDateTime, formatTimeWithUserPreferences } from "../../../../Utils/date";
@@ -92,6 +128,7 @@ const ScannerDetailsIndex = ({
   const [logsLoading, setLogsLoading] = useState(true);
   const [logsError, setLogsError] = useState("");
   const [logsRefreshKey, setLogsRefreshKey] = useState(0);
+  const [selectedLog, setSelectedLog] = useState(null);
 
   useEffect(() => {
     if (!scanner?.apiId) return undefined;
@@ -322,7 +359,11 @@ const ScannerDetailsIndex = ({
             {tagCode ? (
               <span className="font-bold text-(--color-sky-blue)">
                 {tagId ? (
-                  <Link to={`/business/tags/${tagId}`} className="hover:underline">
+                  <Link
+                    to={`/business/tags/${tagId}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="hover:underline"
+                  >
                     {tagCode}
                   </Link>
                 ) : (
@@ -352,7 +393,11 @@ const ScannerDetailsIndex = ({
             {assetName ? (
               <span className="font-semibold text-(--theme-text-primary)">
                 {assetId ? (
-                  <Link to={`/business/assets/${assetId}`} className="hover:underline">
+                  <Link
+                    to={`/business/assets/${assetId}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="hover:underline"
+                  >
                     {assetName}
                   </Link>
                 ) : (
@@ -370,29 +415,245 @@ const ScannerDetailsIndex = ({
       },
       sortable: false,
     },
-    { key: "mode", label: "Mode", accessor: (log) => log.mode || log.scanMode || "-", sortable: false },
+    {
+      key: "zone",
+      label: "Zone",
+      accessor: (log) => log.zone || "Office Scanner",
+      render: (_, log) => (
+        <div className="flex items-center gap-1.5">
+          <MapPin size={13} className="shrink-0 text-(--color-aurora-teal)" />
+          <span className="text-xs font-semibold text-(--theme-text-primary)">
+            {log.zone || "Office Scanner"}
+          </span>
+        </div>
+      ),
+      sortable: false,
+    },
+    {
+      key: "action",
+      label: "Action / Mode",
+      accessor: (log) => log.scanAction || log.mode || "-",
+      render: (_, log) => {
+        const action = log.scanAction || log.metadata?.scanAction || (log.mode === "entry" ? "check_in" : log.mode === "exit" ? "check_out" : null);
+        const isCheckIn = action === "check_in";
+        const isCheckOut = action === "check_out";
+        const scannerConfigMode = log.mode || "entry";
+        const isManualOverride = Boolean(
+          log.isManualAction ||
+          log.actionSource === "manual" ||
+          log.metadata?.isManual ||
+          (scannerConfigMode === "entry" && isCheckOut) ||
+          (scannerConfigMode === "exit" && isCheckIn)
+        );
+
+        return (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {action ? (
+                <span
+                  className={`inline-flex w-fit items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold border ${
+                    isCheckIn
+                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                      : isCheckOut
+                      ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+                      : "border-(--theme-border-soft) bg-(--theme-surface-strong) text-(--theme-text-primary)"
+                  }`}
+                >
+                  {isCheckIn ? <ArrowDownLeft size={12} /> : isCheckOut ? <ArrowUpRight size={12} /> : null}
+                  {isCheckIn ? "Check In" : isCheckOut ? (isManualOverride ? "Manual Check Out" : "Check Out") : action}
+                </span>
+              ) : null}
+            </div>
+            <span className="font-mono text-[11px] text-(--theme-text-muted)">
+              Mode: <strong className="uppercase text-(--theme-text-primary)">{scannerConfigMode}</strong>
+            </span>
+          </div>
+        );
+      },
+      sortable: false,
+    },
+    {
+      key: "direction",
+      label: "Direction",
+      accessor: (log) => log.scanDirection || "-",
+      render: (_, log) => {
+        const dir = log.scanDirection;
+        if (!dir) return <span className="text-(--theme-text-muted)">—</span>;
+        const isReturning = String(dir).includes("returning");
+        const isGoing = String(dir).includes("going");
+        return (
+          <span
+            className={`inline-flex w-fit items-center rounded-lg border px-2 py-0.5 text-xs font-semibold ${
+              isReturning
+                ? "border-sky-500/30 bg-sky-500/10 text-sky-400"
+                : isGoing
+                ? "border-purple-500/30 bg-purple-500/10 text-purple-400"
+                : "border-(--theme-border-soft) bg-(--theme-surface-strong) text-(--theme-text-secondary)"
+            }`}
+          >
+            {String(dir).replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+          </span>
+        );
+      },
+      sortable: false,
+    },
     {
       key: "status",
       label: "Status",
       accessor: (log) => log.status || log.scanStatus || "-",
       sortable: false,
-      render: (value) => {
-        const valStr = String(value || "").toLowerCase();
+      render: (_, log) => {
+        const valStr = String(log.status || "").toLowerCase();
         const variant =
           valStr.includes("failed") || valStr.includes("exception")
             ? "danger"
             : valStr.includes("unlinked")
             ? "warning"
+            : valStr.includes("business") || valStr.includes("active")
+            ? "success"
             : "info";
         return (
           <Badge size="sm" variant={variant}>
-            {String(value).replace(/[_-]+/g, " ")}
+            {log.statusLabel || String(log.status || "").replace(/[_-]+/g, " ")}
           </Badge>
         );
       },
     },
-    { key: "batch", label: "Batch", accessor: (log) => log.batchId || log.batch?.id || log.batch?.batchNumber || log.batch?.batchCode || "-", sortable: false },
-    { key: "activity", label: "Activity", accessor: (log) => formatDateTime(log.createdAt || log.scannedAt || log.lastActivityAt, true) || "-", sortable: false },
+    {
+      key: "batch",
+      label: "Batch",
+      accessor: (log) => log.batch?.batchCode || log.batchCode || log.batchId || "-",
+      render: (_, log) => {
+        const batchCode = log.batch?.batchCode || log.batchCode;
+        const batchId = log.batch?.id || log.laundryBatchId || log.batchId;
+        const itemsCount = log.items;
+        if (!batchCode && !batchId) return <span className="text-(--theme-text-muted)">—</span>;
+        return (
+          <div className="flex flex-col">
+            {batchId ? (
+              <Link
+                to={`/business/dispatch-batches/${batchId}`}
+                onClick={(e) => e.stopPropagation()}
+                className="font-bold text-(--color-sky-blue) hover:underline"
+              >
+                {batchCode || batchId}
+              </Link>
+            ) : (
+              <span className="font-semibold text-(--theme-text-primary)">
+                {batchCode || "—"}
+              </span>
+            )}
+            {itemsCount ? (
+              <span className="text-[11px] font-medium text-(--theme-text-muted)">
+                {itemsCount} items
+              </span>
+            ) : null}
+          </div>
+        );
+      },
+      sortable: false,
+    },
+    {
+      key: "assetWashCount",
+      label: "Asset Washes",
+      accessor: (log) =>
+        log.assetWashCount ??
+        log.asset?.washCount ??
+        log.metadata?.assetWashCount ??
+        (log.asset ? (log.metadata?.washCount ?? 0) : "-"),
+      render: (_, log) => {
+        const count =
+          log.assetWashCount ??
+          log.asset?.washCount ??
+          log.metadata?.assetWashCount ??
+          (log.asset ? (log.metadata?.washCount ?? 0) : null);
+        const limit =
+          log.assetWashLimit ??
+          log.asset?.washLimit ??
+          log.metadata?.assetWashLimit ??
+          (log.asset ? (log.metadata?.washLimit ?? 100) : null);
+        return <WashCountCell count={count} limit={limit} />;
+      },
+      sortable: false,
+    },
+    {
+      key: "tagWashCount",
+      label: "Tag Washes",
+      accessor: (log) =>
+        log.tagWashCount ??
+        log.tag?.washCount ??
+        log.tag?.totalLaundryCycles ??
+        log.metadata?.tagWashCount ??
+        (log.tagCode || log.epc ? (log.metadata?.washCount ?? 0) : "-"),
+      render: (_, log) => {
+        const count =
+          log.tagWashCount ??
+          log.tag?.washCount ??
+          log.tag?.totalLaundryCycles ??
+          log.metadata?.tagWashCount ??
+          (log.tagCode || log.epc ? (log.metadata?.washCount ?? 0) : null);
+        const limit =
+          log.tagWashLimit ??
+          log.tag?.washLimit ??
+          log.metadata?.tagWashLimit ??
+          (log.tagCode || log.epc ? (log.metadata?.washLimit ?? 100) : null);
+        return <WashCountCell count={count} limit={limit} />;
+      },
+      sortable: false,
+    },
+    {
+      key: "operator",
+      label: "Operator",
+      accessor: (log) => log.operator?.name || log.operatorName || "-",
+      render: (_, log) => {
+        const operator = log.operator;
+        if (!operator || !operator.name) {
+          return <span className="text-(--theme-text-muted)">—</span>;
+        }
+        const roleLabel = operator.role
+          ? String(operator.role)
+              .replace(/[_-]+/g, " ")
+              .replace(/\b\w/g, (c) => c.toUpperCase())
+          : "";
+        return (
+          <div className="flex flex-col">
+            <span className="font-semibold text-(--theme-text-primary)">
+              {operator.name}
+            </span>
+            {roleLabel ? (
+              <span className="text-[11px] font-medium text-(--theme-text-muted)">
+                {roleLabel}
+              </span>
+            ) : null}
+          </div>
+        );
+      },
+      sortable: false,
+    },
+    {
+      key: "activity",
+      label: "Activity",
+      accessor: (log) => formatDateTime(log.scannedAt || log.createdAt || log.lastActivity, true) || "-",
+      sortable: false,
+    },
+    {
+      key: "actions",
+      label: "Details",
+      render: (_, log) => (
+        <Button
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedLog(log);
+          }}
+          size="xs"
+          variant="secondary"
+          leftIcon={<Eye size={13} className="text-(--color-sky-blue)" />}
+        >
+          View
+        </Button>
+      ),
+      sortable: false,
+    },
   ];
 
   return (
@@ -624,15 +885,28 @@ const ScannerDetailsIndex = ({
       </div>
 
       <Card padding="20px" rounded="18px">
-        <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Logs size={19} className="text-(--color-aurora-teal)" />
-            <h2 className="m-0 text-lg font-black text-(--theme-text-primary)">Scanner Logs</h2>
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-(--theme-border-soft) bg-(--button-ghost-bg)">
+              <Logs size={19} className="text-(--color-aurora-teal)" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="m-0 text-lg font-black text-(--theme-text-primary)">Scanner Logs</h2>
+                <span className="rounded-full bg-(--button-ghost-bg) px-2.5 py-0.5 font-mono text-xs font-bold text-(--color-aurora-teal)">
+                  {logsPagination.totalItems || logs.length} Records
+                </span>
+              </div>
+              <p className="m-0 mt-0.5 text-xs font-medium text-(--theme-text-muted)">
+                RFID scans, movement directions, batches, and wash lifecycle records. Click any row to view full details.
+              </p>
+            </div>
           </div>
           <Button leftIcon={<RefreshCw size={14} />} onClick={() => { setLogsLoading(true); setLogsRefreshKey((key) => key + 1); }} size="sm" variant="outline">
             Refresh
           </Button>
         </div>
+
         {logsError ? <Alert variant="danger">{logsError}</Alert> : null}
         <Table
           columns={logColumns}
@@ -640,7 +914,9 @@ const ScannerDetailsIndex = ({
           emptyText="No scanner logs found."
           loading={logsLoading}
           rowKey={(log, index) => log.id || log._id || `${log.tagId}-${index}`}
-          tableClassName="min-w-[720px]"
+          tableClassName="min-w-[1100px]"
+          onRowClick={(log) => setSelectedLog(log)}
+          rowClassName="cursor-pointer hover:bg-(--button-ghost-bg)/40 transition-colors"
         />
         <Pagination
           forcePage={logsPage - 1}
@@ -686,6 +962,12 @@ const ScannerDetailsIndex = ({
         scanner={scanner}
       />
       <ScannerAccessModal isOpen={isAccessOpen} onClose={() => setIsAccessOpen(false)} scanner={scanner} staffOptions={staffOptions} roleOptions={roleOptions} policyOwnerType={policyOwnerType} onSave={(payload) => updateAccess(scanner.apiId, payload)} onRotate={() => rotateKey(scanner.apiId).then((response) => response?.data || response)} onRevoke={() => revokeKey(scanner.apiId)} />
+
+      <ScannerLogDetailModal
+        isOpen={Boolean(selectedLog)}
+        onClose={() => setSelectedLog(null)}
+        log={selectedLog}
+      />
     </div>
   );
 };

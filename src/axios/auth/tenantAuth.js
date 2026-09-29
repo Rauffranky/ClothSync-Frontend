@@ -97,3 +97,13 @@ export const verifyTenantEmail = (token) =>
     params: { token },
     timeout: 15000,
   });
+
+export const getTenantSessions = () =>
+  api.get(AUTH_ENDPOINTS.TENANT_SESSIONS);
+
+export const revokeTenantSession = (sessionId) =>
+  api.delete(AUTH_ENDPOINTS.TENANT_REVOKE_SESSION(sessionId));
+
+export const revokeAllTenantSessions = () =>
+  api.delete(AUTH_ENDPOINTS.TENANT_REVOKE_ALL_SESSIONS);
+

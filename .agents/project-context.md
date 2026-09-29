@@ -407,8 +407,10 @@ Confirmed API-backed areas:
   battery, firmware, and signal status, are not fabricated in the UI. Scanner detail routes
   keep All Scanners selected in the sidebar, while the warning route selects
   Scanner Warnings and uses the `Scanners / Warnings` header. Activate/deactivate actions use
-  `PUT /tenant-scanners/update-status/:id`. Mock scan logs are no longer shown
-  on the live detail screen because no scanner-log API contract is integrated.
+  `PUT /tenant-scanners/update-status/:id`. Live scanner logs are fetched from
+  `GET /tenant-scanners/:id/logs` (with pagination, tag, asset, zone, mode, batch, operator,
+  scan action, direction, washes, and timestamps) and rendered in the Scanner Logs table with a
+  dedicated `ScannerLogDetailModal` for full audit and metadata inspection.
 - Tenant Bulk Scanning at `/business/bulk-scanning` loads the authenticated
   active session's selected group through
   `GET /tenant-bulk-scan/sessions/:sessionId/entries` with exact `scanGroup`
@@ -940,3 +942,11 @@ behavior. Prefer direct source evidence over assumptions or generic patterns.
 Local scanner debug builds target `http://192.168.0.103:8000/api/mobile-scanner/`.
 Laundry session start sends `sessionPurpose` (`receipt` by default; `outbound` for separate checkout). The APK reads nested `data.session` responses and discovers portal-created active sessions through `GET /mobile-scanner/scanners/:scannerId/active-session`. Retry preserves the original request ID, session, EPCs and action; unresolved closed-session uploads are retained for reconciliation, never reassigned. Stop/Clear block while the APK has pending uploads. Local queue persistence uses synchronous commit.
 The incoming-batch modal normalizes session-history envelopes, loads active scanner choices for continuation without cached context, and captures the new session response. Received/missing classifications remain distinct. These source changes do not establish complete production or physical RFID verification.
+
+## Scanner Logs and Audit updates — 2026-09-28
+
+- Tenant Scanner Logs (`/business/scanners/:id`) table displays distinct `Asset Washes` and `Tag Washes` columns with live `ProgressBar` meters matching `BulkScanEntriesTable` and `AssetsTable`.
+- `ScannerLogDetailModal` displays dual lifecycle meters: Tag Wash Lifecycle inside the RFID Tag Information card, and Asset Wash Lifecycle inside the Associated Asset card.
+- Clean presentation: internal UUID Log IDs removed from modal footer; extraneous top filter bars and bracketed `(Auto)` indicators removed from `Action / Mode`.
+- Backend (`scannerLogic.js` and `scannerLogHelper.js`) accurately isolates `internal_scan` (status: `in_business`, no batch) from laundry checkout dispatches (`sent_to_laundry`), and returns full Tag and Asset wash metrics.
+- Dependency audit: patched high/moderate third-party vulnerabilities in both repositories via non-breaking `npm audit fix`.

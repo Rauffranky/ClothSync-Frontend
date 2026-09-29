@@ -12,6 +12,9 @@ export const AUTH_ENDPOINTS = Object.freeze({
   TENANT_VERIFY_EMAIL: "/tenant-auth/verify-email",
   TENANT_RESET_PASSWORD: "/tenant-auth/reset-password",
   TENANT_CHANGE_PASSWORD: "/tenant-auth/change-password",
+  TENANT_SESSIONS: "/tenant-auth/sessions",
+  TENANT_REVOKE_SESSION: (sessionId) => `/tenant-auth/sessions/${sessionId}`,
+  TENANT_REVOKE_ALL_SESSIONS: "/tenant-auth/sessions",
 });
 
 export const LAUNDRY_AUTH_ENDPOINTS = Object.freeze({
