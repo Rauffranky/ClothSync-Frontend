@@ -139,16 +139,12 @@ const Header = ({ portalKey, onOpenSidebar }) => {
     tenantProfile?.role === "laundry_sub_admin" ||
     Boolean(tenantProfile?.isStaff);
 
-  const staffName =
-    tenantProfile?.fullName ||
-    tenantProfile?.name ||
-    "";
+  const staffName = tenantProfile?.fullName || tenantProfile?.name || "";
 
   const orgName =
     (portalKey === "laundry"
       ? tenantProfile?.companyName
-      : tenantProfile?.businessName) ||
-    "";
+      : tenantProfile?.businessName) || "";
 
   const profileName =
     orgName ||
@@ -159,28 +155,21 @@ const Header = ({ portalKey, onOpenSidebar }) => {
 
   const displayName = isStaff && staffName ? staffName : profileName;
 
-  const contactPersonName =
-    tenantProfile?.contactPersonName ||
-    tenantProfile?.fullName ||
-    tenantProfile?.name ||
-    "";
-
-  const profileInitials = String(displayName)
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase() || "U";
+  const profileInitials =
+    String(displayName)
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase() || "U";
 
   const isNestedPage =
     activeItem &&
     pathname !== `${activePortal?.basePath}/${activeItem.segment}`;
   const nestedPageLabel =
-    pathname === "/business/staff-roles"
-        ? "Roles"
-        : "Details";
+    pathname === "/business/staff-roles" ? "Roles" : "Details";
 
   return (
     <header className="sticky top-0 z-30 border-b border-(--theme-border) bg-(--layout-header-bg) px-4 py-3 backdrop-blur-[18px] backdrop-saturate-150">
@@ -200,7 +189,9 @@ const Header = ({ portalKey, onOpenSidebar }) => {
                 variant="secondary"
                 size="sm"
                 leftIcon={<ArrowLeft size={16} />}
-                onClick={() => navigate(`${activePortal?.basePath}/${activeItem?.segment}`)}
+                onClick={() =>
+                  navigate(`${activePortal?.basePath}/${activeItem?.segment}`)
+                }
               />
             )}
             <div className="min-w-0">
@@ -208,7 +199,10 @@ const Header = ({ portalKey, onOpenSidebar }) => {
                 {activeItem?.label || "Dashboard"}
                 {isNestedPage && (
                   <span className="text-(--theme-text-muted) font-semibold ml-2">
-                    / <span className="ml-1 text-(--theme-text-secondary)">{nestedPageLabel}</span>
+                    /{" "}
+                    <span className="ml-1 text-(--theme-text-secondary)">
+                      {nestedPageLabel}
+                    </span>
                   </span>
                 )}
               </p>
@@ -238,7 +232,7 @@ const Header = ({ portalKey, onOpenSidebar }) => {
           </button>
 
           <div
-            className="hidden items-center gap-3 rounded-2xl border border-(--theme-border) bg-(--button-ghost-bg) px-3 py-1.5 md:flex cursor-pointer transition-colors hover:border-(--color-aurora-teal)/40"
+            className="hidden items-center gap-2.5 rounded-2xl border border-(--theme-border) bg-(--button-ghost-bg) px-3 py-1.5 md:flex cursor-pointer transition-colors hover:border-(--color-aurora-teal)/40"
             onClick={() => navigate(`${activePortal?.basePath || ""}/settings`)}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
@@ -247,29 +241,22 @@ const Header = ({ portalKey, onOpenSidebar }) => {
             }}
             role="button"
             tabIndex={0}
-            title="View & Edit Profile Settings"
+            title={
+              tenantProfile?.email
+                ? `${displayName} (${isStaff ? "Staff" : "Admin"}) · ${tenantProfile.email}`
+                : displayName
+            }
           >
-            <div className="min-w-0 text-right">
-              <div className="flex items-center justify-end gap-1.5">
-                {isStaff && (
-                  <span className="rounded-md border border-(--color-aurora-teal)/30 bg-(--color-aurora-teal)/10 px-1.5 py-0.5 text-[10px] font-bold text-(--color-aurora-teal)">
-                    Staff
-                  </span>
-                )}
-                <p className="m-0 truncate text-xs font-black text-(--theme-text-primary)">
-                  {displayName}
-                </p>
-              </div>
-              <p className="m-0 truncate text-[11px] font-semibold text-(--theme-text-muted)">
-                {isStaff
-                  ? `${orgName ? `${orgName} · ` : ""}${tenantProfile?.email || activePortal?.user.email || ""}`
-                  : portalKey === "laundry" && contactPersonName
-                  ? `${contactPersonName} · ${tenantProfile?.email || activePortal?.user.email || ""}`
-                  : tenantProfile?.email || activePortal?.user.email}
+            <div className="min-w-0 text-right leading-tight">
+              <p className="m-0 truncate text-xs font-bold text-(--theme-text-primary)">
+                {displayName}
+              </p>
+              <p className="m-0 mt-0.5 truncate text-[11px] font-medium text-(--theme-text-muted)">
+                {isStaff ? "Staff" : tenantProfile?.email || "Admin"}
               </p>
             </div>
             <span
-              className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl text-xs font-black text-white"
+              className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl text-xs font-bold text-white shadow-sm"
               style={{ background: activePortal?.accent }}
             >
               {tenantProfile?.avatar && !isStaff ? (
