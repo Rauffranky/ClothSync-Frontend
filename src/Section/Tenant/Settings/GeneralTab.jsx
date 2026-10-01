@@ -313,14 +313,22 @@ const GeneralTab = ({
       </SettingsPanel>
 
       <SettingsPanel
-        description={panelDescription}
+        description={
+          isStaff
+            ? "View your organization branding and display details"
+            : panelDescription
+        }
         title={panelTitle}
       >
         <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-2 lg:items-end">
           <Input
-            disabled={!canEdit || formik.isSubmitting}
+            disabled={isStaff || !canEdit || formik.isSubmitting}
             error={Boolean(getFieldError("businessName"))}
-            helperText={getFieldError("businessName")}
+            helperText={
+              isStaff
+                ? `Only administrators can edit the ${displayNameLabel.toLowerCase()}.`
+                : getFieldError("businessName")
+            }
             label={displayNameLabel}
             name="businessName"
             onBlur={formik.handleBlur}
@@ -346,7 +354,7 @@ const GeneralTab = ({
                     <ImagePlus size={22} />
                   )}
                 </div>
-                {(logoPreview || formik.values.avatar) && (
+                {!isStaff && (logoPreview || formik.values.avatar) && (
                   <button
                     aria-label={removeLogoAriaLabel}
                     className="cursor-pointer absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full border-2 border-(--theme-bg) bg-(--color-overdue) text-white opacity-0 shadow-md transition-all hover:scale-105 focus:scale-105 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-(--color-overdue)/40 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
@@ -358,25 +366,31 @@ const GeneralTab = ({
                   </button>
                 )}
               </div>
-              <input
-                accept="image/png,image/jpeg"
-                className="hidden"
-                disabled={!canEdit || formik.isSubmitting}
-                onChange={handleLogoChange}
-                ref={logoInputRef}
-                type="file"
-              />
-              <Button
-                disabled={!canEdit || formik.isSubmitting}
-                leftIcon={<Upload size={16} />}
-                onClick={() => logoInputRef.current?.click()}
-                size="sm"
-                variant="outline"
-              >
-                Upload Logo
-              </Button>
+              {!isStaff && (
+                <>
+                  <input
+                    accept="image/png,image/jpeg"
+                    className="hidden"
+                    disabled={!canEdit || formik.isSubmitting}
+                    onChange={handleLogoChange}
+                    ref={logoInputRef}
+                    type="file"
+                  />
+                  <Button
+                    disabled={!canEdit || formik.isSubmitting}
+                    leftIcon={<Upload size={16} />}
+                    onClick={() => logoInputRef.current?.click()}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Upload Logo
+                  </Button>
+                </>
+              )}
               <span className="text-sm font-medium text-(--theme-text-muted)">
-                {selectedLogo?.name || "PNG, JPG up to 2 MB"}
+                {isStaff
+                  ? "Managed by administrator"
+                  : selectedLogo?.name || "PNG, JPG up to 2 MB"}
               </span>
             </div>
           </div>

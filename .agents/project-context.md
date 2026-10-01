@@ -600,7 +600,8 @@ Current endpoints:
 - `GET /tenant-settings/profile` returns `data.profile` for General Settings (including `fullName`, `email`, and `role`).
 - `PUT /tenant-settings/profile` updates required `businessName`, `language`,
   `timezone`, and `dateFormat`, plus optional `fullName` and nullable string `avatar`.
-  Header and General Settings support personal staff identity (`fullName` with dedicated Staff badge, initials, and editable Personal/Staff Profile panel).
+  Staff users (`tenant_sub_admin` and `laundry_sub_admin`) can edit their personal `fullName`,
+  language, and preferences, but cannot edit business/laundry display name or logo (enforced in both UI and backend logic).
 - `GET /tenant-notification-preferences/show` returns the tenant's ordered
   notification preference rows, including `notificationKey`, display metadata,
   `inAppEnabled`, and `emailEnabled`.
