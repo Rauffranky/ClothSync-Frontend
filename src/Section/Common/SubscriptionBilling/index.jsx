@@ -23,6 +23,7 @@ import CardSkeleton from "../../../Components/UI/CardSkeleton";
 import Modal from "../../../Components/UI/Modal";
 import Input from "../../../Components/UI/Input";
 import { getApiErrorMessage } from "../../../axios/api";
+import { getAuthSessionUser } from "../../../axios/auth/authSession";
 import {
   getAvailableSubscriptionPlans,
   requestSubscription,
@@ -34,6 +35,13 @@ import { toast } from "../../../Utils/toast";
 import { formatDateWithUserPreferences } from "../../../Utils/date";
 
 const SubscriptionBilling = () => {
+  const sessionUser = getAuthSessionUser();
+  const isBusinessPortal = Boolean(
+    sessionUser?.tenantId ||
+    sessionUser?.role?.includes("tenant") ||
+    !sessionUser?.laundryId,
+  );
+
   const {
     subscription,
     plan: activePlan,
@@ -238,6 +246,16 @@ const SubscriptionBilling = () => {
               <CardSkeleton key={n} lines={8} />
             ))}
           </div>
+        ) : availablePlans.length === 0 ? (
+          <Card className="p-8 text-center border-(--theme-border-soft)">
+            <DollarSign size={32} className="mx-auto mb-2 text-(--theme-text-muted)" />
+            <h3 className="m-0 text-base font-bold text-(--theme-text-primary)">
+              No Subscription Plans Available
+            </h3>
+            <p className="m-0 mt-1 text-xs text-(--theme-text-secondary)">
+              No subscription tiers are currently configured for your account type. Please contact support or your system administrator.
+            </p>
+          </Card>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {availablePlans.map((plan) => {
@@ -336,7 +354,7 @@ const SubscriptionBilling = () => {
                       <div className="flex items-center justify-between text-xs">
                         <span className="flex items-center gap-1.5 text-(--theme-text-secondary)">
                           <Building2 size={14} className="text-(--color-aurora-teal)" />
-                          Linked Businesses
+                          {isBusinessPortal ? "Linked Laundries" : "Linked Businesses"}
                         </span>
                         <span className="font-bold text-(--theme-text-primary)">
                           {plan.maxLinkedBusinesses == null ? (
