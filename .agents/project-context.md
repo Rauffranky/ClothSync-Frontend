@@ -597,9 +597,10 @@ Current endpoints:
 - `GET /tenant-settings/timezones` lists valid IANA time zones for General
   Settings.
 - `GET /tenant-settings/date-formats` lists supported profile date formats.
-- `GET /tenant-settings/profile` returns `data.profile` for General Settings.
+- `GET /tenant-settings/profile` returns `data.profile` for General Settings (including `fullName`, `email`, and `role`).
 - `PUT /tenant-settings/profile` updates required `businessName`, `language`,
-  `timezone`, and `dateFormat`, plus nullable string `avatar`.
+  `timezone`, and `dateFormat`, plus optional `fullName` and nullable string `avatar`.
+  Header and General Settings support personal staff identity (`fullName` with dedicated Staff badge, initials, and editable Personal/Staff Profile panel).
 - `GET /tenant-notification-preferences/show` returns the tenant's ordered
   notification preference rows, including `notificationKey`, display metadata,
   `inAppEnabled`, and `emailEnabled`.

@@ -36,7 +36,10 @@ import {
 import { FormActions, SettingsPanel } from "./SettingsComponents";
 
 const emptyProfile = {
+  fullName: "",
   businessName: "",
+  email: "",
+  role: "",
   avatar: null,
   language: "en",
   timezone: "UTC",
@@ -44,6 +47,7 @@ const emptyProfile = {
 };
 
 const profileValidationSchema = Yup.object({
+  fullName: Yup.string().trim().required("Full name is required"),
   businessName: Yup.string().trim().required("Display name is required"),
   language: Yup.string().oneOf(["en", "ar"]).required("Language is required"),
   timezone: Yup.string().required("Time zone is required"),
@@ -65,6 +69,12 @@ const GeneralTab = ({
   panelTitle = "Business Profile",
   updateProfile = updateTenantSettingsProfile,
 }) => {
+  const sessionUser = getAuthSessionUser() || {};
+  const isStaff =
+    sessionUser?.role === "tenant_sub_admin" ||
+    sessionUser?.role === "laundry_sub_admin" ||
+    Boolean(sessionUser?.isStaff);
+
   const logoInputRef = useRef(null);
   const [initialProfile, setInitialProfile] = useState(emptyProfile);
   const [timeZoneOptions, setTimeZoneOptions] = useState([]);
@@ -94,6 +104,7 @@ const GeneralTab = ({
 
         const displayName = values.businessName.trim();
         const payload = {
+          fullName: values.fullName?.trim() || undefined,
           [displayNameField]: displayName,
           avatar: avatar || null,
           language: values.language,
@@ -105,6 +116,7 @@ const GeneralTab = ({
         const nextProfile = {
           ...payload,
           ...updatedProfile,
+          fullName: values.fullName?.trim() || updatedProfile.fullName || "",
           businessName:
             updatedProfile[displayNameField] ||
             updatedProfile.businessName ||
@@ -120,6 +132,7 @@ const GeneralTab = ({
         setAuthSessionUser({
           ...getAuthSessionUser(),
           ...nextProfile,
+          fullName: values.fullName?.trim() || nextProfile.fullName,
         });
 
         toast.success(response?.message || "Settings profile updated successfully");
@@ -148,14 +161,23 @@ const GeneralTab = ({
         if (!nextTimeZones.length) throw new Error("No time zones were returned");
         if (!nextDateFormats.length) throw new Error("No date formats were returned");
 
+        const currentSession = getAuthSessionUser() || {};
+        const staffFullName =
+          profile.fullName ||
+          currentSession.fullName ||
+          currentSession.name ||
+          "";
+
         setTimeZoneOptions(nextTimeZones);
         setDateFormatOptions(nextDateFormats);
         setInitialProfile({
+          fullName: staffFullName,
+          email: profile.email || currentSession.email || "",
+          role: profile.role || currentSession.role || "",
           businessName:
             profile[displayNameField] ||
             profile.businessName ||
             profile.companyName ||
-            profile.fullName ||
             "",
           avatar: profile.avatar || null,
           language: profile.language || "en",
@@ -258,6 +280,38 @@ const GeneralTab = ({
 
   return (
     <form className="space-y-7" noValidate onSubmit={formik.handleSubmit}>
+      <SettingsPanel
+        description={
+          isStaff
+            ? "Manage your staff display name and personal account details"
+            : "Update your personal account display name and details"
+        }
+        title={isStaff ? "Staff Profile" : "Personal Profile"}
+      >
+        <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-2 lg:items-end">
+          <Input
+            disabled={!canEdit || formik.isSubmitting}
+            error={Boolean(getFieldError("fullName"))}
+            helperText={getFieldError("fullName")}
+            label={isStaff ? "Staff Full Name" : "Full Name"}
+            name="fullName"
+            onBlur={formik.handleBlur}
+            onChange={(value) => formik.setFieldValue("fullName", value)}
+            placeholder="Enter your full name"
+            required
+            value={formik.values.fullName}
+          />
+          <div>
+            <p className="mb-2 text-sm font-semibold text-(--theme-text-secondary)">
+              Account Email
+            </p>
+            <div className="flex h-11 items-center rounded-xl border border-(--theme-border) bg-(--button-secondary-bg) px-3.5 text-sm font-medium text-(--theme-text-muted)">
+              {formik.values.email || sessionUser?.email || "—"}
+            </div>
+          </div>
+        </div>
+      </SettingsPanel>
+
       <SettingsPanel
         description={panelDescription}
         title={panelTitle}

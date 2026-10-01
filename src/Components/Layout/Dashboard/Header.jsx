@@ -134,27 +134,45 @@ const Header = ({ portalKey, onOpenSidebar }) => {
       .sort((a, b) => b.segment.length - a.segment.length)[0];
   }, [activePortal?.key, pathname]);
 
-  const profileName =
+  const isStaff =
+    tenantProfile?.role === "tenant_sub_admin" ||
+    tenantProfile?.role === "laundry_sub_admin" ||
+    Boolean(tenantProfile?.isStaff);
+
+  const staffName =
+    tenantProfile?.fullName ||
+    tenantProfile?.name ||
+    "";
+
+  const orgName =
     (portalKey === "laundry"
       ? tenantProfile?.companyName
       : tenantProfile?.businessName) ||
+    "";
+
+  const profileName =
+    orgName ||
     tenantProfile?.name ||
     tenantProfile?.fullName ||
     activePortal?.user.name ||
     "User";
+
+  const displayName = isStaff && staffName ? staffName : profileName;
+
   const contactPersonName =
     tenantProfile?.contactPersonName ||
     tenantProfile?.fullName ||
     tenantProfile?.name ||
     "";
-  const profileInitials = String(profileName)
+
+  const profileInitials = String(displayName)
     .trim()
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
-    .toUpperCase();
+    .toUpperCase() || "U";
 
   const isNestedPage =
     activeItem &&
@@ -219,13 +237,33 @@ const Header = ({ portalKey, onOpenSidebar }) => {
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-(--color-aurora-teal) shadow-[0_0_12px_var(--color-aurora-teal)]" />
           </button>
 
-          <div className="hidden items-center gap-3 rounded-2xl border border-(--theme-border) bg-(--button-ghost-bg) px-2 py-1 md:flex">
+          <div
+            className="hidden items-center gap-3 rounded-2xl border border-(--theme-border) bg-(--button-ghost-bg) px-3 py-1.5 md:flex cursor-pointer transition-colors hover:border-(--color-aurora-teal)/40"
+            onClick={() => navigate(`${activePortal?.basePath || ""}/settings`)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                navigate(`${activePortal?.basePath || ""}/settings`);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            title="View & Edit Profile Settings"
+          >
             <div className="min-w-0 text-right">
-              <p className="m-0 truncate text-xs font-black text-(--theme-text-primary)">
-                {profileName}
-              </p>
+              <div className="flex items-center justify-end gap-1.5">
+                {isStaff && (
+                  <span className="rounded-md border border-(--color-aurora-teal)/30 bg-(--color-aurora-teal)/10 px-1.5 py-0.5 text-[10px] font-bold text-(--color-aurora-teal)">
+                    Staff
+                  </span>
+                )}
+                <p className="m-0 truncate text-xs font-black text-(--theme-text-primary)">
+                  {displayName}
+                </p>
+              </div>
               <p className="m-0 truncate text-[11px] font-semibold text-(--theme-text-muted)">
-                {portalKey === "laundry" && contactPersonName
+                {isStaff
+                  ? `${orgName ? `${orgName} · ` : ""}${tenantProfile?.email || activePortal?.user.email || ""}`
+                  : portalKey === "laundry" && contactPersonName
                   ? `${contactPersonName} · ${tenantProfile?.email || activePortal?.user.email || ""}`
                   : tenantProfile?.email || activePortal?.user.email}
               </p>
@@ -234,7 +272,7 @@ const Header = ({ portalKey, onOpenSidebar }) => {
               className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl text-xs font-black text-white"
               style={{ background: activePortal?.accent }}
             >
-              {tenantProfile?.avatar ? (
+              {tenantProfile?.avatar && !isStaff ? (
                 <img
                   alt={`${profileName} avatar`}
                   className="h-full w-full object-cover"
