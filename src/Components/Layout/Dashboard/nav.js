@@ -23,6 +23,7 @@ import {
   Truck,
   LogOut,
   ScanLine,
+  CreditCard,
 } from "lucide-react";
 
 export const NAV_MENU = [
@@ -58,6 +59,18 @@ export const NAV = {
       label: "Business Types",
       href: "/superadmin/business-types",
       Icon: TextInitial,
+    },
+    {
+      id: 10,
+      label: "Subscription Plans",
+      href: "/superadmin/plans",
+      Icon: CreditCard,
+    },
+    {
+      id: 11,
+      label: "Subscription Requests",
+      href: "/superadmin/subscriptions",
+      Icon: DollarSign,
     },
     
     {
@@ -175,6 +188,12 @@ export const NAV = {
       label: "Complaints",
       href: "/business/complaints",
       Icon: ShieldAlert,
+    },
+    {
+      id: 114,
+      label: "Subscription & Billing",
+      href: "/business/subscription-billing",
+      Icon: DollarSign,
     },
     {
       id: 111,

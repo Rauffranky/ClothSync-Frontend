@@ -1,6 +1,8 @@
+import { useNavigate } from "react-router-dom";
 import {
   CircleCheck,
   CircleX,
+  CreditCard,
   ExternalLink,
   Eye,
   Mail,
@@ -24,6 +26,7 @@ const LaundriesTable = ({
   sortBy,
   sortDirection,
 }) => {
+  const navigate = useNavigate();
   const columns = [
     {
       key: "companyName",
@@ -145,6 +148,16 @@ const LaundriesTable = ({
                 label: "View Details",
                 icon: Eye,
                 onClick: () => onViewDetails?.(row),
+              },
+              {
+                label: "Subscription",
+                icon: CreditCard,
+                onClick: () =>
+                  navigate(
+                    `/superadmin/subscriptions?keywords=${encodeURIComponent(
+                      row.companyName || row.name || "",
+                    )}`,
+                  ),
               },
               {
                 label: isActive ? "Deactivate" : "Activate",

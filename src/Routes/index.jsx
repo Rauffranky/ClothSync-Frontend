@@ -4,6 +4,7 @@ import DashboardLayout from "../Components/Layout/Dashboard";
 import LandingLayout from "../Components/Layout/Landing";
 import PermissionRoute from "./PermissionRoute";
 import ProtectedRoute from "./ProtectedRoute";
+import SubscriptionGateRoute from "./SubscriptionGateRoute";
 import PublicRoute from "./PublicRoute";
 import AssetDetailsPage from "../Page/Dashboard/Tenant/AssetDetailsPage";
 
@@ -28,14 +29,20 @@ const SuperAdminEmailTemplatesPage = lazy(() => import("../Page/Dashboard/SuperA
 const SuperAdminBusinessesPage = lazy(() => import("../Page/Dashboard/SuperAdmin/BusinessesPage"));
 const SuperAdminLaundriesPage = lazy(() => import("../Page/Dashboard/SuperAdmin/LaundriesPage"));
 const SuperAdminBusinessTypesPage = lazy(() => import("../Page/Dashboard/SuperAdmin/BusinessTypesPage"));
+const SuperAdminSubscriptionPlansPage = lazy(() => import("../Page/Dashboard/SuperAdmin/SubscriptionPlansPage"));
+const SuperAdminCreateSubscriptionPlanPage = lazy(() => import("../Page/Dashboard/SuperAdmin/CreateSubscriptionPlanPage"));
+const SuperAdminEditSubscriptionPlanPage = lazy(() => import("../Page/Dashboard/SuperAdmin/EditSubscriptionPlanPage"));
+const SuperAdminSubscriptionRequestsPage = lazy(() => import("../Page/Dashboard/SuperAdmin/SubscriptionRequestsPage"));
 const SuperAdminComplaintsPage = lazy(() => import("../Page/Dashboard/SuperAdmin/ComplaintsPage"));
 const SuperAdminComplaintDetailsPage = lazy(() => import("../Page/Dashboard/SuperAdmin/ComplaintDetailsPage"));
 const BusinessComplaintsPage = lazy(() => import("../Page/Dashboard/Tenant/ComplaintsPage"));
 const BusinessCreateComplaintPage = lazy(() => import("../Page/Dashboard/Tenant/CreateComplaintPage"));
 const BusinessComplaintDetailsPage = lazy(() => import("../Page/Dashboard/Tenant/ComplaintDetailsPage"));
+const BusinessSubscriptionBillingPage = lazy(() => import("../Page/Dashboard/Tenant/SubscriptionBillingPage"));
 const LaundryComplaintsPage = lazy(() => import("../Page/Dashboard/Laundry/ComplaintsPage"));
 const LaundryCreateComplaintPage = lazy(() => import("../Page/Dashboard/Laundry/CreateComplaintPage"));
 const LaundryComplaintDetailsPage = lazy(() => import("../Page/Dashboard/Laundry/ComplaintDetailsPage"));
+const LaundrySubscriptionBillingPage = lazy(() => import("../Page/Dashboard/Laundry/SubscriptionBillingPage"));
 const LandingTermsAndConditionsPage = lazy(() => import("../Page/Landing/TermsAndConditionsPage"));
 const LandingPrivacyPolicyPage = lazy(() => import("../Page/Landing/PrivacyPolicyPage"));
 const TenantDashboard = lazy(() => import("../Page/Dashboard/Tenant/DashboardPage"));
@@ -102,7 +109,7 @@ const AppRoutes = () => {
         </Route>
 
         {/* Portal Routes with DashboardLayout */}
-        <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+        <Route element={<ProtectedRoute><SubscriptionGateRoute><DashboardLayout /></SubscriptionGateRoute></ProtectedRoute>}>
           {/* Default redirect to superadmin dashboard */}
           <Route
             path="/"
@@ -118,6 +125,10 @@ const AppRoutes = () => {
           <Route path="/superadmin/businesses" element={<SuperAdminBusinessesPage />} />
           <Route path="/superadmin/laundries" element={<SuperAdminLaundriesPage />} />
           <Route path="/superadmin/business-types" element={<SuperAdminBusinessTypesPage />} />
+          <Route path="/superadmin/plans" element={<SuperAdminSubscriptionPlansPage />} />
+          <Route path="/superadmin/plans/create" element={<SuperAdminCreateSubscriptionPlanPage />} />
+          <Route path="/superadmin/plans/edit/:id" element={<SuperAdminEditSubscriptionPlanPage />} />
+          <Route path="/superadmin/subscriptions" element={<SuperAdminSubscriptionRequestsPage />} />
           <Route path="/superadmin/complaints" element={<SuperAdminComplaintsPage />} />
           <Route path="/superadmin/complaints/:id" element={<SuperAdminComplaintDetailsPage />} />
 
@@ -137,6 +148,7 @@ const AppRoutes = () => {
           <Route path="/business/tags" element={<TagsPage />} />
           <Route path="/business/tags/:id" element={<TagDetailsPage />} />
           <Route path="/business/settings" element={<SettingsPage />} />
+          <Route path="/business/subscription-billing" element={<BusinessSubscriptionBillingPage />} />
           <Route path="/business/reports-analytics" element={<ReportAnalyticsPage />} />
           <Route path="/business/bulk-scanning" element={<BulkScanningPage />} />
           <Route path="/business/dispatch-batches" element={<DispatchBadgesPage />} />
@@ -266,6 +278,10 @@ const AppRoutes = () => {
           <Route
             path="/laundry/complaints/:id"
             element={<LaundryComplaintDetailsPage />}
+          />
+          <Route
+            path="/laundry/subscription-billing"
+            element={<LaundrySubscriptionBillingPage />}
           />
         </Route>
 

@@ -48,18 +48,18 @@ const ImpersonationBanner = () => {
     <div
       role="region"
       aria-label="Super Admin Impersonation Notice"
-      className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/30 bg-gradient-to-r from-amber-500/20 via-teal-500/15 to-emerald-500/20 px-4 py-2 backdrop-blur-md transition-all"
+      className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-3 border-b border-(--badge-pending-border) bg-(--color-pending-bg) px-4 py-2 backdrop-blur-md transition-all"
     >
       <div className="flex min-w-0 items-center gap-2.5">
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-amber-500/25 text-amber-500 dark:text-amber-400">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-(--color-pending)/15 text-(--badge-pending-text)">
           <ShieldAlert size={16} />
         </span>
         <div className="min-w-0 text-xs sm:text-sm">
-          <span className="font-bold text-amber-600 dark:text-amber-400">
+          <span className="font-bold text-(--badge-pending-text)">
             Super Admin Access:
           </span>{" "}
           <span className="font-semibold text-(--theme-text-primary)">
-            Viewing as <span className="underline decoration-amber-500/50 underline-offset-2">{displayName}</span>
+            Viewing as <span className="underline decoration-(--color-pending)/50 underline-offset-2">{displayName}</span>
           </span>
           {user?.email && (
             <span className="hidden text-xs text-(--theme-text-muted) sm:inline sm:ml-1.5">

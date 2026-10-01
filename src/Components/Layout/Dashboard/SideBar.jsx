@@ -34,6 +34,7 @@ import {
   getFirstPermittedHref,
   hasPermission,
 } from "../../../Utils/permissions";
+import useOrganizationSubscription from "../../../Hooks/useOrganizationSubscription";
 
 const SideBar = ({
   isOpen = false,
@@ -43,13 +44,29 @@ const SideBar = ({
   portal = "superadmin",
 }) => {
   const location = useLocation();
-  const menu = useMemo(
-    () =>
-      (NAV[portal] || [])
-        .flatMap((item) => (Array.isArray(item.items) ? item.items : item))
-        .filter((item) => hasPermission(item.permissionKey)),
-    [portal],
-  );
+  const { hasActiveSubscription, isSuperAdmin, isPending } = useOrganizationSubscription();
+
+  const menu = useMemo(() => {
+    const rawItems = (NAV[portal] || [])
+      .flatMap((item) => (Array.isArray(item.items) ? item.items : item))
+      .filter((item) => hasPermission(item.permissionKey));
+
+    if (
+      !isSuperAdmin &&
+      !hasActiveSubscription &&
+      (portal === "laundry" || portal === "business" || portal === "tenant")
+    ) {
+      // Only show Subscription & Billing
+      return rawItems.filter(
+        (item) =>
+          item.href?.includes("subscription-billing") ||
+          item.permissionKey === "subscription_billing" ||
+          item.label?.toLowerCase().includes("subscription"),
+      );
+    }
+
+    return rawItems;
+  }, [portal, isSuperAdmin, hasActiveSubscription]);
   const navigate = useNavigate();
   const [expandedMenus, setExpandedMenus] = useState({});
   const [impersonating, setImpersonating] = useState(isImpersonating);

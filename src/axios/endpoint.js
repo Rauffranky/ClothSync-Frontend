@@ -296,3 +296,26 @@ export const ADMIN_LAUNDRY_ENDPOINTS = Object.freeze({
   IMPERSONATE: (id) => `/admin-laundries/impersonate/${id}`,
 });
 
+export const ADMIN_SUBSCRIPTION_PLAN_ENDPOINTS = Object.freeze({
+  PUBLIC_LIST: "/subscription-plans/list",
+  LIST: "/admin-subscription-plans/show",
+  DETAILS: (id) => `/admin-subscription-plans/show/${id}`,
+  CREATE: "/admin-subscription-plans/create",
+  UPDATE: (id) => `/admin-subscription-plans/update/${id}`,
+  UPDATE_STATUS: (id) => `/admin-subscription-plans/status/${id}`,
+  DELETE: (id) => `/admin-subscription-plans/delete/${id}`,
+});
+
+export const SUBSCRIPTION_ENDPOINTS = Object.freeze({
+  MY_SUBSCRIPTION: "/subscriptions/my-subscription",
+  SUBSCRIBE: "/subscriptions/subscribe",
+  PLANS: "/subscriptions/plans",
+});
+
+export const ADMIN_SUBSCRIPTION_ENDPOINTS = Object.freeze({
+  LIST: "/admin-subscriptions/list",
+  APPROVE: (id) => `/admin-subscriptions/approve/${id}`,
+  REJECT: (id) => `/admin-subscriptions/reject/${id}`,
+  ASSIGN: "/admin-subscriptions/assign",
+});
+
