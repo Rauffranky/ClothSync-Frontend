@@ -3,6 +3,7 @@ import {
   CircleCheck,
   CircleX,
   Clock,
+  ExternalLink,
   Eye,
   Mail,
   MapPin,
@@ -19,6 +20,8 @@ const BusinessesTable = ({
   onSort,
   onViewDetails,
   onStatusAction,
+  onAccessPortal,
+  accessingId = null,
   loading = false,
   sortBy,
   sortDirection,
@@ -166,6 +169,12 @@ const BusinessesTable = ({
           <ActionDropdown
             align="right"
             items={[
+              {
+                label: accessingId === row.id ? "Accessing..." : "Access Portal",
+                icon: ExternalLink,
+                disabled: Boolean(accessingId),
+                onClick: () => onAccessPortal?.(row),
+              },
               {
                 label: "View Details",
                 icon: Eye,

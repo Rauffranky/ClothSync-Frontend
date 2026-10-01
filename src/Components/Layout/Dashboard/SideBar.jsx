@@ -9,6 +9,7 @@ import {
   LogOut,
   ChevronDown,
   ChevronLeft,
+  ShieldAlert,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -16,9 +17,13 @@ import { NAV } from "./nav";
 import GlobalTooltip from "../../UI/Tooltip";
 import { logoutTenant } from "../../../axios/auth/tenantAuth";
 import {
+  AUTH_SESSION_CHANGED_EVENT,
   clearAuthSession,
+  exitImpersonation,
   getAuthAccessToken,
+  isImpersonating,
 } from "../../../axios/auth/authSession";
+import { connectSocket } from "../../../socket/client";
 import { logoutLaundry } from "../../../axios/auth/laundryAuth";
 import { logoutSuperAdmin } from "../../../axios/auth/superAdminAuth";
 import { getApiErrorMessage } from "../../../axios/api";
@@ -47,6 +52,17 @@ const SideBar = ({
   );
   const navigate = useNavigate();
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [impersonating, setImpersonating] = useState(isImpersonating);
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setImpersonating(isImpersonating());
+    };
+    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, handleAuthChange);
+    return () => {
+      window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, handleAuthChange);
+    };
+  }, []);
 
   const getPortalLabel = (p = "") => {
     const normalized = String(p).toLowerCase();
@@ -171,6 +187,14 @@ const SideBar = ({
         >
           <div
             onClick={() => {
+              if (id === "return-superadmin") {
+                const returnPath = exitImpersonation();
+                connectSocket();
+                toast.success("Returned to Super Admin session");
+                navigate(returnPath || "/superadmin/businesses");
+                if (isMobile) onClose();
+                return;
+              }
               if (label === "Logout") {
                 handleLogout();
                 return;
@@ -335,6 +359,16 @@ const SideBar = ({
         <nav className="p-3 flex flex-col justify-between h-[calc(100dvh-64px)] overflow-auto hide-scrollbar">
           <div className="space-y-1">{renderMenuContent(true)}</div>
           <div className="mt-4 flex flex-col gap-2">
+            {impersonating &&
+              renderLink(
+                {
+                  id: "return-superadmin",
+                  label: "Return to Admin",
+                  href: "#",
+                  Icon: ShieldAlert,
+                },
+                true,
+              )}
             {renderLink(
               { id: "logout", label: "Logout", href: "#", Icon: LogOut },
               true,
@@ -378,6 +412,16 @@ const SideBar = ({
         </div>
 
         <div className="pt-2 pb-8 bg-transparent flex flex-col gap-2 border-t border-(--theme-border)">
+          {impersonating &&
+            renderLink(
+              {
+                id: "return-superadmin",
+                label: "Return to Admin",
+                href: "#",
+                Icon: ShieldAlert,
+              },
+              false,
+            )}
           {renderLink(
             { id: "logout", label: "Logout", href: "#", Icon: LogOut },
             false,

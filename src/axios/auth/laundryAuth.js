@@ -82,3 +82,16 @@ export const changeLaundryPassword = ({ currentPassword, newPassword, confirmNew
     newPassword,
     confirmNewPassword,
   });
+
+export const getLaundrySessions = () =>
+  api.get(LAUNDRY_AUTH_ENDPOINTS.SESSIONS);
+
+export const revokeLaundrySession = (sessionId) =>
+  api.delete(LAUNDRY_AUTH_ENDPOINTS.REVOKE_SESSION(sessionId));
+
+export const deleteLaundrySession = (sessionId) =>
+  api.delete(LAUNDRY_AUTH_ENDPOINTS.DELETE_SESSION(sessionId));
+
+export const revokeAllLaundrySessions = () =>
+  api.delete(LAUNDRY_AUTH_ENDPOINTS.REVOKE_ALL_SESSIONS);
+

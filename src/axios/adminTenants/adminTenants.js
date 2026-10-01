@@ -28,3 +28,8 @@ export const updateAdminTenantStatus = (id, status, language = "en") =>
     { status },
     { headers: { "x-language": language } },
   );
+
+export const impersonateAdminTenant = (id, language = "en") =>
+  api.post(ADMIN_TENANT_ENDPOINTS.IMPERSONATE(id), {}, {
+    headers: { "x-language": language },
+  });

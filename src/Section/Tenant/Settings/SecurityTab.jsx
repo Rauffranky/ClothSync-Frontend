@@ -43,22 +43,51 @@ const SecurityTab = ({
   canEdit = true,
   changePassword = changeTenantPassword,
   portalLabel = "Business Admin",
+  supportsSessions = true,
+  getSessions = getTenantSessions,
+  revokeSession = revokeTenantSession,
+  deleteSession = deleteTenantSession,
+  revokeAllSessions = revokeAllTenantSessions,
 }) => {
-  const [sessions, setSessions] = useState([]);
-  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+  const [sessions, setSessions] = useState(() =>
+    !supportsSessions || typeof getSessions !== "function"
+      ? [
+          {
+            id: "current-local",
+            isCurrent: true,
+            status: "active",
+            deviceName: getCurrentDeviceName(),
+            deviceType: "desktop",
+            location: "Current browser · Active now",
+          },
+        ]
+      : [],
+  );
+  const [isLoadingSessions, setIsLoadingSessions] = useState(
+    () => supportsSessions && typeof getSessions === "function",
+  );
   const [revokingId, setRevokingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [isLoggingOutAll, setIsLoggingOutAll] = useState(false);
 
   useEffect(() => {
+    if (!supportsSessions || typeof getSessions !== "function") return;
+
     let isMounted = true;
-    getTenantSessions()
+
+    getSessions()
       .then((res) => {
         if (!isMounted) return;
-        if (res?.data && Array.isArray(res.data)) {
-          setSessions(res.data);
-        } else if (res?.data?.items && Array.isArray(res.data.items)) {
-          setSessions(res.data.items);
+        const list =
+          (Array.isArray(res?.data) && res.data) ||
+          (Array.isArray(res?.data?.items) && res.data.items) ||
+          (Array.isArray(res?.data?.data) && res.data.data) ||
+          (Array.isArray(res) && res) ||
+          (Array.isArray(res?.items) && res.items) ||
+          null;
+
+        if (list) {
+          setSessions(list);
         }
       })
       .catch(() => {
@@ -81,12 +110,13 @@ const SecurityTab = ({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [getSessions, supportsSessions]);
 
   const handleRevokeSession = async (sessionId) => {
+    if (!supportsSessions || typeof revokeSession !== "function") return;
     try {
       setRevokingId(sessionId);
-      await revokeTenantSession(sessionId);
+      await revokeSession(sessionId);
       toast.success("Device logged out successfully");
       // Keep device in list but mark as Inactive / Logged out
       setSessions((prev) =>
@@ -109,9 +139,10 @@ const SecurityTab = ({
   };
 
   const handleDeleteSession = async (sessionId) => {
+    if (!supportsSessions || typeof deleteSession !== "function") return;
     try {
       setDeletingId(sessionId);
-      await deleteTenantSession(sessionId);
+      await deleteSession(sessionId);
       toast.success("Session removed successfully");
       // Remove permanently from list
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
@@ -123,9 +154,10 @@ const SecurityTab = ({
   };
 
   const handleLogoutAll = async () => {
+    if (!supportsSessions || typeof revokeAllSessions !== "function") return;
     try {
       setIsLoggingOutAll(true);
-      await revokeAllTenantSessions();
+      await revokeAllSessions();
       toast.success("All other active devices logged out successfully");
       // Mark all other sessions as Inactive / Logged out
       setSessions((prev) =>

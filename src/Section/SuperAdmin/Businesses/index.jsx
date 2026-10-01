@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Building2, Plus, Search, TriangleAlert } from "lucide-react";
 import Alert from "../../../Components/UI/Alert";
 import Button from "../../../Components/UI/Button";
@@ -9,7 +10,12 @@ import Pagination from "../../../Components/UI/Pagination";
 import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import { getApiErrorMessage } from "../../../axios/api";
-import { getAdminTenants } from "../../../axios/adminTenants/adminTenants";
+import {
+  getAdminTenants,
+  impersonateAdminTenant,
+} from "../../../axios/adminTenants/adminTenants";
+import { startImpersonation } from "../../../axios/auth/authSession";
+import { connectSocket } from "../../../socket/client";
 import { getPublicBusinessTypes } from "../../../axios/adminBusinessTypes/adminBusinessTypes";
 import { toast } from "../../../Utils/toast";
 import AddBusinessModal from "./AddBusinessModal";
@@ -26,6 +32,7 @@ import {
 } from "./data";
 
 const Businesses = () => {
+  const navigate = useNavigate();
   const [businessRows, setBusinessRows] = useState([]);
   const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,6 +49,22 @@ const Businesses = () => {
   const [statusAction, setStatusAction] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [accessingId, setAccessingId] = useState(null);
+
+  const handleAccessPortal = async (business) => {
+    try {
+      setAccessingId(business.id);
+      const res = await impersonateAdminTenant(business.id);
+      startImpersonation(res, window.location.pathname + window.location.search);
+      connectSocket();
+      toast.success(`Accessing ${business.businessName || "Business"} portal...`);
+      navigate("/business/dashboard");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to access business portal"));
+    } finally {
+      setAccessingId(null);
+    }
+  };
 
   useEffect(() => {
     let isActive = true;
@@ -223,8 +246,10 @@ const Businesses = () => {
         {/* Table View */}
         <div className="p-4 md:p-5">
           <BusinessesTable
+            accessingId={accessingId}
             data={sortedData}
             loading={isLoading}
+            onAccessPortal={handleAccessPortal}
             onSort={handleSort}
             onStatusAction={setStatusAction}
             onViewDetails={setSelectedBusiness}

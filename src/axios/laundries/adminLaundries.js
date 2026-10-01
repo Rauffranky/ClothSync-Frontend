@@ -15,3 +15,6 @@ export const updateAdminLaundryStatus = (id, payload) =>
 
 export const updateAdminLaundry = (id, payload) =>
   api.put(ADMIN_LAUNDRY_ENDPOINTS.UPDATE(id), payload);
+
+export const impersonateAdminLaundry = (id) =>
+  api.post(ADMIN_LAUNDRY_ENDPOINTS.IMPERSONATE(id), {});

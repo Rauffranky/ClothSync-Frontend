@@ -29,6 +29,10 @@ export const LAUNDRY_AUTH_ENDPOINTS = Object.freeze({
   VERIFY_FORGOT_PASSWORD_OTP: "/laundry-auth/verify-forgot-password-otp",
   RESET_PASSWORD: "/laundry-auth/reset-password",
   CHANGE_PASSWORD: "/laundry-auth/change-password",
+  SESSIONS: "/laundry-auth/sessions",
+  REVOKE_SESSION: (sessionId) => `/laundry-auth/sessions/${sessionId}`,
+  DELETE_SESSION: (sessionId) => `/laundry-auth/sessions/${sessionId}?action=delete`,
+  REVOKE_ALL_SESSIONS: "/laundry-auth/sessions",
 });
 
 // Kept as a named export for simple imports and backwards compatibility.
@@ -272,6 +276,7 @@ export const ADMIN_TENANT_ENDPOINTS = Object.freeze({
   CREATE: "/admin-tenants/create",
   UPDATE: (id) => `/admin-tenants/update/${id}`,
   UPDATE_STATUS: (id) => `/admin-tenants/update-status/${id}`,
+  IMPERSONATE: (id) => `/admin-tenants/impersonate/${id}`,
 });
 
 export const ADMIN_BUSINESS_TYPE_ENDPOINTS = Object.freeze({
@@ -288,5 +293,6 @@ export const ADMIN_LAUNDRY_ENDPOINTS = Object.freeze({
   CREATE: "/admin-laundries/create",
   UPDATE: (id) => `/admin-laundries/update/${id}`,
   UPDATE_STATUS: (id) => `/admin-laundries/update-status/${id}`,
+  IMPERSONATE: (id) => `/admin-laundries/impersonate/${id}`,
 });
 

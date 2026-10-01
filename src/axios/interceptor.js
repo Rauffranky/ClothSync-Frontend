@@ -58,12 +58,12 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const isUnauthorized = error?.response?.status === 401;
+    const isForbidden = error?.response?.status === 403;
     const responseMessage = String(
       error?.response?.data?.message ?? error?.response?.data?.error ?? "",
     ).toLowerCase();
-    const hasUnauthorizedMessage = responseMessage.includes(
-      "unauthorized access",
-    );
+    const hasUnauthorizedMessage =
+      !isForbidden && responseMessage.includes("unauthorized access");
     const hasActiveSession = Boolean(getAuthAccessToken());
 
     if ((isUnauthorized || hasUnauthorizedMessage) && hasActiveSession && error.config && !error.config._retry && sessionStorage.getItem("refreshToken")) {

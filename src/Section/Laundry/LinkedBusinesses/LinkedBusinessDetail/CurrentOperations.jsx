@@ -79,8 +79,19 @@ const CurrentOperations = ({ business }) => {
                 variant={item.variant}
               />
               <div className="min-w-0">
-                <p className="m-0 wrap-break-word text-2xl font-black text-(--theme-text-primary)">
-                  {values[item.key] ?? 0}
+                <p
+                  className={`m-0 wrap-break-word text-(--theme-text-primary) ${
+                    item.key === "lastActivity"
+                      ? "text-sm sm:text-base font-bold leading-snug"
+                      : "text-2xl font-black"
+                  }`}
+                  title={
+                    item.key === "lastActivity"
+                      ? String(values[item.key] ?? "-")
+                      : undefined
+                  }
+                >
+                  {values[item.key] ?? (item.key === "lastActivity" ? "-" : 0)}
                 </p>
                 <p className="m-0 mt-1 text-sm font-semibold text-(--theme-text-muted)">
                   {item.label}

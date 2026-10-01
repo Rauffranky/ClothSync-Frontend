@@ -1,6 +1,7 @@
 import {
   CircleCheck,
   CircleX,
+  ExternalLink,
   Eye,
   Mail,
   MapPin,
@@ -17,6 +18,8 @@ const LaundriesTable = ({
   onSort,
   onViewDetails,
   onStatusAction,
+  onAccessPortal,
+  accessingId = null,
   loading = false,
   sortBy,
   sortDirection,
@@ -132,6 +135,12 @@ const LaundriesTable = ({
           <ActionDropdown
             align="right"
             items={[
+              {
+                label: accessingId === row.id ? "Accessing..." : "Access Portal",
+                icon: ExternalLink,
+                disabled: Boolean(accessingId),
+                onClick: () => onAccessPortal?.(row),
+              },
               {
                 label: "View Details",
                 icon: Eye,

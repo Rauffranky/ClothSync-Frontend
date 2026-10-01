@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import SideBar from "./SideBar";
 import GlobalUndoBanners from "./GlobalUndoBanners";
+import ImpersonationBanner from "./ImpersonationBanner";
 
 const DashboardLayout = ({ portalKey }) => {
   const { pathname } = useLocation();
@@ -35,6 +36,7 @@ const DashboardLayout = ({ portalKey }) => {
             "--sidebar-offset": isDesktopSidebarCollapsed ? "88px" : "256px",
           }}
         >
+          <ImpersonationBanner />
           <Header
             portalKey={activePortalKey}
             onOpenSidebar={() => setIsMobileSidebarOpen(true)}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus, Search, TowelRack, TriangleAlert } from "lucide-react";
 import Alert from "../../../Components/UI/Alert";
 import Button from "../../../Components/UI/Button";
@@ -9,7 +10,12 @@ import Pagination from "../../../Components/UI/Pagination";
 import { useDebouncedSearch } from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
 import { getApiErrorMessage } from "../../../axios/api";
-import { getAdminLaundries } from "../../../axios/laundries/adminLaundries";
+import {
+  getAdminLaundries,
+  impersonateAdminLaundry,
+} from "../../../axios/laundries/adminLaundries";
+import { startImpersonation } from "../../../axios/auth/authSession";
+import { connectSocket } from "../../../socket/client";
 import { toast } from "../../../Utils/toast";
 import AddLaundryModal from "./AddLaundryModal";
 import LaundriesTable from "./LaundriesTable";
@@ -24,6 +30,7 @@ import {
 } from "./data";
 
 const Laundries = () => {
+  const navigate = useNavigate();
   const [laundryRows, setLaundryRows] = useState([]);
   const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +45,22 @@ const Laundries = () => {
   const [statusAction, setStatusAction] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [accessingId, setAccessingId] = useState(null);
+
+  const handleAccessPortal = async (laundry) => {
+    try {
+      setAccessingId(laundry.id);
+      const res = await impersonateAdminLaundry(laundry.id);
+      startImpersonation(res, window.location.pathname + window.location.search);
+      connectSocket();
+      toast.success(`Accessing ${laundry.companyName || "Laundry"} portal...`);
+      navigate("/laundry/dashboard");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to access laundry portal"));
+    } finally {
+      setAccessingId(null);
+    }
+  };
 
   useEffect(() => {
     let isActive = true;
@@ -178,8 +201,10 @@ const Laundries = () => {
         {/* Table View */}
         <div className="p-4 md:p-5">
           <LaundriesTable
+            accessingId={accessingId}
             data={sortedData}
             loading={isLoading}
+            onAccessPortal={handleAccessPortal}
             onSort={handleSort}
             onStatusAction={setStatusAction}
             onViewDetails={setSelectedLaundry}

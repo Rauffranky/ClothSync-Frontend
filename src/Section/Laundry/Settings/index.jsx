@@ -1,5 +1,11 @@
 import TenantSettings from "../../Tenant/Settings";
-import { changeLaundryPassword } from "../../../axios/auth/laundryAuth";
+import {
+  changeLaundryPassword,
+  getLaundrySessions,
+  revokeLaundrySession,
+  deleteLaundrySession,
+  revokeAllLaundrySessions,
+} from "../../../axios/auth/laundryAuth";
 import {
   getLaundryNotificationPreferences,
   updateLaundryNotificationPreferences,
@@ -38,6 +44,11 @@ const securityTabProps = {
   canEdit: hasPermission("settings", "edit"),
   changePassword: changeLaundryPassword,
   portalLabel: "Laundry Admin",
+  supportsSessions: true,
+  getSessions: getLaundrySessions,
+  revokeSession: revokeLaundrySession,
+  deleteSession: deleteLaundrySession,
+  revokeAllSessions: revokeAllLaundrySessions,
 };
 
 const LaundrySettings = () => (
