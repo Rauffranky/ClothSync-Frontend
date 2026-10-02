@@ -48,10 +48,13 @@ export const normalizeSubscriptionPlan = (item) => {
     formattedPrice: `$${numPrice.toFixed(2)}`,
     billingCycle: item?.billingCycle || "monthly",
     formattedBillingCycle: formatBillingCycle(item?.billingCycle),
+    targetType: item?.targetType || "laundry",
     maxLinkedBusinesses: item?.maxLinkedBusinesses,
     maxScanners: item?.maxScanners,
     maxStaff: item?.maxStaff,
     maxStaffRoles: item?.maxStaffRoles,
+    maxAssets: item?.maxAssets,
+    maxCategories: item?.maxCategories,
     allowBulkScan: Boolean(item?.allowBulkScan),
     allowBatchDispatch: Boolean(item?.allowBatchDispatch),
     allowReports: Boolean(item?.allowReports),
@@ -113,6 +116,9 @@ export const subscriptionPlanValidationSchema = Yup.object({
     )
     .max(100, "Code cannot exceed 100 characters")
     .required("Identifier code is required"),
+  targetType: Yup.string()
+    .oneOf(["laundry", "business"])
+    .required("Target portal type is required"),
   description: Yup.string()
     .trim()
     .max(255, "Description cannot exceed 255 characters"),
@@ -142,6 +148,18 @@ export const subscriptionPlanValidationSchema = Yup.object({
     )
     .min(0, "Must be 0 or greater"),
   maxStaffRoles: Yup.number()
+    .nullable()
+    .transform((value, originalValue) =>
+      String(originalValue).trim() === "" ? null : value,
+    )
+    .min(0, "Must be 0 or greater"),
+  maxAssets: Yup.number()
+    .nullable()
+    .transform((value, originalValue) =>
+      String(originalValue).trim() === "" ? null : value,
+    )
+    .min(0, "Must be 0 or greater"),
+  maxCategories: Yup.number()
     .nullable()
     .transform((value, originalValue) =>
       String(originalValue).trim() === "" ? null : value,

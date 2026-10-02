@@ -5,11 +5,13 @@ import {
   CreditCard,
   Edit2,
   Infinity as InfinityIcon,
+  Layers,
   ScanLine,
   ShieldAlert,
+  Sparkles,
+  Tag,
   Trash2,
   Users,
-  Sparkles,
 } from "lucide-react";
 import Badge from "../../../Components/UI/Badge";
 import Button from "../../../Components/UI/Button";
@@ -78,10 +80,13 @@ const PlanCardView = ({
               {/* Header */}
               <div className="flex items-start justify-between gap-3 pt-2">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <h3 className="m-0 text-xl font-black text-(--theme-text-primary)">
                       {plan.name}
                     </h3>
+                    <Badge size="xs" variant={plan.targetType === "business" ? "primary" : "neutral"}>
+                      {plan.targetType === "business" ? "Business" : "Laundry"}
+                    </Badge>
                     {isEnterprise && (
                       <span className="flex items-center gap-1 rounded-full bg-(--color-pending-bg) border border-(--badge-pending-border) px-2 py-0.5 text-[10px] font-bold text-(--badge-pending-text)">
                         <Sparkles size={11} /> Top Tier
@@ -127,13 +132,13 @@ const PlanCardView = ({
               {/* Resource Quotas */}
               <div className="mb-5 rounded-xl bg-(--theme-surface-soft) p-3.5 space-y-2 border border-(--theme-border-soft)/50">
                 <p className="m-0 mb-2 text-[11px] font-bold uppercase tracking-wider text-(--theme-text-muted)">
-                  Laundry Quotas
+                  {plan.targetType === "business" ? "Business Quotas" : "Laundry Quotas"}
                 </p>
 
                 <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5 text-(--theme-text-secondary)">
                     <Building2 size={14} className="text-(--color-aurora-teal)" />
-                    Linked Laundries
+                    {plan.targetType === "business" ? "Linked Laundries" : "Linked Businesses"}
                   </span>
                   <span className="font-bold text-(--theme-text-primary)">
                     {plan.maxLinkedBusinesses == null ? (
@@ -145,6 +150,42 @@ const PlanCardView = ({
                     )}
                   </span>
                 </div>
+
+                {plan.targetType === "business" && (
+                  <>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5 text-(--theme-text-secondary)">
+                        <Tag size={14} className="text-(--color-seafoam)" />
+                        Linen Assets / Items
+                      </span>
+                      <span className="font-bold text-(--theme-text-primary)">
+                        {plan.maxAssets == null ? (
+                          <span className="inline-flex items-center gap-0.5 text-xs font-bold text-(--color-aurora-teal)">
+                            <InfinityIcon size={12} /> Unlimited
+                          </span>
+                        ) : (
+                          formatQuota(plan.maxAssets)
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5 text-(--theme-text-secondary)">
+                        <Layers size={14} className="text-(--color-sky-blue)" />
+                        Linen Categories
+                      </span>
+                      <span className="font-bold text-(--theme-text-primary)">
+                        {plan.maxCategories == null ? (
+                          <span className="inline-flex items-center gap-0.5 text-xs font-bold text-(--color-aurora-teal)">
+                            <InfinityIcon size={12} /> Unlimited
+                          </span>
+                        ) : (
+                          formatQuota(plan.maxCategories)
+                        )}
+                      </span>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5 text-(--theme-text-secondary)">
@@ -201,16 +242,18 @@ const PlanCardView = ({
                   Features
                 </p>
 
-                <div className="flex items-center gap-2">
-                  {plan.allowBulkScan ? (
-                    <CircleCheck size={14} className="text-(--color-ready) shrink-0" />
-                  ) : (
-                    <CircleX size={14} className="text-(--theme-text-muted) shrink-0" />
-                  )}
-                  <span className={plan.allowBulkScan ? "text-(--theme-text-primary) font-medium" : "text-(--theme-text-muted) line-through"}>
-                    Bulk RFID Scanning
-                  </span>
-                </div>
+                {plan.targetType !== "business" && (
+                  <div className="flex items-center gap-2">
+                    {plan.allowBulkScan ? (
+                      <CircleCheck size={14} className="text-(--color-ready) shrink-0" />
+                    ) : (
+                      <CircleX size={14} className="text-(--theme-text-muted) shrink-0" />
+                    )}
+                    <span className={plan.allowBulkScan ? "text-(--theme-text-primary) font-medium" : "text-(--theme-text-muted) line-through"}>
+                      Bulk RFID Scanning
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2">
                   {plan.allowBatchDispatch ? (
@@ -219,7 +262,7 @@ const PlanCardView = ({
                     <CircleX size={14} className="text-(--theme-text-muted) shrink-0" />
                   )}
                   <span className={plan.allowBatchDispatch ? "text-(--theme-text-primary) font-medium" : "text-(--theme-text-muted) line-through"}>
-                    Batch Dispatch Operations
+                    {plan.targetType === "business" ? "Batch Dispatch to Laundries" : "Batch Dispatch Operations"}
                   </span>
                 </div>
 

@@ -9,6 +9,8 @@ import {
   ScanLine,
   Users,
   ShieldAlert,
+  Layers,
+  Tag,
 } from "lucide-react";
 import ActionDropdown from "../../../Components/UI/ActionDropdown";
 import Badge from "../../../Components/UI/Badge";
@@ -63,9 +65,17 @@ const SubscriptionPlansTable = ({
             <CreditCard size={18} />
           </span>
           <div className="min-w-0">
-            <p className="m-0 truncate font-bold text-(--theme-text-primary)">
-              {row.name}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="m-0 truncate font-bold text-(--theme-text-primary)">
+                {row.name}
+              </p>
+              <Badge
+                size="xs"
+                variant={row.targetType === "business" ? "secondary" : "teal"}
+              >
+                {row.targetType === "business" ? "Business" : "Laundry"}
+              </Badge>
+            </div>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-(--theme-surface-strong) text-(--theme-text-muted)">
                 {row.code}
@@ -102,9 +112,23 @@ const SubscriptionPlansTable = ({
         <div className="space-y-1 py-1">
           <QuotaBadge
             icon={Building2}
-            label="Linked Laundries"
+            label={row.targetType === "business" ? "Linked Laundries" : "Linked Businesses"}
             value={row.maxLinkedBusinesses}
           />
+          {row.targetType === "business" && (
+            <>
+              <QuotaBadge
+                icon={Layers}
+                label="Categories"
+                value={row.maxCategories}
+              />
+              <QuotaBadge
+                icon={Tag}
+                label="Linen Assets"
+                value={row.maxAssets}
+              />
+            </>
+          )}
           <QuotaBadge
             icon={ScanLine}
             label="Scanners"

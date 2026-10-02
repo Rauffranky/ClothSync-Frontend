@@ -79,6 +79,64 @@ export const useOrganizationSubscription = () => {
     };
   }, [isSuperAdmin]);
 
+  const sub = subscriptionData?.subscription;
+  const status = sub?.status?.toLowerCase();
+  const hasActiveSubscription = isSuperAdmin ? true : status === "active";
+  const isPending = isSuperAdmin ? false : status === "pending";
+  const isRejected = isSuperAdmin ? false : status === "rejected";
+
+  const getQuotaLimit = useCallback(
+    (quotaKey) => {
+      if (isSuperAdmin) return null; // unlimited for super_admin
+      const plan = subscriptionData?.plan || sub?.plan || null;
+      if (!plan) return 0;
+
+      const keyMap = {
+        scanners: "maxScanners",
+        staff: "maxStaff",
+        staffRoles: "maxStaffRoles",
+        categories: "maxCategories",
+        assets: "maxAssets",
+        linkedPartners: "maxLinkedBusinesses",
+        linkedBusinesses: "maxLinkedBusinesses",
+        linkedLaundries: "maxLinkedBusinesses",
+      };
+      const resolvedKey = keyMap[quotaKey] || quotaKey;
+      const limit = plan[resolvedKey];
+      return limit === undefined ? null : limit;
+    },
+    [isSuperAdmin, subscriptionData, sub],
+  );
+
+  const isQuotaReached = useCallback(
+    (quotaKey, currentCount) => {
+      if (isSuperAdmin) return false;
+      if (!hasActiveSubscription) return true;
+      const limit = getQuotaLimit(quotaKey);
+      if (limit === null) return false; // unlimited
+      return (Number(currentCount) || 0) >= limit;
+    },
+    [isSuperAdmin, hasActiveSubscription, getQuotaLimit],
+  );
+
+  const canAccessFeature = useCallback(
+    (featureKey) => {
+      if (isSuperAdmin) return true;
+      if (!hasActiveSubscription) return false;
+      const plan = subscriptionData?.plan || sub?.plan || null;
+      if (!plan) return false;
+
+      const keyMap = {
+        bulkScan: "allowBulkScan",
+        batchDispatch: "allowBatchDispatch",
+        reports: "allowReports",
+      };
+      const resolvedKey = keyMap[featureKey] || featureKey;
+      return Boolean(plan[resolvedKey]);
+    },
+    [isSuperAdmin, hasActiveSubscription, subscriptionData, sub],
+  );
+
   if (isSuperAdmin) {
     return {
       subscription: null,
@@ -90,14 +148,11 @@ export const useOrganizationSubscription = () => {
       isLoading: false,
       error: null,
       refreshSubscription: reloadSubscription,
+      getQuotaLimit,
+      isQuotaReached,
+      canAccessFeature,
     };
   }
-
-  const sub = subscriptionData?.subscription;
-  const status = sub?.status?.toLowerCase();
-  const hasActiveSubscription = status === "active";
-  const isPending = status === "pending";
-  const isRejected = status === "rejected";
 
   return {
     subscription: sub || null,
@@ -109,6 +164,9 @@ export const useOrganizationSubscription = () => {
     isLoading,
     error,
     refreshSubscription: reloadSubscription,
+    getQuotaLimit,
+    isQuotaReached,
+    canAccessFeature,
   };
 };
 

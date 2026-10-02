@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, RefreshCw, ScanLine, TriangleAlert } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { CheckCircle2, RefreshCw, ScanLine, Sparkles, TriangleAlert } from "lucide-react";
 import Alert from "../../../Components/UI/Alert";
 import Button from "../../../Components/UI/Button";
 import Card from "../../../Components/UI/Card";
 import Tabs from "../../../Components/UI/Tabs";
+import { useOrganizationSubscription } from "../../../Hooks/useOrganizationSubscription";
 import { getApiErrorMessage } from "../../../axios/api";
 import {
   clearTenantBulkScanSession,
@@ -84,6 +86,10 @@ const getInitialActiveTab = () => {
 
 
 const BulkScanningIndex = () => {
+  const navigate = useNavigate();
+  const { canAccessFeature, isSuperAdmin } = useOrganizationSubscription();
+  const hasBulkScanAccess = isSuperAdmin || canAccessFeature("bulkScan");
+
   const [activeTab, setActiveTab] = useState(getInitialActiveTab);
   const [currentPage, setCurrentPage] = useState(0);
   const [sessionId, setSessionId] = useState(getActiveBulkScanSessionId);
@@ -570,6 +576,35 @@ const BulkScanningIndex = () => {
       setIsRetagging(false);
     }
   };
+
+  if (!hasBulkScanAccess) {
+    return (
+      <div className="w-full space-y-6">
+        <Card>
+          <div className="py-12 text-center flex flex-col items-center justify-center space-y-4 max-w-md mx-auto">
+            <div className="h-16 w-16 rounded-2xl bg-(--color-sky-blue)/10 text-(--color-sky-blue) grid place-items-center">
+              <ScanLine size={32} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-(--theme-text-primary)">
+                Bulk RFID Scanning is Locked
+              </h2>
+              <p className="text-sm text-(--theme-text-secondary) mt-1 leading-relaxed">
+                Your current subscription tier does not include Bulk RFID scanning and real-time processing. Upgrade your plan to unlock this module.
+              </p>
+            </div>
+            <Button
+              leftIcon={<Sparkles size={16} />}
+              onClick={() => navigate("/business/subscription-billing")}
+              variant="primary"
+            >
+              Upgrade Subscription Plan
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-6">

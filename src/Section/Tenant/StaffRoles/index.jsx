@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, RefreshCw, Search, TriangleAlert } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, RefreshCw, Search, Sparkles, TriangleAlert } from "lucide-react";
 import Alert from "../../../Components/UI/Alert";
 import Button from "../../../Components/UI/Button";
 import Card from "../../../Components/UI/Card";
@@ -10,6 +11,7 @@ import {
   getSearchQuery,
   useDebouncedSearch,
 } from "../../../Hooks/useDebouncedSearch";
+import { useOrganizationSubscription } from "../../../Hooks/useOrganizationSubscription";
 import { getApiErrorMessage } from "../../../axios/api";
 import {
   createTenantStaffRole,
@@ -192,6 +194,12 @@ const StaffRoles = ({
     }
   };
 
+  const navigate = useNavigate();
+  const { isQuotaReached, getQuotaLimit, isSuperAdmin } = useOrganizationSubscription();
+  const totalRolesCount = summary?.totalRoles ?? totalItems;
+  const staffRolesQuotaLimit = getQuotaLimit("staffRoles");
+  const isRolesLimitReached = isQuotaReached("staffRoles", totalRolesCount);
+
   return (
     <div className="space-y-5">
       <StaffRoleStats loading={isLoading && !summary} summary={summary} />
@@ -207,6 +215,29 @@ const StaffRoles = ({
               variant="outline"
             >
               Try Again
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {isRolesLimitReached && !isSuperAdmin && (
+        <Alert variant="warning">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <p className="m-0 text-sm font-bold text-(--theme-text-primary)">
+                Custom Roles Quota Reached ({totalRolesCount} / {staffRolesQuotaLimit ?? "0"})
+              </p>
+              <p className="m-0 text-xs text-(--theme-text-muted)">
+                You have reached your subscription tier limit for custom staff roles. Upgrade your plan to configure more roles.
+              </p>
+            </div>
+            <Button
+              leftIcon={<Sparkles size={14} />}
+              size="sm"
+              variant="primary"
+              onClick={() => navigate("/business/subscription-billing")}
+            >
+              Upgrade Subscription
             </Button>
           </div>
         </Alert>
@@ -233,8 +264,22 @@ const StaffRoles = ({
           {permissions.create && (
             <Button
               className="w-full md:w-auto"
+              disabled={isRolesLimitReached && !isSuperAdmin}
               leftIcon={<Plus size={17} />}
-              onClick={() => setIsCreateRoleOpen(true)}
+              onClick={() => {
+                if (isRolesLimitReached && !isSuperAdmin) {
+                  toast.error(
+                    `Role limit of ${staffRolesQuotaLimit} reached. Upgrade your subscription plan to create more.`,
+                  );
+                  return;
+                }
+                setIsCreateRoleOpen(true);
+              }}
+              title={
+                isRolesLimitReached && !isSuperAdmin
+                  ? `Plan limit of ${staffRolesQuotaLimit} staff roles reached`
+                  : undefined
+              }
             >
               Create Role
             </Button>

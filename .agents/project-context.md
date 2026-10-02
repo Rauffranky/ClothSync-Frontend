@@ -997,6 +997,15 @@ The incoming-batch modal normalizes session-history envelopes, loads active scan
   - All hardcoded Tailwind color utilities (such as `emerald-*`, `amber-*`, `indigo-*`, `teal-*`, `slate-*`) and raw hex codes have been migrated to CSS design tokens defined in `src/index.css` (e.g., `--color-aurora-teal`, `--color-pending`, `--color-ready`, `--color-sky-blue`, `--color-seafoam`, `--admin-primary`, `--theme-text-primary`, `--theme-border-soft`, `--theme-surface-soft`).
   - Applied across `PlanCardView.jsx`, `PlanForm/index.jsx`, `SubscriptionPlansTable.jsx`, `SubscriptionRequestsTable.jsx`, `Stats.jsx`, `SubscriptionBilling/index.jsx`, and `ImpersonationBanner.jsx`.
 
+## Distinct Laundry & Business Plans & Module Quota Limits — 2026-10-02
 
-
-
+- **Distinct Plan Management**:
+  - Super Admin Subscription Plans (`/superadmin/plans`) supports tabs for **All Plans**, **Laundry Plans**, and **Business Plans** with audience-specific statistics and headers.
+  - Plan Form (`PlanForm/index.jsx`) includes a Target Portal & Audience selector (`laundry` vs `business`), dynamic code slug prefixes, and customized live preview cards.
+- **Module Quota Schema & Migrations**:
+  - `subscription_plans` table updated with `maxAssets` and `maxCategories` (nullable integers for Unlimited).
+  - Business plans configure limits for: Linen Assets / Items (`maxAssets`), Linen Categories (`maxCategories`), Linked Laundries (`maxLinkedBusinesses`), RFID Scanners (`maxScanners`), Staff Accounts (`maxStaff`), and Custom Staff Roles (`maxStaffRoles`).
+  - Laundry plans configure limits for: Linked Client Businesses (`maxLinkedBusinesses`), RFID Scanners (`maxScanners`), Staff Accounts (`maxStaff`), and Custom Staff Roles (`maxStaffRoles`).
+- **Quota & Capability Enforcement**:
+  - **Backend**: Implemented `subscriptionQuotaHelper.js` with `assertQuotaNotExceeded` and `assertCapabilityAllowed`. Rejects creation requests with 403 Forbidden and user-friendly messages when counts reach plan quotas or if the plan does not entitle the feature (`bulkScan`, `batchDispatch`, `reports`). Integrated across Scanners, Tenant Staff, Laundry Staff, Staff Roles, and Categories.
+  - **Frontend**: Enhanced `useOrganizationSubscription.js` with `getQuotaLimit`, `isQuotaReached`, and `canAccessFeature`. Added upgrade warning alerts and disabled button states in Categories, Staff, Staff Roles, Scanners, and Bulk RFID Scanning when limits are reached or capability is locked.

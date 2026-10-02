@@ -41,6 +41,7 @@ const SubscriptionPlans = () => {
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebouncedSearch(searchValue);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [targetTypeFilter, setTargetTypeFilter] = useState("all"); // 'all' | 'laundry' | 'business'
   const [viewMode, setViewMode] = useState("card"); // 'card' or 'table'
   const [currentPage, setCurrentPage] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
@@ -55,6 +56,7 @@ const SubscriptionPlans = () => {
     getAdminSubscriptionPlans({
       page: currentPage + 1,
       limit: SUBSCRIPTION_PLANS_PER_PAGE,
+      targetType: targetTypeFilter,
       ...(debouncedSearch ? { keywords: debouncedSearch } : {}),
       ...(statusFilter !== "all" ? { status: statusFilter } : {}),
     })
@@ -93,17 +95,19 @@ const SubscriptionPlans = () => {
     return () => {
       isActive = false;
     };
-  }, [currentPage, debouncedSearch, statusFilter, refreshKey]);
+  }, [
+    currentPage,
+    debouncedSearch,
+    statusFilter,
+    targetTypeFilter,
+    refreshKey,
+  ]);
 
-  const {
-    sortedData,
-    sortBy,
-    sortDirection,
-    handleSort,
-  } = useSortableTableData(planRows, {
-    initialSortBy: "price",
-    initialDirection: "asc",
-  });
+  const { sortedData, sortBy, sortDirection, handleSort } =
+    useSortableTableData(planRows, {
+      initialSortBy: "price",
+      initialDirection: "asc",
+    });
 
   const handleRefresh = () => {
     setIsLoading(true);
@@ -126,6 +130,35 @@ const SubscriptionPlans = () => {
     setCurrentPage(0);
   };
 
+  const handleTargetTypeChange = (type) => {
+    setTargetTypeFilter(type);
+    setCurrentPage(0);
+  };
+
+  const getPageHeaderInfo = () => {
+    if (targetTypeFilter === "laundry") {
+      return {
+        title: "Laundry Subscription Plans",
+        subtitle:
+          "Create & configure laundry plans, RFID scanner limits, staff quotas, and feature flags.",
+      };
+    }
+    if (targetTypeFilter === "business") {
+      return {
+        title: "Business Subscription Plans",
+        subtitle:
+          "Create & configure business plans, linen asset quotas, scanner limits, and dispatch rules.",
+      };
+    }
+    return {
+      title: "Subscription Plans & Pricing",
+      subtitle:
+        "Manage tiered subscription packages, resource quotas, and capability entitlements for Laundries and Businesses.",
+    };
+  };
+
+  const headerInfo = getPageHeaderInfo();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -137,10 +170,10 @@ const SubscriptionPlans = () => {
             </span>
             <div>
               <h1 className="m-0 text-2xl font-black text-(--theme-text-primary)">
-                Laundry Subscription Plans
+                {headerInfo.title}
               </h1>
               <p className="m-0 text-sm font-medium text-(--theme-text-secondary)">
-                Create & configure laundry plans, RFID scanner limits, staff quotas, and feature flags.
+                {headerInfo.subtitle}
               </p>
             </div>
           </div>
@@ -157,6 +190,43 @@ const SubscriptionPlans = () => {
           </Button>
         </div>
       </section>
+
+      {/* Target Type Navigation Tabs */}
+      <div className="flex items-center border-b border-(--theme-border-soft) gap-2">
+        <button
+          type="button"
+          onClick={() => handleTargetTypeChange("all")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 transition-all -mb-px ${
+            targetTypeFilter === "all"
+              ? "border-(--color-aurora-teal) text-(--color-aurora-teal)"
+              : "border-transparent text-(--theme-text-muted) hover:text-(--theme-text-primary)"
+          }`}
+        >
+          All Plans
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTargetTypeChange("laundry")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 transition-all -mb-px ${
+            targetTypeFilter === "laundry"
+              ? "border-(--color-aurora-teal) text-(--color-aurora-teal)"
+              : "border-transparent text-(--theme-text-muted) hover:text-(--theme-text-primary)"
+          }`}
+        >
+          Laundry Plans
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTargetTypeChange("business")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 transition-all -mb-px ${
+            targetTypeFilter === "business"
+              ? "border-(--color-aurora-teal) text-(--color-aurora-teal)"
+              : "border-transparent text-(--theme-text-muted) hover:text-(--theme-text-primary)"
+          }`}
+        >
+          Business Plans
+        </button>
+      </div>
 
       {/* Stats Summary */}
       <Stats
@@ -223,7 +293,12 @@ const SubscriptionPlans = () => {
 
             <Button
               aria-label="Refresh plans"
-              leftIcon={<RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />}
+              leftIcon={
+                <RefreshCw
+                  size={14}
+                  className={isLoading ? "animate-spin" : ""}
+                />
+              }
               onClick={handleRefresh}
               rounded="8px"
               size="sm"
@@ -271,7 +346,9 @@ const SubscriptionPlans = () => {
             data={sortedData}
             loading={isLoading}
             onDeleteAction={(plan) => setDeleteAction(plan)}
-            onEditAction={(plan) => navigate(`/superadmin/plans/edit/${plan.id}`)}
+            onEditAction={(plan) =>
+              navigate(`/superadmin/plans/edit/${plan.id}`)
+            }
             onSort={handleSort}
             onStatusAction={(action) => setStatusAction(action)}
             sortBy={sortBy}

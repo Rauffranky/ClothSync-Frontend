@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   RefreshCw,
   Search,
+  Sparkles,
   TriangleAlert,
 } from "lucide-react";
 import Alert from "../../../Components/UI/Alert";
@@ -16,6 +18,7 @@ import {
   useDebouncedSearch,
 } from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
+import { useOrganizationSubscription } from "../../../Hooks/useOrganizationSubscription";
 import { getApiErrorMessage } from "../../../axios/api";
 import { getTenantCategories } from "../../../axios/categories/tenantCategories";
 import { toast } from "../../../Utils/toast";
@@ -33,6 +36,12 @@ import {
 } from "./data";
 
 const Categories = () => {
+  const navigate = useNavigate();
+  const {
+    isQuotaReached,
+    getQuotaLimit,
+    isSuperAdmin,
+  } = useOrganizationSubscription();
   const [categoryRows, setCategoryRows] = useState([]);
   const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -134,6 +143,10 @@ const Categories = () => {
     setCurrentPage(0);
   };
 
+  const totalCategoriesCount = summary?.totalCategories ?? totalItems;
+  const categoryQuotaLimit = getQuotaLimit("categories");
+  const isCategoryLimitReached = isQuotaReached("categories", totalCategoriesCount);
+
   return (
     <div className="space-y-5">
       <Stats loading={isLoading && !summary} summary={summary} />
@@ -149,6 +162,29 @@ const Categories = () => {
               variant="outline"
             >
               Try Again
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {isCategoryLimitReached && !isSuperAdmin && (
+        <Alert variant="warning">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <p className="m-0 text-sm font-bold text-(--theme-text-primary)">
+                Category Quota Limit Reached ({totalCategoriesCount} / {categoryQuotaLimit ?? "0"})
+              </p>
+              <p className="m-0 text-xs text-(--theme-text-muted)">
+                You have reached your subscription tier limit for linen categories. Upgrade your plan to create more categories.
+              </p>
+            </div>
+            <Button
+              leftIcon={<Sparkles size={14} />}
+              size="sm"
+              variant="primary"
+              onClick={() => navigate("/business/subscription-billing")}
+            >
+              Upgrade Subscription
             </Button>
           </div>
         </Alert>
@@ -173,10 +209,24 @@ const Categories = () => {
             value={usageFilter}
           />
           <Button
+            disabled={isCategoryLimitReached && !isSuperAdmin}
             leftIcon={<Plus size={16} />}
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              if (isCategoryLimitReached && !isSuperAdmin) {
+                toast.error(
+                  `Category limit of ${categoryQuotaLimit} reached. Upgrade your subscription plan to add more.`,
+                );
+                return;
+              }
+              setIsAddModalOpen(true);
+            }}
             size="sm"
             variant="secondary"
+            title={
+              isCategoryLimitReached && !isSuperAdmin
+                ? `Plan limit of ${categoryQuotaLimit} categories reached`
+                : undefined
+            }
           >
             Add Category
           </Button>

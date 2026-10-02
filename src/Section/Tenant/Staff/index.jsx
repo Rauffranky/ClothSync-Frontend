@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, RefreshCw, Search, TriangleAlert } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, RefreshCw, Search, Sparkles, TriangleAlert } from "lucide-react";
 import Alert from "../../../Components/UI/Alert";
 import Button from "../../../Components/UI/Button";
 import Card from "../../../Components/UI/Card";
@@ -11,6 +12,7 @@ import {
   useDebouncedSearch,
 } from "../../../Hooks/useDebouncedSearch";
 import { useSortableTableData } from "../../../Hooks/useSortableTableData";
+import { useOrganizationSubscription } from "../../../Hooks/useOrganizationSubscription";
 import { getApiErrorMessage } from "../../../axios/api";
 import { getTenantStaffRoles } from "../../../axios/staffRoles/tenantStaffRoles";
 import {
@@ -243,6 +245,12 @@ const Staff = ({
     }
   };
 
+  const navigate = useNavigate();
+  const { isQuotaReached, getQuotaLimit, isSuperAdmin } = useOrganizationSubscription();
+  const totalStaffCount = summary?.totalStaff ?? totalItems;
+  const staffQuotaLimit = getQuotaLimit("staff");
+  const isStaffLimitReached = isQuotaReached("staff", totalStaffCount);
+
   return (
     <div className="space-y-5">
       <StaffStats loading={isLoading && !summary} summary={summary} />
@@ -258,6 +266,29 @@ const Staff = ({
               variant="outline"
             >
               Try Again
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {isStaffLimitReached && !isSuperAdmin && (
+        <Alert variant="warning">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <p className="m-0 text-sm font-bold text-(--theme-text-primary)">
+                Staff Account Quota Reached ({totalStaffCount} / {staffQuotaLimit ?? "0"})
+              </p>
+              <p className="m-0 text-xs text-(--theme-text-muted)">
+                You have reached your subscription tier limit for staff accounts. Upgrade your plan to invite more staff members.
+              </p>
+            </div>
+            <Button
+              leftIcon={<Sparkles size={14} />}
+              size="sm"
+              variant="primary"
+              onClick={() => navigate("/business/subscription-billing")}
+            >
+              Upgrade Subscription
             </Button>
           </div>
         </Alert>
@@ -284,9 +315,22 @@ const Staff = ({
           />
           {permissions.create && (
             <Button
-              disabled={activeRoleOptions.length <= 1}
+              disabled={activeRoleOptions.length <= 1 || (isStaffLimitReached && !isSuperAdmin)}
               leftIcon={<Plus size={16} />}
-              onClick={openAddModal}
+              onClick={() => {
+                if (isStaffLimitReached && !isSuperAdmin) {
+                  toast.error(
+                    `Staff limit of ${staffQuotaLimit} reached. Upgrade your subscription plan to add more.`,
+                  );
+                  return;
+                }
+                openAddModal();
+              }}
+              title={
+                isStaffLimitReached && !isSuperAdmin
+                  ? `Plan limit of ${staffQuotaLimit} staff accounts reached`
+                  : undefined
+              }
             >
               Add Staff
             </Button>
