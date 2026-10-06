@@ -22,6 +22,7 @@ import AddBusinessModal from "./AddBusinessModal";
 import BusinessesTable from "./BusinessesTable";
 import BusinessDetailsModal from "./BusinessDetailsModal";
 import BusinessStatusModal from "./BusinessStatusModal";
+import AssignSubscriptionModal from "../SubscriptionRequests/AssignSubscriptionModal";
 import Stats from "./Stats";
 import {
   BUSINESS_ITEMS_PER_PAGE,
@@ -47,6 +48,7 @@ const Businesses = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [statusAction, setStatusAction] = useState(null);
+  const [assignPlanBusiness, setAssignPlanBusiness] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [accessingId, setAccessingId] = useState(null);
@@ -250,6 +252,7 @@ const Businesses = () => {
             data={sortedData}
             loading={isLoading}
             onAccessPortal={handleAccessPortal}
+            onAssignPlan={setAssignPlanBusiness}
             onSort={handleSort}
             onStatusAction={setStatusAction}
             onViewDetails={setSelectedBusiness}
@@ -303,6 +306,21 @@ const Businesses = () => {
         }}
         open={isAddModalOpen}
       />
+
+      {/* Assign Plan Modal */}
+      {assignPlanBusiness && (
+        <AssignSubscriptionModal
+          initialTargetId={assignPlanBusiness.id}
+          initialTargetName={assignPlanBusiness.businessName || assignPlanBusiness.name}
+          initialTargetType="business"
+          onClose={() => setAssignPlanBusiness(null)}
+          onSaved={() => {
+            setAssignPlanBusiness(null);
+            reloadBusinesses();
+          }}
+          open={Boolean(assignPlanBusiness)}
+        />
+      )}
     </div>
   );
 };

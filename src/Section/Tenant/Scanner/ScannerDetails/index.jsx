@@ -238,7 +238,7 @@ const ScannerDetailsIndex = ({
       scannerMode: values.scannerMode.toLowerCase(),
       location: values.location.trim(),
       zoneName: values.zoneName.trim(),
-      status: values.status.toLowerCase(),
+      status: (values.status || "Active").toLowerCase(),
       assignedOperatorId: operatorIds[0] || null,
       assignedOperatorIds: operatorIds,
       translations: {
@@ -931,6 +931,10 @@ const ScannerDetailsIndex = ({
         getStaffOptions={getStaffOptions}
         initialValues={{
           ...scanner,
+          status:
+            String(scanner?.status || "").trim().toLowerCase() === "inactive"
+              ? "Inactive"
+              : "Active",
           scannerName: scanner.name,
           scannerId: scanner.id,
           scannerType: scanner.type,

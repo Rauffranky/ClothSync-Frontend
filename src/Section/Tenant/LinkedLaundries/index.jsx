@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { Plus } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
+import Alert from "../../../Components/UI/Alert";
 import Button from "../../../Components/UI/Button";
 import Card from "../../../Components/UI/Card";
 import Tabs from "../../../Components/UI/Tabs";
@@ -11,6 +12,7 @@ import {
   getTenantLaundries,
   sendTenantLaundryInvite,
 } from "../../../axios/laundries/tenantLaundries";
+import { useOrganizationSubscription } from "../../../Hooks/useOrganizationSubscription";
 import { toast } from "../../../Utils/toast";
 import InviteLaundryModal from "./InviteLaundryModal";
 import LinkedLaundries from "./LinkedLaundries";
@@ -32,7 +34,13 @@ const inviteLaundryValidationSchema = Yup.object({
 });
 
 const Laundries = () => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    isQuotaReached,
+    getQuotaLimit,
+    isSuperAdmin,
+  } = useOrganizationSubscription();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [summary, setSummary] = useState(null);
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
@@ -40,10 +48,26 @@ const Laundries = () => {
   const requestedTab = searchParams.get("tab");
   const activeTab = TAB_VALUES.includes(requestedTab) ? requestedTab : "linked";
 
+  const totalLinkedCount =
+    (Number(summary?.totalLinked) || 0) +
+    (Number(summary?.pendingRequests) || 0);
+  const linkedQuotaLimit = getQuotaLimit("linkedPartners");
+  const isLinkedLimitReached = isQuotaReached(
+    "linkedPartners",
+    totalLinkedCount,
+  );
+
   const inviteLaundryFormik = useFormik({
     initialValues: inviteLaundryInitialValues,
     validationSchema: inviteLaundryValidationSchema,
     onSubmit: async (values, { setSubmitting }) => {
+      if (isLinkedLimitReached && !isSuperAdmin) {
+        toast.error(
+          `Linked laundry limit of ${linkedQuotaLimit} reached. Upgrade your subscription plan to add more.`,
+        );
+        setSubmitting(false);
+        return;
+      }
       try {
         const response = await sendTenantLaundryInvite({ email: values.email });
         toast.success(response?.message || "Invitation sent successfully");
@@ -115,6 +139,29 @@ const Laundries = () => {
     <div className="space-y-5">
       <Stats loading={isSummaryLoading} summary={summary} />
 
+      {isLinkedLimitReached && !isSuperAdmin && (
+        <Alert variant="warning">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <p className="m-0 text-sm font-bold text-(--theme-text-primary)">
+                Linked Laundry Quota Limit Reached ({totalLinkedCount} / {linkedQuotaLimit ?? "0"})
+              </p>
+              <p className="m-0 text-xs text-(--theme-text-muted)">
+                You have reached your subscription tier limit for linked laundries. Upgrade your plan to invite more laundries.
+              </p>
+            </div>
+            <Button
+              leftIcon={<Sparkles size={14} />}
+              size="sm"
+              variant="primary"
+              onClick={() => navigate("/business/subscription-billing")}
+            >
+              Upgrade Subscription
+            </Button>
+          </div>
+        </Alert>
+      )}
+
       <Card padding="0" rounded="18px">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-(--theme-border) px-4 py-4">
           <div className="min-w-0 flex-[1_1_520px] overflow-x-auto overscroll-x-contain">
@@ -143,10 +190,24 @@ const Laundries = () => {
           {activeTab === "linked" && (
             <Button
               className="w-full shrink-0 sm:ml-auto sm:w-auto"
+              disabled={isLinkedLimitReached && !isSuperAdmin}
               leftIcon={<Plus size={17} />}
-              onClick={() => setIsInviteModalOpen(true)}
+              onClick={() => {
+                if (isLinkedLimitReached && !isSuperAdmin) {
+                  toast.error(
+                    `Linked laundry limit of ${linkedQuotaLimit} reached. Upgrade your subscription plan to add more.`,
+                  );
+                  return;
+                }
+                setIsInviteModalOpen(true);
+              }}
               size="md"
               variant="secondary"
+              title={
+                isLinkedLimitReached && !isSuperAdmin
+                  ? `Plan limit of ${linkedQuotaLimit} linked laundries reached`
+                  : undefined
+              }
             >
               Invite New Laundry
             </Button>

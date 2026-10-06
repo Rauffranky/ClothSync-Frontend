@@ -3,6 +3,7 @@ import {
   CircleCheck,
   CircleX,
   Clock,
+  DollarSign,
   ExternalLink,
   Eye,
   Mail,
@@ -21,6 +22,7 @@ const BusinessesTable = ({
   onViewDetails,
   onStatusAction,
   onAccessPortal,
+  onAssignPlan,
   accessingId = null,
   loading = false,
   sortBy,
@@ -179,6 +181,11 @@ const BusinessesTable = ({
                 label: "View Details",
                 icon: Eye,
                 onClick: () => onViewDetails?.(row),
+              },
+              {
+                label: "Assign Plan",
+                icon: DollarSign,
+                onClick: () => onAssignPlan?.(row),
               },
               {
                 label: row.status === "Active" ? "Deactivate" : "Activate",

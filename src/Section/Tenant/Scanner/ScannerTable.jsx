@@ -276,10 +276,14 @@ const ScannerTable = ({
   };
 
   const openEditScannerModal = (scanner) => {
+    const rawStatus = String(scanner.status || "").trim().toLowerCase();
+    const normalizedStatus = rawStatus === "inactive" ? "Inactive" : "Active";
+
     setEditScannerState({
       isOpen: true,
       scanner: {
         ...scanner,
+        status: normalizedStatus,
         scannerName: scanner.name,
         scannerId: scanner.id,
         scannerType: scanner.type,
@@ -327,7 +331,7 @@ const ScannerTable = ({
       zoneName: updatedScanner.zoneName,
       assignedOperatorId: operatorIds[0] || null,
       assignedOperatorIds: operatorIds,
-      status: updatedScanner.status.toLowerCase(),
+      status: (updatedScanner.status || "Active").toLowerCase(),
       translations: {
         en: {
           name: updatedScanner.scannerName,

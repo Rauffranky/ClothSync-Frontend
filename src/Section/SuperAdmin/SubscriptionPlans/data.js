@@ -129,42 +129,110 @@ export const subscriptionPlanValidationSchema = Yup.object({
   billingCycle: Yup.string()
     .oneOf(["monthly", "quarterly", "yearly", "one_time"])
     .required("Billing cycle is required"),
-  maxLinkedBusinesses: Yup.number()
-    .nullable()
-    .transform((value, originalValue) =>
-      String(originalValue).trim() === "" ? null : value,
-    )
-    .min(0, "Must be 0 or greater"),
-  maxScanners: Yup.number()
-    .nullable()
-    .transform((value, originalValue) =>
-      String(originalValue).trim() === "" ? null : value,
-    )
-    .min(0, "Must be 0 or greater"),
-  maxStaff: Yup.number()
-    .nullable()
-    .transform((value, originalValue) =>
-      String(originalValue).trim() === "" ? null : value,
-    )
-    .min(0, "Must be 0 or greater"),
-  maxStaffRoles: Yup.number()
-    .nullable()
-    .transform((value, originalValue) =>
-      String(originalValue).trim() === "" ? null : value,
-    )
-    .min(0, "Must be 0 or greater"),
-  maxAssets: Yup.number()
-    .nullable()
-    .transform((value, originalValue) =>
-      String(originalValue).trim() === "" ? null : value,
-    )
-    .min(0, "Must be 0 or greater"),
-  maxCategories: Yup.number()
-    .nullable()
-    .transform((value, originalValue) =>
-      String(originalValue).trim() === "" ? null : value,
-    )
-    .min(0, "Must be 0 or greater"),
+  unlimitedLinkedBusinesses: Yup.boolean(),
+  maxLinkedBusinesses: Yup.mixed().when("unlimitedLinkedBusinesses", {
+    is: (val) => val === true,
+    then: (schema) => schema.nullable().optional(),
+    otherwise: (schema) =>
+      schema
+        .test(
+          "required-quota",
+          "Quota limit is required when Unlimited is turned off",
+          (val) => val !== "" && val !== null && val !== undefined,
+        )
+        .test("valid-quota", "Must be 0 or greater", (val) => {
+          if (val === "" || val === null || val === undefined) return false;
+          const n = Number(val);
+          return !isNaN(n) && n >= 0 && Number.isInteger(n);
+        }),
+  }),
+  unlimitedScanners: Yup.boolean(),
+  maxScanners: Yup.mixed().when("unlimitedScanners", {
+    is: (val) => val === true,
+    then: (schema) => schema.nullable().optional(),
+    otherwise: (schema) =>
+      schema
+        .test(
+          "required-quota",
+          "Quota limit is required when Unlimited is turned off",
+          (val) => val !== "" && val !== null && val !== undefined,
+        )
+        .test("valid-quota", "Must be 0 or greater", (val) => {
+          if (val === "" || val === null || val === undefined) return false;
+          const n = Number(val);
+          return !isNaN(n) && n >= 0 && Number.isInteger(n);
+        }),
+  }),
+  unlimitedStaff: Yup.boolean(),
+  maxStaff: Yup.mixed().when("unlimitedStaff", {
+    is: (val) => val === true,
+    then: (schema) => schema.nullable().optional(),
+    otherwise: (schema) =>
+      schema
+        .test(
+          "required-quota",
+          "Quota limit is required when Unlimited is turned off",
+          (val) => val !== "" && val !== null && val !== undefined,
+        )
+        .test("valid-quota", "Must be 0 or greater", (val) => {
+          if (val === "" || val === null || val === undefined) return false;
+          const n = Number(val);
+          return !isNaN(n) && n >= 0 && Number.isInteger(n);
+        }),
+  }),
+  unlimitedStaffRoles: Yup.boolean(),
+  maxStaffRoles: Yup.mixed().when("unlimitedStaffRoles", {
+    is: (val) => val === true,
+    then: (schema) => schema.nullable().optional(),
+    otherwise: (schema) =>
+      schema
+        .test(
+          "required-quota",
+          "Quota limit is required when Unlimited is turned off",
+          (val) => val !== "" && val !== null && val !== undefined,
+        )
+        .test("valid-quota", "Must be 0 or greater", (val) => {
+          if (val === "" || val === null || val === undefined) return false;
+          const n = Number(val);
+          return !isNaN(n) && n >= 0 && Number.isInteger(n);
+        }),
+  }),
+  unlimitedAssets: Yup.boolean(),
+  maxAssets: Yup.mixed().when(["targetType", "unlimitedAssets"], {
+    is: (targetType, unlimitedAssets) =>
+      targetType === "business" && !unlimitedAssets,
+    then: (schema) =>
+      schema
+        .test(
+          "required-quota",
+          "Quota limit is required when Unlimited is turned off",
+          (val) => val !== "" && val !== null && val !== undefined,
+        )
+        .test("valid-quota", "Must be 0 or greater", (val) => {
+          if (val === "" || val === null || val === undefined) return false;
+          const n = Number(val);
+          return !isNaN(n) && n >= 0 && Number.isInteger(n);
+        }),
+    otherwise: (schema) => schema.nullable().optional(),
+  }),
+  unlimitedCategories: Yup.boolean(),
+  maxCategories: Yup.mixed().when(["targetType", "unlimitedCategories"], {
+    is: (targetType, unlimitedCategories) =>
+      targetType === "business" && !unlimitedCategories,
+    then: (schema) =>
+      schema
+        .test(
+          "required-quota",
+          "Quota limit is required when Unlimited is turned off",
+          (val) => val !== "" && val !== null && val !== undefined,
+        )
+        .test("valid-quota", "Must be 0 or greater", (val) => {
+          if (val === "" || val === null || val === undefined) return false;
+          const n = Number(val);
+          return !isNaN(n) && n >= 0 && Number.isInteger(n);
+        }),
+    otherwise: (schema) => schema.nullable().optional(),
+  }),
   allowBulkScan: Yup.boolean(),
   allowBatchDispatch: Yup.boolean(),
   allowReports: Yup.boolean(),

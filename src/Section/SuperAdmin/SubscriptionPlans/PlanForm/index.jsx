@@ -96,38 +96,50 @@ const PlanForm = ({ isEditing = false }) => {
           billingCycle: values.billingCycle,
           maxLinkedBusinesses: values.unlimitedLinkedBusinesses
             ? null
-            : values.maxLinkedBusinesses === ""
-              ? null
+            : values.maxLinkedBusinesses === "" ||
+                values.maxLinkedBusinesses === null ||
+                values.maxLinkedBusinesses === undefined
+              ? 0
               : Number(values.maxLinkedBusinesses),
           maxScanners: values.unlimitedScanners
             ? null
-            : values.maxScanners === ""
-              ? null
+            : values.maxScanners === "" ||
+                values.maxScanners === null ||
+                values.maxScanners === undefined
+              ? 0
               : Number(values.maxScanners),
           maxStaff: values.unlimitedStaff
             ? null
-            : values.maxStaff === ""
-              ? null
+            : values.maxStaff === "" ||
+                values.maxStaff === null ||
+                values.maxStaff === undefined
+              ? 0
               : Number(values.maxStaff),
           maxStaffRoles: values.unlimitedStaffRoles
             ? null
-            : values.maxStaffRoles === ""
-              ? null
+            : values.maxStaffRoles === "" ||
+                values.maxStaffRoles === null ||
+                values.maxStaffRoles === undefined
+              ? 0
               : Number(values.maxStaffRoles),
           maxAssets:
             values.targetType === "business"
               ? values.unlimitedAssets
                 ? null
-                : values.maxAssets === ""
-                  ? null
+                : values.maxAssets === "" ||
+                    values.maxAssets === null ||
+                    values.maxAssets === undefined
+                  ? 0
                   : Number(values.maxAssets)
               : null,
           maxCategories:
             values.targetType === "business"
               ? values.unlimitedCategories
                 ? null
-                : values.maxCategories === ""
-                  ? null
+                : values.maxCategories === "" ||
+                    values.maxCategories === null ||
+                    values.maxCategories === undefined
+                  ? 0
                   : Number(values.maxCategories)
               : null,
           allowBulkScan: values.allowBulkScan,
@@ -593,7 +605,12 @@ const PlanForm = ({ isEditing = false }) => {
                     checked={formik.values.unlimitedLinkedBusinesses}
                     onChange={(val) => {
                       formik.setFieldValue("unlimitedLinkedBusinesses", val);
-                      if (val) formik.setFieldValue("maxLinkedBusinesses", "");
+                      if (val) {
+                        formik.setFieldValue("maxLinkedBusinesses", "");
+                        formik.setFieldError("maxLinkedBusinesses", undefined);
+                      } else {
+                        formik.setFieldTouched("maxLinkedBusinesses", true);
+                      }
                     }}
                     label="Unlimited"
                     size="sm"
@@ -603,11 +620,16 @@ const PlanForm = ({ isEditing = false }) => {
                   disabled={formik.values.unlimitedLinkedBusinesses}
                   error={
                     formik.touched.maxLinkedBusinesses &&
+                    Boolean(formik.errors.maxLinkedBusinesses)
+                  }
+                  helperText={
+                    formik.touched.maxLinkedBusinesses &&
                     formik.errors.maxLinkedBusinesses
                   }
                   name="maxLinkedBusinesses"
                   type="number"
                   min="0"
+                  onBlur={formik.handleBlur}
                   onChange={(value) =>
                     formik.setFieldValue("maxLinkedBusinesses", value)
                   }
@@ -636,7 +658,12 @@ const PlanForm = ({ isEditing = false }) => {
                       checked={formik.values.unlimitedCategories}
                       onChange={(val) => {
                         formik.setFieldValue("unlimitedCategories", val);
-                        if (val) formik.setFieldValue("maxCategories", "");
+                        if (val) {
+                          formik.setFieldValue("maxCategories", "");
+                          formik.setFieldError("maxCategories", undefined);
+                        } else {
+                          formik.setFieldTouched("maxCategories", true);
+                        }
                       }}
                       label="Unlimited"
                       size="sm"
@@ -645,11 +672,17 @@ const PlanForm = ({ isEditing = false }) => {
                   <Input
                     disabled={formik.values.unlimitedCategories}
                     error={
-                      formik.touched.maxCategories && formik.errors.maxCategories
+                      formik.touched.maxCategories &&
+                      Boolean(formik.errors.maxCategories)
+                    }
+                    helperText={
+                      formik.touched.maxCategories &&
+                      formik.errors.maxCategories
                     }
                     name="maxCategories"
                     type="number"
                     min="0"
+                    onBlur={formik.handleBlur}
                     onChange={(value) =>
                       formik.setFieldValue("maxCategories", value)
                     }
@@ -679,7 +712,12 @@ const PlanForm = ({ isEditing = false }) => {
                       checked={formik.values.unlimitedAssets}
                       onChange={(val) => {
                         formik.setFieldValue("unlimitedAssets", val);
-                        if (val) formik.setFieldValue("maxAssets", "");
+                        if (val) {
+                          formik.setFieldValue("maxAssets", "");
+                          formik.setFieldError("maxAssets", undefined);
+                        } else {
+                          formik.setFieldTouched("maxAssets", true);
+                        }
                       }}
                       label="Unlimited"
                       size="sm"
@@ -687,10 +725,18 @@ const PlanForm = ({ isEditing = false }) => {
                   </div>
                   <Input
                     disabled={formik.values.unlimitedAssets}
-                    error={formik.touched.maxAssets && formik.errors.maxAssets}
+                    error={
+                      formik.touched.maxAssets &&
+                      Boolean(formik.errors.maxAssets)
+                    }
+                    helperText={
+                      formik.touched.maxAssets &&
+                      formik.errors.maxAssets
+                    }
                     name="maxAssets"
                     type="number"
                     min="0"
+                    onBlur={formik.handleBlur}
                     onChange={(value) =>
                       formik.setFieldValue("maxAssets", value)
                     }
@@ -719,7 +765,12 @@ const PlanForm = ({ isEditing = false }) => {
                     checked={formik.values.unlimitedScanners}
                     onChange={(val) => {
                       formik.setFieldValue("unlimitedScanners", val);
-                      if (val) formik.setFieldValue("maxScanners", "");
+                      if (val) {
+                        formik.setFieldValue("maxScanners", "");
+                        formik.setFieldError("maxScanners", undefined);
+                      } else {
+                        formik.setFieldTouched("maxScanners", true);
+                      }
                     }}
                     label="Unlimited"
                     size="sm"
@@ -728,11 +779,17 @@ const PlanForm = ({ isEditing = false }) => {
                 <Input
                   disabled={formik.values.unlimitedScanners}
                   error={
-                    formik.touched.maxScanners && formik.errors.maxScanners
+                    formik.touched.maxScanners &&
+                    Boolean(formik.errors.maxScanners)
+                  }
+                  helperText={
+                    formik.touched.maxScanners &&
+                    formik.errors.maxScanners
                   }
                   name="maxScanners"
                   type="number"
                   min="0"
+                  onBlur={formik.handleBlur}
                   onChange={(value) =>
                     formik.setFieldValue("maxScanners", value)
                   }
@@ -758,7 +815,12 @@ const PlanForm = ({ isEditing = false }) => {
                     checked={formik.values.unlimitedStaff}
                     onChange={(val) => {
                       formik.setFieldValue("unlimitedStaff", val);
-                      if (val) formik.setFieldValue("maxStaff", "");
+                      if (val) {
+                        formik.setFieldValue("maxStaff", "");
+                        formik.setFieldError("maxStaff", undefined);
+                      } else {
+                        formik.setFieldTouched("maxStaff", true);
+                      }
                     }}
                     label="Unlimited"
                     size="sm"
@@ -766,10 +828,18 @@ const PlanForm = ({ isEditing = false }) => {
                 </div>
                 <Input
                   disabled={formik.values.unlimitedStaff}
-                  error={formik.touched.maxStaff && formik.errors.maxStaff}
+                  error={
+                    formik.touched.maxStaff &&
+                    Boolean(formik.errors.maxStaff)
+                  }
+                  helperText={
+                    formik.touched.maxStaff &&
+                    formik.errors.maxStaff
+                  }
                   name="maxStaff"
                   type="number"
                   min="0"
+                  onBlur={formik.handleBlur}
                   onChange={(value) => formik.setFieldValue("maxStaff", value)}
                   placeholder={
                     formik.values.unlimitedStaff ? "∞ Unlimited" : "e.g. 5"
@@ -791,7 +861,12 @@ const PlanForm = ({ isEditing = false }) => {
                     checked={formik.values.unlimitedStaffRoles}
                     onChange={(val) => {
                       formik.setFieldValue("unlimitedStaffRoles", val);
-                      if (val) formik.setFieldValue("maxStaffRoles", "");
+                      if (val) {
+                        formik.setFieldValue("maxStaffRoles", "");
+                        formik.setFieldError("maxStaffRoles", undefined);
+                      } else {
+                        formik.setFieldTouched("maxStaffRoles", true);
+                      }
                     }}
                     label="Unlimited"
                     size="sm"
@@ -800,11 +875,17 @@ const PlanForm = ({ isEditing = false }) => {
                 <Input
                   disabled={formik.values.unlimitedStaffRoles}
                   error={
-                    formik.touched.maxStaffRoles && formik.errors.maxStaffRoles
+                    formik.touched.maxStaffRoles &&
+                    Boolean(formik.errors.maxStaffRoles)
+                  }
+                  helperText={
+                    formik.touched.maxStaffRoles &&
+                    formik.errors.maxStaffRoles
                   }
                   name="maxStaffRoles"
                   type="number"
                   min="0"
+                  onBlur={formik.handleBlur}
                   onChange={(value) =>
                     formik.setFieldValue("maxStaffRoles", value)
                   }

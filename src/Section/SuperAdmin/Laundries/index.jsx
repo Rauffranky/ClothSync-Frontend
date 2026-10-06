@@ -21,6 +21,7 @@ import AddLaundryModal from "./AddLaundryModal";
 import LaundriesTable from "./LaundriesTable";
 import LaundryDetailsModal from "./LaundryDetailsModal";
 import LaundryStatusModal from "./LaundryStatusModal";
+import AssignSubscriptionModal from "../SubscriptionRequests/AssignSubscriptionModal";
 import Stats from "./Stats";
 import {
   LAUNDRY_ITEMS_PER_PAGE,
@@ -43,6 +44,7 @@ const Laundries = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [selectedLaundry, setSelectedLaundry] = useState(null);
   const [statusAction, setStatusAction] = useState(null);
+  const [assignPlanLaundry, setAssignPlanLaundry] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [accessingId, setAccessingId] = useState(null);
@@ -205,6 +207,7 @@ const Laundries = () => {
             data={sortedData}
             loading={isLoading}
             onAccessPortal={handleAccessPortal}
+            onAssignPlan={setAssignPlanLaundry}
             onSort={handleSort}
             onStatusAction={setStatusAction}
             onViewDetails={setSelectedLaundry}
@@ -258,6 +261,21 @@ const Laundries = () => {
         }}
         open={isAddModalOpen}
       />
+
+      {/* Assign Plan Modal */}
+      {assignPlanLaundry && (
+        <AssignSubscriptionModal
+          initialTargetId={assignPlanLaundry.id}
+          initialTargetName={assignPlanLaundry.companyName || assignPlanLaundry.name}
+          initialTargetType="laundry"
+          onClose={() => setAssignPlanLaundry(null)}
+          onSaved={() => {
+            setAssignPlanLaundry(null);
+            reloadLaundries();
+          }}
+          open={Boolean(assignPlanLaundry)}
+        />
+      )}
     </div>
   );
 };

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import {
   DollarSign,
+  Plus,
+  RefreshCw,
   Search,
   TriangleAlert,
-  RefreshCw,
 } from "lucide-react";
 import Alert from "../../../Components/UI/Alert";
 import Button from "../../../Components/UI/Button";
@@ -20,6 +21,7 @@ import Stats from "./Stats";
 import SubscriptionRequestsTable from "./SubscriptionRequestsTable";
 import ApproveSubscriptionModal from "./ApproveSubscriptionModal";
 import RejectSubscriptionModal from "./RejectSubscriptionModal";
+import AssignSubscriptionModal from "./AssignSubscriptionModal";
 import {
   SUBSCRIPTION_REQUESTS_PER_PAGE,
   subscriptionStatusFilterOptions,
@@ -42,6 +44,7 @@ const SubscriptionRequests = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [approveAction, setApproveAction] = useState(null);
   const [rejectAction, setRejectAction] = useState(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -139,15 +142,26 @@ const SubscriptionRequests = () => {
           </div>
         </div>
 
-        <Button
-          leftIcon={<RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />}
-          onClick={handleRefresh}
-          rounded="10px"
-          size="sm"
-          variant="outline"
-        >
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            leftIcon={<RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />}
+            onClick={handleRefresh}
+            rounded="10px"
+            size="sm"
+            variant="outline"
+          >
+            Refresh
+          </Button>
+          <Button
+            leftIcon={<Plus size={15} />}
+            onClick={() => setIsAssignModalOpen(true)}
+            rounded="10px"
+            size="sm"
+            variant="primary"
+          >
+            Assign Plan
+          </Button>
+        </div>
       </section>
 
       {/* Stats Summary */}
@@ -251,6 +265,12 @@ const SubscriptionRequests = () => {
           handleRefresh();
         }}
         requestItem={rejectAction}
+      />
+
+      <AssignSubscriptionModal
+        onClose={() => setIsAssignModalOpen(false)}
+        onSaved={handleRefresh}
+        open={isAssignModalOpen}
       />
     </div>
   );

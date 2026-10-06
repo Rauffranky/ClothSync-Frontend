@@ -3,6 +3,7 @@ import {
   CircleCheck,
   CircleX,
   CreditCard,
+  DollarSign,
   ExternalLink,
   Eye,
   Mail,
@@ -21,6 +22,7 @@ const LaundriesTable = ({
   onViewDetails,
   onStatusAction,
   onAccessPortal,
+  onAssignPlan,
   accessingId = null,
   loading = false,
   sortBy,
@@ -150,7 +152,12 @@ const LaundriesTable = ({
                 onClick: () => onViewDetails?.(row),
               },
               {
-                label: "Subscription",
+                label: "Assign Plan",
+                icon: DollarSign,
+                onClick: () => onAssignPlan?.(row),
+              },
+              {
+                label: "Subscription History",
                 icon: CreditCard,
                 onClick: () =>
                   navigate(

@@ -44,6 +44,11 @@ const scannerValidationSchema = yup.object({
     .string()
     .oneOf(["Fixed", "Portable"])
     .required("Scanner type is required"),
+  status: yup
+    .string()
+    .trim()
+    .oneOf(["Active", "Inactive"], "Status must be either Active or Inactive")
+    .required("Scanner status is required"),
   scannerMode: yup.string().when("scannerType", {
     is: "Fixed",
     then: (schema) => schema.required("Scanner mode is required"),
@@ -104,9 +109,17 @@ const AddScannerModal = ({
   initialValues = initialFormState,
   getStaffOptions = getTenantStaffOptions,
 }) => {
+  const rawStatus = String(
+    initialValues?.status ?? initialFormState.status ?? "Active",
+  )
+    .trim()
+    .toLowerCase();
+  const normalizedStatus = rawStatus === "inactive" ? "Inactive" : "Active";
+
   const resolvedInitialValues = {
     ...initialFormState,
     ...initialValues,
+    status: normalizedStatus,
     assignedOperatorId:
       initialValues?.assignedOperatorId ??
       (Array.isArray(initialValues?.assignedOperatorIds) &&
@@ -142,7 +155,7 @@ const AddScannerModal = ({
         scannerMode: values.scannerMode,
         assignedOperatorId: operatorIds[0] || null,
         assignedOperatorIds: operatorIds,
-        status: values.status,
+        status: (values.status || "Active").toLowerCase(),
         location: values.location.trim(),
         zoneName: values.zoneName.trim(),
         customNotes: values.customNotes.trim(),
@@ -390,7 +403,7 @@ const AddScannerModal = ({
           <div>
             <div className="mb-2 flex items-center justify-between gap-3">
               <label className="block text-sm font-semibold text-(--theme-text-secondary)">
-                Status
+                Status <span className="text-(--color-overdue)">*</span>
               </label>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -458,6 +471,11 @@ const AddScannerModal = ({
                 Inactive
               </Button>
             </div>
+            {hasFieldError("status") && (
+              <p className="mt-2 text-xs font-semibold text-(--color-overdue)">
+                {getFieldError("status")}
+              </p>
+            )}
           </div>
         </div>
 

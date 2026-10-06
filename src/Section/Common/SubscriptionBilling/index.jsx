@@ -8,10 +8,12 @@ import {
   CreditCard,
   DollarSign,
   Infinity as InfinityIcon,
+  Layers,
   RefreshCw,
   ScanLine,
   ShieldAlert,
   Sparkles,
+  Tag,
   Users,
   AlertTriangle,
 } from "lucide-react";
@@ -366,6 +368,42 @@ const SubscriptionBilling = () => {
                           )}
                         </span>
                       </div>
+
+                      {isBusinessPortal && (
+                        <>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="flex items-center gap-1.5 text-(--theme-text-secondary)">
+                              <Tag size={14} className="text-(--color-seafoam)" />
+                              Linen Assets / Items
+                            </span>
+                            <span className="font-bold text-(--theme-text-primary)">
+                              {plan.maxAssets == null ? (
+                                <span className="inline-flex items-center gap-0.5 text-xs font-bold text-(--color-aurora-teal)">
+                                  <InfinityIcon size={12} /> Unlimited
+                                </span>
+                              ) : (
+                                Number(plan.maxAssets).toLocaleString()
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="flex items-center gap-1.5 text-(--theme-text-secondary)">
+                              <Layers size={14} className="text-(--color-sky-blue)" />
+                              Linen Categories
+                            </span>
+                            <span className="font-bold text-(--theme-text-primary)">
+                              {plan.maxCategories == null ? (
+                                <span className="inline-flex items-center gap-0.5 text-xs font-bold text-(--color-aurora-teal)">
+                                  <InfinityIcon size={12} /> Unlimited
+                                </span>
+                              ) : (
+                                Number(plan.maxCategories).toLocaleString()
+                              )}
+                            </span>
+                          </div>
+                        </>
+                      )}
 
                       <div className="flex items-center justify-between text-xs">
                         <span className="flex items-center gap-1.5 text-(--theme-text-secondary)">

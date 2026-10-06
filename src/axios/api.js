@@ -54,10 +54,30 @@ export const api = {
   delete: (url, config = {}) => request({ ...config, method: "DELETE", url }),
 };
 
-export const getApiErrorMessage = (error, fallbackMessage = "Something went wrong") =>
-  error?.response?.data?.message ||
-  error?.response?.data?.error ||
-  error?.message ||
-  fallbackMessage;
+export const getApiErrorMessage = (error, fallbackMessage = "Something went wrong") => {
+  const data = error?.response?.data;
+
+  if (Array.isArray(data?.errors) && data.errors.length > 0) {
+    const firstErr = data.errors[0];
+    const errMsg = typeof firstErr === "string" ? firstErr : firstErr?.message;
+    if (errMsg) {
+      return errMsg.replace(/^"([^"]+)"/, (_, field) => field.charAt(0).toUpperCase() + field.slice(1));
+    }
+  }
+
+  if (data?.errors && typeof data.errors === "object" && !Array.isArray(data.errors)) {
+    const firstKey = Object.keys(data.errors)[0];
+    const val = data.errors[firstKey];
+    if (typeof val === "string") return val;
+    if (Array.isArray(val) && val[0]) return String(val[0]);
+  }
+
+  return (
+    data?.message ||
+    data?.error ||
+    error?.message ||
+    fallbackMessage
+  );
+};
 
 export default api;
