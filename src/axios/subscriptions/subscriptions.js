@@ -15,10 +15,13 @@ export const requestSubscription = (data, language = "en") =>
     headers: { "x-language": language },
   });
 
-export const getAvailableSubscriptionPlans = (language = "en") =>
-  api.get(SUBSCRIPTION_ENDPOINTS.PLANS, {
+export const getAvailableSubscriptionPlans = (params = {}, language = "en") => {
+  const queryParams = typeof params === "string" ? { targetType: params } : params;
+  return api.get(SUBSCRIPTION_ENDPOINTS.PLANS, {
+    params: queryParams,
     headers: { "x-language": language },
   });
+};
 
 // Super Admin
 export const getAdminSubscriptionsList = (params, language = "en") =>

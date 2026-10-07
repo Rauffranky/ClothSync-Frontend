@@ -36,13 +36,18 @@ import useOrganizationSubscription, {
 import { toast } from "../../../Utils/toast";
 import { formatDateWithUserPreferences } from "../../../Utils/date";
 
-const SubscriptionBilling = () => {
+const SubscriptionBilling = ({ portal }) => {
   const sessionUser = getAuthSessionUser();
-  const isBusinessPortal = Boolean(
-    sessionUser?.tenantId ||
-    sessionUser?.role?.includes("tenant") ||
-    !sessionUser?.laundryId,
-  );
+  const isLaundryPortal =
+    portal === "laundry" ||
+    (typeof window !== "undefined" &&
+      window.location.pathname.startsWith("/laundry")) ||
+    Boolean(sessionUser?.laundryId) ||
+    Boolean(sessionUser?.laundry?.id) ||
+    Boolean(sessionUser?.isLaundry) ||
+    Boolean(sessionUser?.role?.includes("laundry"));
+  const isBusinessPortal = !isLaundryPortal;
+  const targetAudience = isLaundryPortal ? "laundry" : "business";
 
   const {
     subscription,
@@ -63,11 +68,16 @@ const SubscriptionBilling = () => {
   useEffect(() => {
     let isActive = true;
 
-    getAvailableSubscriptionPlans()
+    getAvailableSubscriptionPlans({ targetType: targetAudience })
       .then((res) => {
         if (!isActive) return;
-        const plans = res?.data?.data || res?.data || [];
-        setAvailablePlans(plans);
+        const allPlans = res?.data?.data || res?.data || [];
+        const filtered = Array.isArray(allPlans)
+          ? allPlans.filter(
+              (p) => (p.targetType || "laundry") === targetAudience,
+            )
+          : [];
+        setAvailablePlans(filtered);
       })
       .catch((err) => {
         if (!isActive) return;
@@ -80,7 +90,7 @@ const SubscriptionBilling = () => {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [targetAudience]);
 
   const handleSubscribe = async () => {
     if (!selectedPlanForSubscribe) return;

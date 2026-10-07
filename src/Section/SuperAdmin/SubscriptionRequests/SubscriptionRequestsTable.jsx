@@ -25,8 +25,9 @@ const SubscriptionRequestsTable = ({
       key: "orgName",
       label: "Organization",
       sortable: true,
+      width: "30%",
       render: (_, row) => (
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 max-w-sm items-center gap-3">
           <span
             className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
               row.targetType === "laundry"
@@ -40,22 +41,31 @@ const SubscriptionRequestsTable = ({
               <Building2 size={18} />
             )}
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <p className="m-0 truncate font-bold text-(--theme-text-primary)">
+              <p
+                className="m-0 truncate font-bold text-(--theme-text-primary)"
+                title={row.orgName}
+              >
                 {row.orgName}
               </p>
-              <span className="rounded px-1.5 py-0.2 text-[10px] font-bold uppercase tracking-wider bg-(--theme-surface-strong) text-(--theme-text-muted)">
+              <span className="shrink-0 rounded px-1.5 py-0.2 text-[10px] font-bold uppercase tracking-wider bg-(--theme-surface-strong) text-(--theme-text-muted)">
                 {row.targetTypeLabel}
               </span>
             </div>
-            <p className="m-0 mt-0.5 text-xs text-(--theme-text-muted)">
+            <p
+              className="m-0 mt-0.5 truncate text-xs text-(--theme-text-muted)"
+              title={row.orgEmail}
+            >
               {row.orgEmail}
             </p>
             {row.notes && (
-              <p className="m-0 mt-1 flex items-center gap-1 text-[11px] text-(--theme-text-secondary) italic">
-                <MessageSquare size={11} className="shrink-0" /> Note: "
-                {row.notes}"
+              <p
+                className="m-0 mt-1 flex max-w-full items-center gap-1 text-[11px] text-(--theme-text-secondary) italic"
+                title={row.notes}
+              >
+                <MessageSquare size={11} className="shrink-0" />
+                <span className="truncate">Note: "{row.notes}"</span>
               </p>
             )}
           </div>
@@ -66,9 +76,13 @@ const SubscriptionRequestsTable = ({
       key: "planName",
       label: "Requested Tier",
       sortable: true,
+      width: "22%",
       render: (_, row) => (
-        <div>
-          <span className="text-sm font-bold text-(--theme-text-primary)">
+        <div className="min-w-0">
+          <span
+            className="block truncate text-sm font-bold text-(--theme-text-primary)"
+            title={row.planName}
+          >
             {row.planName}
           </span>
           <div className="flex items-center gap-1.5 mt-0.5">
@@ -84,6 +98,7 @@ const SubscriptionRequestsTable = ({
       label: "Status",
       align: "center",
       sortable: true,
+      width: "14%",
       render: (_, row) => (
         <Badge
           leftIcon={
@@ -106,6 +121,7 @@ const SubscriptionRequestsTable = ({
       key: "created",
       label: "Submitted Date",
       sortable: true,
+      width: "16%",
       render: (value) => (
         <span className="text-xs font-semibold text-(--theme-text-muted)">
           {value}
@@ -116,6 +132,7 @@ const SubscriptionRequestsTable = ({
       key: "actions",
       label: "Decision",
       align: "center",
+      width: "18%",
       render: (_, row) => {
         if (row.rawStatus === "pending") {
           return (
