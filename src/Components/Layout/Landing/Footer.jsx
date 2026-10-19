@@ -35,13 +35,13 @@ export default function Footer() {
               Trackly brings businesses, laundry
               partners, and everyday operations into sync.
             </p>
-            <a
+            {SUPPORT_EMAIL ? <a
               href={`mailto:${SUPPORT_EMAIL}`}
               className={`${linkClass} mt-5 inline-flex items-center gap-2 break-all`}
             >
               <Mail size={16} className="shrink-0" />
               {SUPPORT_EMAIL}
-            </a>
+            </a> : <Link to="/contact" className={`${linkClass} mt-5 inline-flex items-center gap-2`}><Mail size={16} />Contact Us</Link>}
           </div>
           <FooterLinks
             title="Explore"

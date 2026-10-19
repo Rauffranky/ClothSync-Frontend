@@ -44,14 +44,14 @@ export default function ContactSection() {
               A conversation starts here.
             </h2>
             <p className="mt-3 text-sm leading-7 text-(--theme-text-secondary)">
-              For product questions, onboarding, and support, reach us by email.
+              {SUPPORT_EMAIL ? "For product questions, onboarding, and support, reach us by email." : "Explore the business and laundry workspaces below to get started with Trackly."}
             </p>
-            <a
+            {SUPPORT_EMAIL && <a
               className="mt-5 block break-all font-semibold text-(--color-aurora-teal) hover:underline"
               href={`mailto:${SUPPORT_EMAIL}`}
             >
               {SUPPORT_EMAIL}
-            </a>
+            </a>}
           </Card>
           <Card padding="28px" rounded="22px">
             <h2 className="text-lg font-bold text-(--theme-text-primary)">
@@ -89,8 +89,7 @@ export default function ContactSection() {
               Tell us how we can help.
             </h2>
             <p className="mt-3 text-sm leading-7 text-(--theme-text-secondary)">
-              Fill in your details to prepare an email. Your email app will open
-              so you can review and send it.
+              {SUPPORT_EMAIL ? "Fill in your details to prepare an email. Your email app will open so you can review and send it." : "Email contact is currently unavailable."}
             </p>
           </div>
           <ContactForm />

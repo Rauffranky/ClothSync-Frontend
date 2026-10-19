@@ -27,6 +27,10 @@ export default function ContactForm() {
     initialValues: { fullName: "", email: "", organization: "", message: "" },
     validationSchema,
     onSubmit(values, helpers) {
+      if (!SUPPORT_EMAIL) {
+        helpers.setSubmitting(false);
+        return;
+      }
       const subject = `Trackly enquiry${values.organization.trim() ? ` - ${values.organization.trim()}` : ""}`;
       const body = `Name: ${values.fullName.trim()}\nEmail: ${values.email.trim()}\nOrganization: ${values.organization.trim() || "Not provided"}\n\n${values.message.trim()}`;
       window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -89,11 +93,13 @@ export default function ContactForm() {
       </p>
       <Button
         type="submit"
+        disabled={!SUPPORT_EMAIL}
         loading={formik.isSubmitting}
         rightIcon={<ArrowUpRight size={17} />}
       >
         Open email app
       </Button>
+      {!SUPPORT_EMAIL && <p role="status" className="text-sm leading-7 text-(--theme-text-secondary)">Email contact is currently unavailable.</p>}
       {prepared && (
         <p
           role="status"

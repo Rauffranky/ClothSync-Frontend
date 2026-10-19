@@ -3,7 +3,6 @@ import {
   ArrowRight,
   Check,
   Radio,
-  ScanLine,
   Shirt,
   Truck,
   Building2,
@@ -11,6 +10,7 @@ import {
 import { Link } from "react-router-dom";
 import Button from "../../../../Components/UI/Button";
 import Reveal from "./Reveal";
+import HeroMotionScene from "./HeroMotionScene";
 
 const journey = [
   {
@@ -41,8 +41,8 @@ export default function HeroSection() {
           <span>All in sync.</span>
         </h1>
         <p className="home-intro">
-          From the first check-in to the final return. Bring your linen,
-          laundry partners, and people together with Trackly.
+          From the first check-in to the final return. Bring your linen, laundry
+          partners, and people together with Trackly.
         </p>
         <div className="home-actions">
           <Button
@@ -79,23 +79,7 @@ export default function HeroSection() {
           </span>
           <span className="home-mini-pill">TRACKLY</span>
         </div>
-        <div className="home-shirt-scene" aria-hidden="true">
-          <div className="home-orbit" />
-          <div className="home-orbit home-orbit-inner" />
-          <div className="home-shirt">
-            <Shirt size={115} strokeWidth={1.1} />
-            <div className="home-tag">
-              <Radio size={16} /> ITEM TAG
-            </div>
-          </div>
-          <div className="home-scan-badge">
-            <ScanLine size={20} />
-            <div>
-              <strong>A little tag. A clear picture.</strong>
-              <span>Identity stays with every item.</span>
-            </div>
-          </div>
-        </div>
+        <HeroMotionScene />
         <div className="home-journey-list">
           {journey.map(({ icon: Icon, label, detail }, i) => (
             <div className="home-journey-row" key={label}>
@@ -114,14 +98,6 @@ export default function HeroSection() {
           One item. One identity. Full visibility.
         </p>
       </Reveal>
-      <div className="home-industry-strip">
-        <span>BUILT FOR THE LINEN ECONOMY</span>
-        <strong>Hospitality</strong>
-        <span>+</span>
-        <strong>Healthcare</strong>
-        <span>+</span>
-        <strong>Commercial laundries</strong>
-      </div>
     </section>
   );
 }

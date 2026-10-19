@@ -6,6 +6,7 @@ import { startSocketConnection } from "./socket/client";
 import useUserDatePreferences from "./Hooks/useUserDatePreferences";
 import LiveScanRedirect from "./Components/Layout/Dashboard/LiveScanRedirect";
 import ScrollToTop from "./Components/Common/ScrollToTop";
+import { IntroReadyContext } from "./Config/introContext";
 
 const SPLASH_SESSION_KEY = "clothsync-splash-shown";
 
@@ -61,7 +62,9 @@ function App() {
     <>
       <ScrollToTop />
       <LiveScanRedirect />
-      <AppRoutes />
+      <IntroReadyContext value={!shouldShowSplash}>
+        <AppRoutes />
+      </IntroReadyContext>
       {shouldShowSplash && (
         <SplashScreen isLeaving={splashState === "leaving"} />
       )}

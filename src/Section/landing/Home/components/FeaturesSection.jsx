@@ -58,7 +58,7 @@ export default function FeaturesSection() {
       </Reveal>
       <div className="home-feature-grid">
         {features.map(({ icon: Icon, title, text }, i) => (
-          <Reveal key={title} delay={(i % 3) * 0.06}>
+          <Reveal key={title} delay={(i % 3) * 0.12} lift>
             <Card
               className="h-full"
               bodyClassName="h-full"

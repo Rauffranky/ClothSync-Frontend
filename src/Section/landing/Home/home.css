@@ -203,27 +203,199 @@
   font-size: 10px;
   color: var(--theme-text-secondary);
 }
-.home-industry-strip {
-  grid-column: 1 / -1;
+.industries-section {
+  padding-top: 88px;
+  padding-bottom: 28px;
+}
+.industries-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+.industries-heading h2 span {
+  color: var(--color-aurora-teal);
+}
+.industries-heading > p {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--theme-text-secondary);
+  margin-bottom: 20px;
+}
+.industries-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.industry-card {
+  overflow: hidden;
+  transition: box-shadow 220ms ease;
+}
+.industry-card:hover {
+  box-shadow: 0 18px 48px
+    color-mix(in srgb, var(--industry-accent) 13%, transparent);
+}
+.industry-card-body {
+  position: relative;
+  overflow: hidden;
+}
+.industry-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 48px;
+}
+.industry-icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--industry-accent) 12%, transparent);
+  color: var(--industry-accent);
+  border: 1px solid color-mix(in srgb, var(--industry-accent) 20%, transparent);
+  transition: transform 250ms ease;
+}
+.industry-card:hover .industry-icon {
+  transform: rotate(-7deg) scale(1.05);
+}
+.industry-card-number {
+  color: var(--theme-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+.industry-orbit {
+  position: absolute;
+  pointer-events: none;
+  top: -55px;
+  right: -65px;
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--industry-accent) 15%, transparent);
+  box-shadow:
+    0 0 0 24px color-mix(in srgb, var(--industry-accent) 4%, transparent),
+    0 0 0 48px color-mix(in srgb, var(--industry-accent) 3%, transparent);
+}
+.industry-label {
+  position: relative;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--industry-accent);
+}
+.trackly-home .industry-card h3 {
+  position: relative;
+  font-size: clamp(21px, 2vw, 25px);
+  margin: 14px 0 12px;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+.industry-description {
+  position: relative;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--theme-text-secondary);
+  min-height: 70px;
+}
+.industry-tags {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  padding-block: 32px;
-  border-block: 1px solid var(--theme-border);
-  margin-top: 10px;
+  gap: 7px;
+  border-top: 1px solid var(--theme-border);
+  padding-top: 20px;
+  margin-top: 23px;
 }
-.home-industry-strip > span:first-child {
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: var(--theme-text-muted);
-}
-.home-industry-strip strong {
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+.industry-tags span {
+  font-size: 9px;
+  border-radius: 6px;
+  padding: 6px 8px;
   color: var(--theme-text-secondary);
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+}
+.industries-connection {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  align-items: center;
+  padding: 25px 12px;
+  font-size: 11px;
+  color: var(--theme-text-secondary);
+}
+.industries-connection svg {
+  color: var(--color-aurora-teal);
+}
+.home-orbit-moving::after {
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-aurora-teal);
+  box-shadow: 0 0 16px var(--tenant-glow);
+}
+.home-motion-scan {
+  position: absolute;
+  top: 50%;
+  width: 150px;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-aurora-teal),
+    transparent
+  );
+  box-shadow: 0 0 12px var(--tenant-glow);
+}
+@media (max-width: 900px) {
+  .industries-heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 0;
+  }
+  .industries-grid {
+    gap: 13px;
+  }
+}
+@media (max-width: 640px) {
+  .industries-section {
+    padding-top: 56px;
+  }
+  .industries-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .industry-card-top {
+    margin-bottom: 32px;
+  }
+  .industry-description {
+    min-height: 0;
+  }
+  .industries-connection {
+    justify-content: start;
+    line-height: 1.8;
+  }
+  .industries-connection > span:nth-child(2) {
+    flex: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .industry-card,
+  .industry-icon {
+    transition: none;
+  }
+  .industry-card:hover .industry-icon {
+    transform: none;
+  }
 }
 .trackly-home h2 {
   margin: 16px 0;
@@ -746,17 +918,6 @@
   }
   .home-intro {
     font-size: 15px;
-  }
-  .home-industry-strip {
-    justify-content: center;
-    gap: 16px;
-  }
-  .home-industry-strip > span:first-child {
-    width: 100%;
-    text-align: center;
-  }
-  .home-industry-strip strong {
-    font-size: 12px;
   }
   .home-feature-grid,
   .home-workflow-grid,

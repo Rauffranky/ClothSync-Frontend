@@ -174,8 +174,11 @@ Authentication and landing:
   `Page/Landing/ContactPage.jsx` wrapper and `Section/landing/Contact` components.
   The Formik/Yup form validates locally and opens an email draft via `mailto:`;
   no contact-submission backend exists or delivery success is claimed. The shared
-  support address is in `Config/contact.js`. The landing footer includes explicit
-  Contact Us, Privacy Policy, and Terms & Conditions links, alongside product
+  support address is in `Config/contact.js`.
+  The support address is read from `VITE_SUPPORT_EMAIL` without an assumed
+  fallback domain. If unset, email links are hidden and contact form submission
+  is disabled with an unavailable message until a real address is configured.
+  The landing footer includes Contact Us, Privacy Policy, and Terms & Conditions links, alongside product
   anchors and Business/Laundry workspace links.
 - `/404`; unmatched routes redirect there.
 
@@ -257,6 +260,12 @@ Re-check these facts in source during every related task.
   image instead, with a preview fallback on image failure. The public landing
   does not fetch authenticated data or embed protected portals. The expanded
   landing navigation switches to the mobile menu below the xl breakpoint.
+  The linen economy showcase is owned by `IndustriesSection`, with responsive
+  Hospitality, Healthcare, and Commercial laundries cards using shared Card.
+  `IntroReadyContext` exposes whether the startup splash has left; landing
+  reveals wait for it so first-visit entrances are visible. `HeroMotionScene`
+  animates the item, scanner line, and orbit only while in view and after the
+  splash. Reduced-motion preferences disable decorative motion and card lifts.
 
 Confirmed API-backed areas:
 

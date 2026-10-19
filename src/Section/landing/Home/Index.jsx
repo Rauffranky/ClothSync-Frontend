@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { MotionConfig, useReducedMotion } from "framer-motion";
 import HeroSection from "./components/HeroSection";
+import IndustriesSection from "./components/IndustriesSection";
 import FeaturesSection from "./components/FeaturesSection";
 import InventorySection from "./components/InventorySection";
 import WorkflowSection from "./components/WorkflowSection";
@@ -25,6 +26,7 @@ export default function HomeSection() {
     <MotionConfig reducedMotion="user">
       <div className="trackly-home">
         <HeroSection />
+        <IndustriesSection />
         <FeaturesSection />
         <InventorySection />
         <WorkflowSection />
