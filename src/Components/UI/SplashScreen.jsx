@@ -6,7 +6,7 @@ const BUBBLES = ["one", "two", "three", "four", "five", "six"];
 const SplashScreen = ({ isLeaving = false }) => (
   <div
     aria-atomic="true"
-    aria-label="ClothSync is getting everything ready"
+    aria-label="Trackly is getting everything ready"
     aria-live="polite"
     className={`clothsync-splash ${isLeaving ? "clothsync-splash--leaving" : ""}`}
     role="status"
@@ -68,7 +68,7 @@ const SplashScreen = ({ isLeaving = false }) => (
       <div aria-hidden="true" className="clothsync-splash__progress">
         <span className="clothsync-splash__progress-bar" />
       </div>
-      <span className="sr-only">Loading ClothSync</span>
+      <span className="sr-only">Loading Trackly</span>
     </div>
   </div>
 );

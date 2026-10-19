@@ -1,115 +1,122 @@
-import { Mail, MapPin, ShieldCheck } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { landingNavigationItems } from "../../../Config/navigation";
+import { ArrowRight, Mail, Radio } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import Logo from "../../Logo";
+import Button from "../../UI/Button";
+import { landingNavigationItems } from "../../../Config/navigation";
+import { SUPPORT_EMAIL } from "../../../Config/contact";
 
-const Footer = () => {
-  const navigate = useNavigate();
-  const handleNavigate = (item) => {
-    navigate(item.hash ? `${item.to}${item.hash}` : item.to);
-  };
+const linkClass =
+  "w-fit rounded text-sm text-(--theme-text-secondary) transition-colors hover:text-(--color-aurora-teal) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--color-aurora-teal)";
 
+export default function Footer() {
   return (
-    <footer className="px-4 py-6">
-      <div
-        className="mx-auto w-full max-w-7xl overflow-hidden rounded-[28px] border backdrop-blur-[18px] backdrop-saturate-150"
-        style={{
-          background: "var(--layout-footer-bg)",
-          borderColor: "var(--theme-border)",
-          boxShadow: "var(--layout-panel-shadow)",
-        }}
-      >
-        <div className="grid gap-8 p-6 md:grid-cols-[1.1fr_1fr] md:p-8">
+    <footer className="mt-8 border-t border-(--theme-border) bg-(--layout-footer-bg)">
+      <div className="mx-auto max-w-7xl px-6 py-12 md:px-8">
+        <div className="mb-12 flex flex-col justify-between gap-6 border-b border-(--theme-border) pb-10 sm:flex-row sm:items-center">
           <div>
-            <div className="flex flex-col items-start gap-2">
-              <Logo className="h-10 w-auto" />
-              <p className="m-0 text-xs font-semibold text-(--theme-text-secondary)">
-                Smart. Clean. Connected.
-              </p>
-            </div>
-
-            <p className="mt-5 max-w-md text-sm font-medium leading-6 text-(--theme-text-secondary)">
-              A smart RFID-powered laundry management platform for tenants,
-              laundry staff, and admins.
+            <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-(--color-aurora-teal)">
+              <Radio size={15} /> Smart. Clean. Connected.
             </p>
-
-            <div className="mt-5 grid gap-3 text-sm font-semibold text-(--theme-text-secondary)">
-              <a
-                className="flex items-center gap-2 hover:text-(--color-aurora-teal)"
-                href="mailto:support@rfidlaundry.com"
-              >
-                <Mail size={16} />
-                support@rfidlaundry.com
-              </a>
-              <span className="flex items-center gap-2">
-                <MapPin size={16} />
-                Connected Laundry Operations
-              </span>
-            </div>
+            <h2 className="text-2xl font-bold tracking-tight text-(--theme-text-primary) md:text-3xl">
+              A clearer picture of every linen journey.
+            </h2>
           </div>
-
-          <div>
-            <h3 className="m-0 text-sm font-black uppercase tracking-[0.14em] text-(--theme-text-primary)">
-              Navigation
-            </h3>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {landingNavigationItems.map((item) => (
-                <button
-                  className="text-sm font-semibold text-(--theme-text-secondary) transition hover:text-(--color-aurora-teal)"
-                  key={item.label}
-                  onClick={() => handleNavigate(item)}
-                  type="button"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <Button as={Link} to="/contact" rightIcon={<ArrowRight size={17} />}>
+            Let’s connect
+          </Button>
         </div>
 
-        <div
-          className="flex flex-col gap-3 border-t px-6 py-4 text-sm font-semibold text-(--theme-text-secondary) md:flex-row md:items-center md:justify-between md:px-8"
-          style={{ borderColor: "var(--theme-border)" }}
-        >
-          <div className="flex flex-wrap items-center gap-3">
-            <span>
-              Copyright {new Date().getFullYear()} RFID Laundry Management System.
-            </span>
-            <span className="hidden sm:inline">•</span>
-            <Link
-              to="/terms-and-conditions"
-              className="text-xs font-semibold text-(--theme-text-muted) hover:text-(--color-aurora-teal) transition-colors"
-            >
-              Terms & Conditions
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
+          <div>
+            <Link to="/" aria-label="Trackly home">
+              <Logo className="h-10 w-auto" />
             </Link>
-            <span className="hidden sm:inline">•</span>
-            <Link
-              to="/privacy-policy"
-              className="text-xs font-semibold text-(--theme-text-muted) hover:text-(--color-aurora-teal) transition-colors"
+            <p className="mt-5 max-w-xs text-sm leading-7 text-(--theme-text-secondary)">
+              Trackly brings businesses, laundry
+              partners, and everyday operations into sync.
+            </p>
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className={`${linkClass} mt-5 inline-flex items-center gap-2 break-all`}
             >
-              Privacy Policy
-            </Link>
-            <span className="hidden sm:inline">•</span>
-            <span className="text-xs text-(--theme-text-muted)">
-              Powered by:{" "}
-              <a
-                href="https://code-xperts.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-(--color-aurora-teal) hover:underline transition-colors"
-              >
-                Code Xperts
-              </a>
-            </span>
+              <Mail size={16} className="shrink-0" />
+              {SUPPORT_EMAIL}
+            </a>
           </div>
-          <span className="flex items-center gap-2">
-            <ShieldCheck size={16} className="text-(--color-aurora-teal)" />
-            Secure RFID technology for contactless operations.
-          </span>
+          <FooterLinks
+            title="Explore"
+            links={landingNavigationItems
+              .filter((item) => item.to !== "/contact")
+              .map((item) => ({
+                label: item.label,
+                to: `${item.to}${item.hash || ""}`,
+              }))}
+          />
+          <FooterLinks
+            title="Your workspace"
+            links={[
+              { label: "Business portal", to: "/business/login" },
+              { label: "Laundry portal", to: "/laundry/login" },
+              { label: "Create business account", to: "/business/signup" },
+              { label: "Create laundry account", to: "/laundry/signup" },
+            ]}
+          />
+          <FooterLinks
+            title="Help & legal"
+            links={[
+              { label: "Contact Us", to: "/contact" },
+              { label: "Privacy Policy", to: "/privacy-policy" },
+              { label: "Terms & Conditions", to: "/terms-and-conditions" },
+            ]}
+          />
+        </div>
+
+        <div className="mt-12 flex flex-col justify-between gap-4 border-t border-(--theme-border) pt-6 text-xs text-(--theme-text-muted) sm:flex-row">
+          <p>© {new Date().getFullYear()} Trackly. All rights reserved.</p>
+          <p>
+            Powered by{" "}
+            <a
+              href="https://code-xperts.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-(--color-aurora-teal) hover:underline"
+            >
+              Code Xperts
+            </a>
+          </p>
         </div>
       </div>
     </footer>
   );
-};
+}
 
-export default Footer;
+function FooterLinks({ title, links }) {
+  const { pathname, hash } = useLocation();
+
+  return (
+    <nav aria-label={title}>
+      <h3 className="mb-5 text-xs font-bold uppercase tracking-widest text-(--theme-text-primary)">
+        {title}
+      </h3>
+      <ul className="space-y-3">
+        {links.map(({ label, to }) => {
+          const [targetPath, targetHash = ""] = to.split("#");
+          const isActive = pathname === targetPath && hash === (targetHash ? `#${targetHash}` : "");
+
+          return (
+            <li key={label}>
+              <Link
+                to={to}
+                aria-current={isActive ? (targetHash ? "location" : "page") : undefined}
+                className={`${linkClass}${isActive ? " font-semibold underline decoration-2 underline-offset-4" : ""}`}
+                style={isActive ? { color: "var(--color-aurora-teal)" } : undefined}
+              >
+                {label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}

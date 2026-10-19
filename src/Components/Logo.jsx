@@ -1,11 +1,11 @@
-import logoSvg from "../assets/logo.svg";
+import logoSvg from "../assets/trackly.svg";
 
 const Logo = ({
   width,
   height,
   className = "",
   style = {},
-  alt = "ClothSync",
+  alt = "Trackly",
   onClick,
   ...props
 }) => {

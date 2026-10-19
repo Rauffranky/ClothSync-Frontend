@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   FileText,
   Clock,
@@ -78,8 +79,8 @@ const TermsAndConditionsSection = () => {
 
             <p className="mt-3 text-base font-medium leading-relaxed text-(--theme-text-secondary) md:text-lg">
               {activeLang === "ar"
-                ? "يرجى مراجعة الشروط القياسية، وبروتوكولات مسح أجهزة RFID، وسياسات الاستخدام لمنصة كلوث سينك لإدارة المغاسل."
-                : "Please review the standard terms, hardware scanning protocols, and platform usage policies for the ClothSync RFID Laundry Management System."}
+                ? "يرجى مراجعة الشروط والأحكام وسياسات الاستخدام لمنصة Trackly."
+                : "Please review the terms, conditions, and platform usage policies for Trackly."}
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-4 text-xs font-semibold text-(--theme-text-muted)">
@@ -112,13 +113,13 @@ const TermsAndConditionsSection = () => {
                 : "If you have any questions regarding these terms, SLA guarantees, or compliance requirements, our support team is available 24/7."}
             </p>
           </div>
-          <a
-            href="mailto:support@clothsync.com"
+          <Link
+            to="/contact"
             className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-(--color-aurora-teal) hover:underline"
           >
             <Mail size={14} />
-            support@clothsync.com
-          </a>
+            Contact Us
+          </Link>
         </Card>
       </div>
 

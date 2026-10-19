@@ -1,8 +1,6 @@
 import { useState, useId, useMemo } from "react";
 import {
   Activity,
-  ArrowDownLeft,
-  ArrowUpRight,
   BarChart3,
   Info,
   RotateCcw,
@@ -288,9 +286,7 @@ const ChartsRow = () => {
               {/* Horizontal Gridlines & Y-Axis Ticks */}
               {ticks.map((tick) => {
                 const y =
-                  PADDING.top +
-                  plotHeight -
-                  (tick / resolvedMax) * plotHeight;
+                  PADDING.top + plotHeight - (tick / resolvedMax) * plotHeight;
                 return (
                   <g key={tick}>
                     <line
@@ -411,7 +407,8 @@ const ChartsRow = () => {
               {viewMode === "bar" && (
                 <>
                   {points.map((p, idx) => {
-                    const centerX = sentPoints[idx]?.x ?? PADDING.left + idx * stepX;
+                    const centerX =
+                      sentPoints[idx]?.x ?? PADDING.left + idx * stepX;
                     const barW = Math.min(18, stepX * 0.24);
                     const sentVal = Number(p.sent) || 0;
                     const retVal = Number(p.returned) || 0;
@@ -536,10 +533,7 @@ const ChartsRow = () => {
               {hoveredIndex !== null && sentPoints[hoveredIndex] && (
                 <foreignObject
                   x={Math.min(
-                    Math.max(
-                      sentPoints[hoveredIndex].x - 80,
-                      PADDING.left + 6,
-                    ),
+                    Math.max(sentPoints[hoveredIndex].x - 80, PADDING.left + 6),
                     SVG_WIDTH - PADDING.right - 166,
                   )}
                   y={Math.max(

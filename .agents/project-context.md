@@ -7,7 +7,7 @@ because the application is actively evolving.
 
 ## 1. Product and portals
 
-The application is the frontend for **ClothSync / RFID Laundry**, a multi-portal
+The application is the frontend for **Trackly**, a multi-portal
 system for laundry assets, RFID tags, scanners, categories, linked laundries,
 staff, dispatch/inventory activity, exceptions, and reporting.
 
@@ -73,6 +73,8 @@ before changing it.
 - `react-helmet-async` is provided, while pages usually call `usePageMeta`.
 - ESLint 10 with JavaScript, React Hooks, and Vite refresh rules.
 - ESM package format (`"type": "module"`).
+- Framer Motion powers viewport entrance animations on the public landing home;
+  its `MotionConfig` and reveal component respect reduced-motion preferences.
 - `android/r501-scanner` is a separate Kotlin/Jetpack Compose Android companion
   for the Android 13 R501/PDA RFID reader. It uses MVVM, Hilt, Retrofit, Room,
   WorkManager, encrypted session storage, and compile-only signatures for the
@@ -96,7 +98,7 @@ React.StrictMode
 ```
 
 `src/App.jsx` applies the stored theme, renders `AppRoutes`, and shows the shared
-ClothSync startup splash as a fixed overlay once per browser-tab session. A
+Trackly startup splash as a fixed overlay once per browser-tab session. A
 session-storage marker prevents it from replaying on refresh or route changes;
 the splash exits after its short intro while routes remain mounted underneath.
 `src/Routes/index.jsx` declares routes and lazy-loads route pages.
@@ -168,6 +170,13 @@ Authentication and landing:
   dashboard shell; `/laundry/handle-invite` and the backend email path
   `/laundry-invite/accept` are compatible aliases.
 - `/` -> landing home through `LandingLayout`; public legal policy routes `/terms-and-conditions` and `/privacy-policy`.
+- `/contact` -> public Contact Us page through `LandingLayout`, with a thin
+  `Page/Landing/ContactPage.jsx` wrapper and `Section/landing/Contact` components.
+  The Formik/Yup form validates locally and opens an email draft via `mailto:`;
+  no contact-submission backend exists or delivery success is claimed. The shared
+  support address is in `Config/contact.js`. The landing footer includes explicit
+  Contact Us, Privacy Policy, and Terms & Conditions links, alongside product
+  anchors and Business/Laundry workspace links.
 - `/404`; unmatched routes redirect there.
 
 Dashboard routes:
@@ -223,6 +232,31 @@ single-dot behavior as the Scanners group.
 ## 7. Current feature/data status
 
 Re-check these facts in source during every related task.
+
+- The public home is a static product landing page composed in
+  `src/Section/landing/Home/Index.jsx`, with feature-local components under
+  `Home/components` and scoped styles in `Home/home.css`. It reuses shared Button
+  and Card primitives. Features, How it works, Overview, and Portals navigation
+  targets home anchors, while signup/login links open the existing Business and
+  Laundry auth routes. Legal links remain in the footer. Its responsive iframe
+  embeds the user-provided Google Drive video with file ID
+  `1NrPNQkXebtGtAD4hkqOn-AacZAhHkrX0` using `/preview`, without a separate link
+  below the player. Playback requires access granted by the file owner.
+  Footer links derive their selected state from the current pathname and exact
+  hash, using a teal underline and `aria-current` for the active page or section.
+  Trackly is the user-confirmed product name; earlier ClothSync/RFID Laundry
+  names in legacy modules are not the current product branding. The shared Logo
+  component now renders `src/assets/trackly.svg` with Trackly alternative text.
+  Inventory Management has its own `#inventory-management` section composed by
+  `InventorySection`. How it works presents six steps: partner connection,
+  asset registration, business dispatch, laundry receipt, laundry return, and
+  business check-in/reconciliation. `Home/flowSteps.js` owns the static content.
+  `PortalPreview` uses shared Badge styling and explicitly labeled illustrative
+  example data; no real portal screenshots have been supplied or captured.
+  Optional `screenshot` and `screenshotAlt` fields on each flow step render an
+  image instead, with a preview fallback on image failure. The public landing
+  does not fetch authenticated data or embed protected portals. The expanded
+  landing navigation switches to the mobile menu below the xl breakpoint.
 
 Confirmed API-backed areas:
 
@@ -789,12 +823,12 @@ Reuse `src/Components/UI` before creating feature-local replacements:
   `CardSkeleton`, `Badge`, `Card`, `Alert`, `ProgressBar`, and the shared `Charts`
   primitives (`ChartCard`, `LineChart`, `BarChart`, `DonutChart`, and
   `SegmentedBarChart`).
-- Identity/icons: `Avatar`, `InitialsAvatar`, `IconWrapper`, and `Logo` (`src/Components/Logo.jsx` renders `src/assets/logo.svg`).
+- Identity/icons: `Avatar`, `InitialsAvatar`, `IconWrapper`, and `Logo` (`src/Components/Logo.jsx` renders `src/assets/trackly.svg`).
 - Primary action primitive: `Button`.
 
 Important contracts:
 
-- `Logo` (`src/Components/Logo.jsx`) renders the official ClothSync vector brand mark (`src/assets/logo.svg`). It supports custom `className`, `width`, `height`, and `alt`, and is used across Dashboard sidebars, Auth screens, Landing headers/footers, and the Splash screen.
+- `Logo` (`src/Components/Logo.jsx`) renders the Trackly vector wordmark (`src/assets/trackly.svg`). It supports custom `className`, `width`, `height`, and `alt`, and is used across Dashboard sidebars, Auth screens, Landing headers/footers, and the Splash screen.
 
 - `Input.onChange` receives `(value, event)`, not only a native event. It supports
   errors/helper text, icons, passwords, multiline, and numeric constraints.

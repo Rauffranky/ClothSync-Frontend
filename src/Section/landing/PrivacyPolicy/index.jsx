@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   FileText,
   Clock,
@@ -78,8 +79,8 @@ const PrivacyPolicySection = () => {
 
             <p className="mt-3 text-base font-medium leading-relaxed text-(--theme-text-secondary) md:text-lg">
               {activeLang === "ar"
-                ? "تعرّف على كيفية جمع بيانات القياس عن بُعد، وسجلات مسح علامات RFID، وإدارتها وعزلها بأمان داخل بنية كلوث سينك متعددة المستأجرين."
-                : "Understand how ClothSync collects, protects, isolates, and manages operational telemetry, RFID tag scan logs, and tenant organizational records."}
+                ? "تعرّف على كيفية جمع بياناتك وحمايتها وإدارتها في Trackly."
+                : "Understand how Trackly collects, protects, and manages your data and operational records."}
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-4 text-xs font-semibold text-(--theme-text-muted)">
@@ -115,17 +116,17 @@ const PrivacyPolicySection = () => {
             </h3>
             <p className="mt-2 text-xs font-medium leading-relaxed text-(--theme-text-secondary)">
               {activeLang === "ar"
-                ? "إذا كانت لديك استفسارات بشأن الامتثال أو عزل البيانات أو تشفير معرّفات RFID، يسعد فريقنا تقديم المساعدة."
-                : "If you have inquiries regarding GDPR, tenant data isolation, or our RFID tag tracking encryption protocols, our compliance team is here to assist."}
+                ? "إذا كانت لديك استفسارات بشأن الخصوصية أو حماية البيانات في Trackly، يسعد فريقنا تقديم المساعدة."
+                : "If you have questions about privacy or data protection in Trackly, contact our team."}
             </p>
           </div>
-          <a
-            href="mailto:privacy@clothsync.com"
+          <Link
+            to="/contact"
             className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-(--color-aurora-teal) hover:underline"
           >
             <Mail size={14} />
-            privacy@clothsync.com
-          </a>
+            Contact Us
+          </Link>
         </Card>
       </div>
 

@@ -13,6 +13,7 @@ import AssetDetailsPage from "../Page/Dashboard/Tenant/AssetDetailsPage";
 // ============================================================================
 
 const HomePage = lazy(() => import("../Page/Landing/HomePage"));
+const ContactPage = lazy(() => import("../Page/Landing/ContactPage"));
 const AuthPage = lazy(() => import("../Page/Auth/AuthPage"));
 const StaffEmailVerificationPage = lazy(() => import("../Page/Auth/StaffEmailVerificationPage"));
 const TenantEmailVerificationPage = lazy(() => import("../Page/Auth/TenantEmailVerificationPage"));
@@ -104,6 +105,7 @@ const AppRoutes = () => {
         {/* Landing Routes */}
         <Route element={<LandingLayout />} path="/">
           <Route index element={<HomePage />} />
+          <Route path="contact" element={<ContactPage />} />
           <Route path="terms-and-conditions" element={<LandingTermsAndConditionsPage />} />
           <Route path="privacy-policy" element={<LandingPrivacyPolicyPage />} />
         </Route>

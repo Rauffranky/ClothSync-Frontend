@@ -4,12 +4,12 @@ import HomeSection from "../../Section/landing/Home/Index";
 
 const HomePage = () => {
   usePageMeta({
-    title: "RFID Laundry Management System",
+    title: "Trackly - Connected Laundry Management",
     meta: [
       {
         name: "description",
         content:
-          "A modern RFID-powered laundry management platform for tenants, laundry staff, and super admins.",
+          "Trackly connects businesses and laundry partners with asset tracking, dispatch management, and shared operational visibility.",
       },
     ],
   });

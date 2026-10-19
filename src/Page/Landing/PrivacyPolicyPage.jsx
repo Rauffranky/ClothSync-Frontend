@@ -3,12 +3,12 @@ import PrivacyPolicySection from "../../Section/landing/PrivacyPolicy";
 
 const PrivacyPolicyPage = () => {
   usePageMeta({
-    title: "Privacy Policy - RFID Laundry Management System",
+    title: "Privacy Policy - Trackly",
     meta: [
       {
         name: "description",
         content:
-          "Official Privacy Policy and data protection standards for the ClothSync RFID Laundry Management System platform.",
+          "Privacy Policy and data protection information for Trackly.",
       },
     ],
   });

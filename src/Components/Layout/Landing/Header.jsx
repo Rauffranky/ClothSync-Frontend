@@ -40,12 +40,12 @@ const Header = () => {
           className="flex min-w-0 shrink-0 items-center cursor-pointer transition-transform hover:opacity-90 active:scale-95"
           onClick={() => navigate("/")}
           type="button"
-          aria-label="ClothSync Home"
+          aria-label="Trackly Home"
         >
           <Logo className="h-10 w-auto" />
         </button>
 
-        <nav className="ml-auto hidden items-center gap-1 md:flex">
+        <nav className="ml-auto hidden items-center gap-1 xl:flex">
           {landingNavigationItems.map((item) => {
             const isActive =
               pathname === item.to && (item.hash ? hash === item.hash : !hash);
@@ -69,8 +69,9 @@ const Header = () => {
           })}
         </nav>
 
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden xl:flex items-center gap-3">
           <Button
+            aria-label={themeMode === "dark" ? "Switch to light theme" : "Switch to dark theme"}
             leftIcon={
               themeMode === "dark" ? <Sun size={18} /> : <Moon size={18} />
             }
@@ -93,7 +94,7 @@ const Header = () => {
         </div>
 
         <button
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border bg-white/30 dark:bg-(--button-secondary-bg) border-(--theme-border) text-(--theme-text-primary) hover:bg-[rgba(20,184,166,0.12)] transition md:hidden"
+          className="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-2xl border bg-white/30 dark:bg-(--button-secondary-bg) border-(--theme-border) text-(--theme-text-primary) hover:bg-[rgba(20,184,166,0.12)] transition xl:hidden"
           type="button"
           aria-label="Open menu"
           onClick={() => setIsMobileMenuOpen(true)}
@@ -114,7 +115,7 @@ const Header = () => {
               setIsMobileMenuOpen(false);
             }}
             type="button"
-            aria-label="ClothSync Home"
+            aria-label="Trackly Home"
           >
             <Logo className="h-9 w-auto" />
           </button>
